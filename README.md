@@ -14,6 +14,9 @@ Moosey CMS transforms your FastAPI application into a content-driven website wit
 ![Example Screenshot](/example/assets/example-1.jpeg)
 
 ![Example Screenshot](/example/assets/example-2.jpeg)
+
+Check out the [/example](/example/) for templating and content samples used to generate the images above.
+
 ---
 
 ## 🚀 Features
