@@ -211,6 +211,12 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
             md_data = helpers.parse_markdown_file(target_file)
             front_matter = md_data.metadata
 
+            # never render drafts in production
+            if front_matter.get("draft") is True and mode != "development":
+                return templates.TemplateResponse(
+                    "404.html", {"request": request}, status_code=404
+                )
+
             # Merge front matter
             template_data = {
                 **template_data,
@@ -219,14 +225,12 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
                 "site_code": app.state.site_code,
             }
 
-
             # Render jinja inside frontmatter strings
             for k in front_matter:
                 if isinstance(front_matter[k], str):
                     front_matter[k] = helpers.template_render_content(
                         templates, front_matter[k], template_data, False
                     )
-
 
             html_content = md_data.html
 
@@ -248,13 +252,14 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
             physical_folder=nav_folder,
             current_url=current_url,
             relative_to_path=dirs["content"],
+            mode=mode,
         )
         breadcrumbs = helpers.get_breadcrumbs(full_path)
 
         # 7. Find Template
         search_path = "" if clean_path == "index" else clean_path
         template_name = helpers.find_best_template(
-            templates, search_path, is_index_file=is_index
+            templates, search_path, is_index_file=is_index, frontmatter=front_matter
         )
 
         template_data = {**template_data, **md_data}

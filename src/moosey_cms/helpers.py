@@ -8,7 +8,7 @@ https://opensource.org/licenses/MIT
 import os
 import frontmatter
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from jinja2 import TemplateNotFound
 from jinja2.sandbox import SandboxedEnvironment 
 from datetime import datetime
@@ -82,62 +82,54 @@ def get_secure_target(user_path: str, relative_to_path: Path) -> Path:
 
 
 @cache_fn(debug=cache_debug)
-def find_best_template(templates, path_str: str, is_index_file: bool = False) -> str:
+def find_best_template(templates, path_str: str, is_index_file: bool = False, frontmatter: Optional[dict] = None) -> str:
     """
-    Determines the best template based on the path hierarchy.
-    path_str: The clean relative path (e.g. 'posts/stories/my-story')
-    is_index_file: True if we are rendering a directory index (e.g. 'posts/stories/index.md')
+    Determines the best template based on hierarchy or Frontmatter override.
     """
+    
+    # 0. Check Frontmatter Override First
+    if frontmatter and frontmatter.get('template'):
+        candidate = frontmatter.get('template')
+        # Ensure it ends with .html if user forgot
+        if not candidate.endswith('.html'):
+            candidate += '.html'
+        
+        if template_exists(templates, candidate):
+            return candidate
 
     parts = [p for p in path_str.strip("/").split("/") if p]
 
-    # use index,html for home...
-    if len(parts)==0:
+    if len(parts) == 0:
         index_candidate = 'index.html'
         if template_exists(templates, index_candidate):
             return index_candidate
 
-
-    # 1. Exact Match (Specific File Override)
-    # We skip this for index files, as their "Exact Match" is essentially
-    # the folder name check in step 2B.
+    # 1. Exact Match
     if not is_index_file:
         candidate = "/".join(parts) + ".html"
-
         if template_exists(templates, candidate):
             return candidate
-
-        # If we didn't find specific 'my-story.html',
-        # pop the filename so we start searching from parent 'stories'
         if parts:
             parts.pop()
 
     # 2. Recursive Parent Search
     while len(parts) > 0:
-        current_folder = parts[-1]  # e.g. "stories"
-        parent_path = parts[:-1]  # e.g. ["posts"]
+        current_folder = parts[-1]
+        parent_path = parts[:-1]
 
-        # A. Singular Check (The "Item" Template)
-        # e.g. "posts/story.html"
-        # Only valid if we are NOT rendering a directory list (index file)
+        # A. Singular Check
         if not is_index_file:
             singular_name = singularize(current_folder)
             singular_candidate = "/".join(parent_path + [singular_name]) + ".html"
-
-            print('>>>>parts', parts)
-
             if template_exists(templates, singular_candidate):
                 return singular_candidate
 
-        # B. Plural/Folder Check (The "Section" Template)
-        # e.g. "posts/stories.html"
+        # B. Plural/Folder Check
         plural_candidate = "/".join(parts) + ".html"
         if template_exists(templates, plural_candidate):
             return plural_candidate
 
-        # Traverse up
         parts.pop()
-
 
     # 3. Final Fallback
     return "page.html"
@@ -147,17 +139,16 @@ def find_best_template(templates, path_str: str, is_index_file: bool = False) ->
 def parse_markdown_file(file):
     data = frontmatter.load(file)
     stats = file.stat()
-    # Last date
-    data.metadata["date"] = {
-        "updated": datetime.fromtimestamp(stats.st_mtime),
-        "created": datetime.fromtimestamp(stats.st_ctime),
-    }
-    # add slug
+    
+    # Ensure date metadata exists
+    if "date" not in data.metadata or not isinstance(data.metadata["date"], dict):
+        data.metadata["date"] = {}
+        
+    data.metadata["date"]["updated"] = datetime.fromtimestamp(stats.st_mtime)
+    data.metadata["date"]["created"] = datetime.fromtimestamp(stats.st_ctime)
     data.metadata["slug"] = slugify(str(file.stem))
 
     data.html = parse_markdown(data.content)
-
-
     return data
 
 
@@ -176,8 +167,7 @@ def ensure_sandbox_filters(main_templates):
 # template_render_content only in sandbox mode
 @cache_fn(debug=cache_debug) 
 def template_render_content(templates, content, data, safe=True):
-    if not content:
-        return ""
+    if not content: return ""
 
     try:
         # Sync filters/globals from the main app to our sandbox
@@ -196,51 +186,95 @@ def template_render_content(templates, content, data, safe=True):
 
 @cache_fn(debug=cache_debug)
 def get_directory_navigation(
-    physical_folder: Path, current_url: str, relative_to_path: Path
+    physical_folder: Path, current_url: str, relative_to_path: Path, mode: str = "production"
 ) -> List[Dict[str, Any]]:
     """
-    Scans the folder containing the current file to generate a sidebar menu.
+    Scans folder for sidebar menu. Supports advanced frontmatter features.
     """
     if not physical_folder.exists() or not physical_folder.is_dir():
         return []
 
     items = []
     try:
-        # Iterate over files in the folder
-        for entry in sorted(
-            physical_folder.iterdir(), key=lambda x: (not x.is_dir(), x.name)
-        ):
-            if entry.name.startswith("."):
-                continue  # Skip hidden
+        for entry in physical_folder.iterdir():
+            if entry.name.startswith("."): continue
+            if entry.name == "index.md": continue  
+            if entry.is_dir() and not (entry / 'index.md').exists(): continue
 
-            # Skip self-reference if inside index
-            if entry.name == "index.md":
-                continue  
+            # Determine Metadata Source
+            meta_file = entry / 'index.md' if entry.is_dir() else entry
+            
+            # Defaults
+            sort_weight = 9999
+            display_title = entry.stem.replace("-", " ").title()
+            nav_group = None
+            external_url = None
+            is_visible = True
+            target = "_self"
 
-            # if dir only list if it has an index.md
-            if  entry.is_dir() and not (entry / 'index.md').exists() :
-                continue
+            try:
+                # Load minimal metadata
+                post = frontmatter.load(meta_file)
+                meta = post.metadata
+                
+                # 1. Visibility & Draft Check
+                if meta.get('visible') is False:
+                    is_visible = False
+                
+                if meta.get('draft') is True and mode != 'development':
+                    is_visible = False
+                
+                if not is_visible:
+                    continue
 
+                # 2. Ordering
+                if 'weight' in meta: sort_weight = int(meta['weight'])
+                elif 'order' in meta: sort_weight = int(meta['order'])
+                
+                # 3. Titles & Grouping
+                if 'nav_title' in meta: display_title = meta['nav_title']
+                elif 'title' in meta: display_title = meta['title']
+                
+                nav_group = meta.get('group')
+
+                # 4. External Links
+                if 'external_link' in meta:
+                    external_url = meta['external_link']
+                    target = "_blank"
+                elif 'redirect' in meta:
+                    external_url = meta['redirect']
+
+            except Exception:
+                pass 
 
             # Build URL
-            try:
-                rel_path = entry.relative_to(relative_to_path)
-                # Strip .md for URL, keep pure for directories
-                url_slug = str(rel_path).replace(".md", "").replace("\\", "/")
-                entry_url = f"/{url_slug}"
-            except ValueError:
-                continue
+            if external_url:
+                entry_url = external_url
+                is_active = False # External links are never 'active' page
+            else:
+                try:
+                    rel_path = entry.relative_to(relative_to_path)
+                    url_slug = str(rel_path).replace(".md", "").replace("\\", "/")
+                    entry_url = f"/{url_slug}"
+                    is_active = (entry_url == current_url)
+                except ValueError:
+                    continue
 
-            items.append(
-                {
-                    "name": entry.stem.replace("-", " ").title(),
-                    "url": entry_url,
-                    "is_active": entry_url == current_url,
-                    "is_dir": entry.is_dir(),
-                }
-            )
+            items.append({
+                "name": display_title,
+                "url": entry_url,
+                "is_active": is_active,
+                "is_dir": entry.is_dir(),
+                "weight": sort_weight,
+                "group": nav_group,
+                "target": target
+            })
+            
+        # Sorting: Weight first, then Name
+        items.sort(key=lambda x: (x['weight'], x['name']))
+
     except OSError:
-        pass  # Ignore permission errors
+        pass 
 
     return items
 
