@@ -37,7 +37,7 @@ def cache_fn(cache=cache, debug=True, exclude_args=None):
     exclude_args: list of argument indices or keyword names to ignore
     """
     if exclude_args is None:
-        exclude_args = []
+        exclude_args = ['templates']
 
     def decorator(func):
         @wraps(func)
