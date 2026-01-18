@@ -5,42 +5,75 @@
  https://opensource.org/licenses/MIT
 """
 
+from pydantic import BaseModel, Field, field_validator
+from typing import Dict, Literal, Optional
 from pathlib import Path
-from pydantic import BaseModel, RootModel, HttpUrl, EmailStr, Field, field_validator, HttpUrl
-from typing import List, Optional, Union, Dict, Any
 
 
+class OpenGraphConfig(BaseModel):
+    """Open Graph metadata configuration"""
+    og_image: str = Field(..., description="Path to Open Graph image")
+    og_title: Optional[str] = Field(None, description="Open Graph title")
+    og_description: Optional[str] = Field(None, description="Open Graph description")
+    og_url: Optional[str] = Field(None, description="Open Graph URL")
 
-class Dirs(BaseModel):
-    content: Path
-    templates: Path
 
-    @field_validator('content', 'templates', mode='before')
+class SocialConfig(BaseModel):
+    """Social media links configuration"""
+    twitter: Optional[str] = Field(None, description="Twitter/X profile URL")
+    facebook: Optional[str] = Field(None, description="Facebook profile URL")
+    linkedin: Optional[str] = Field(None, description="LinkedIn profile URL")
+    instagram: Optional[str] = Field(None, description="Instagram profile URL")
+    github: Optional[str] = Field(None, description="GitHub profile URL")
+
+    @field_validator('twitter', 'facebook', 'linkedin', 'instagram', 'github')
     @classmethod
-    def resolve_path(cls, v):
-        if isinstance(v, str):
-            v = Path(v)
-        return v.resolve()
-
-    @field_validator('content', 'templates')
-    @classmethod
-    def must_exist(cls, v: Path):
-        if not v.exists():
-            raise ValueError(f'Path does not exist: {v}')
+    def validate_url(cls, v: Optional[str]) -> Optional[str]:
+        if v and not v.startswith(('http://', 'https://')):
+            raise ValueError('Social media links must be valid URLs starting with http:// or https://')
         return v
 
 
-class OpenGraph(BaseModel):
-    og_image : str
-
 class SiteData(BaseModel):
-    name: Optional[str] = None
-    keywords: Optional[list[str]] = None
-    description: Optional[str] = None
-    author: Optional[str] = None
-    social: Optional[Dict[str, HttpUrl]] = None
-    open_graph: Optional[OpenGraph]
+    """Site metadata and configuration"""
+    name: Optional[str] = Field(..., description="Site name")
+    keywords: Optional[list[str]] = Field(..., description="SEO keywords")
+    description: Optional[str] = Field(..., description="Site description")
+    author: Optional[str] = Field(..., description="Site author")
+    open_graph: Optional[OpenGraphConfig] = Field(..., description="Open Graph configuration")
+    social: Optional[SocialConfig] = Field(..., description="Social media links")
 
 
-class SiteCode(RootModel[Dict[str, str]]):
-    root: Dict[str, Any]
+class SiteCode(BaseModel):
+    """Custom HTML/code snippets for the site"""
+    styled_name: Optional[str] = Field(None, description="Styled HTML name")
+    header_code: Optional[str] = Field(None, description="Code to inject in header")
+    footer_code: Optional[str] = Field(None, description="Code to inject in footer")
+
+
+class Dirs(BaseModel):
+    """Directory paths configuration"""
+    content: Path = Field(..., description="Content directory path")
+    templates: Path = Field(..., description="Templates directory path")
+
+    @field_validator('content', 'templates')
+    @classmethod
+    def validate_path_exists(cls, v: Path) -> Path:
+        if not v.exists():
+            raise ValueError(f'Directory does not exist: {v}')
+        if not v.is_dir():
+            raise ValueError(f'Path is not a directory: {v}')
+        return v
+
+
+class CMSConfig(BaseModel):
+    """Complete CMS initialization configuration"""
+    host: str = Field(..., description="Server host address")
+    port: int = Field(..., ge=1, le=65535, description="Server port number")
+    dirs: Dirs = Field(..., description="Directory configuration")
+    mode: Literal["development", "production", "staging", "testing"] = Field(
+        ..., 
+        description="Application mode"
+    )
+    site_data: Optional[SiteData] = Field(..., description="Site metadata")
+    site_code: Optional[SiteCode] = Field(..., description="Custom site code")

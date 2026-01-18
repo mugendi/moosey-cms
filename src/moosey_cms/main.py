@@ -16,7 +16,7 @@ from fastapi.templating import Jinja2Templates
 
 from . import filters
 from . import helpers
-from .models import Dirs, SiteData, SiteCode
+
 from .cache import clear_cache_on_file_change
 from .file_watcher import start_watching
 from .middlewares import inject_script_middleware
@@ -46,22 +46,33 @@ class ConnectionManager:
                 self.disconnect(connection)
 
 
+from .models import CMSConfig, Dirs, SiteCode, SiteData
+
+
 def init_cms(
     app,
     host: str,
     port: int,
     dirs: Dirs,
+    mode: str,
     site_data: SiteData = {},
     site_code: SiteCode = {},
 ):
 
-    inject_script_middleware(app, host, port)
-
     # validate dirs inputs
-    dirs = helpers.validate_model(Dirs, dirs)
+    CMSConfig(
+        host=host,
+        port=port,
+        dirs=dirs,
+        mode=mode,
+        site_data=site_data,
+        site_code=site_code,
+    )
 
-    app.state.site_data = helpers.validate_model(SiteData, site_data)
-    app.state.site_code = helpers.validate_model(SiteCode, site_code)
+    app.state.site_code = site_code
+    app.state.site_data = site_data
+
+    inject_script_middleware(app, host, port)
 
     # resolve paths
     dirs = {k: p.resolve() for k, p in dirs.items()}
