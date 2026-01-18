@@ -145,154 +145,55 @@ A user visits **`/posts/post-1`**.
 
 **Resolution Order:**
 
-1.  **`templates/posts/post-1.html`** (Exact Match):
-    Checked first. Use this if a specific article requires a unique design completely different from other posts.
-
-2.  **`templates/post.html`** (Singular Parent):
-    The system automatically "singularizes" the parent folder name (`posts` → `post`). This is the standard template used to render individual blog items.
-
-3.  **`templates/posts.html`** (Plural Parent):
-    If no singular template exists, the system looks for the folder's name. This allows articles to inherit the layout of their parent section if desired.
-
-4.  **`templates/page.html`** (Global Fallback):
-    If no specific, singular, or plural templates are found, the system defaults to the generic page layout.
+1.  **Frontmatter Override:** If `post-1.md` contains `template: special.html`, that template is used immediately.
+2.  **Exact Match:** `templates/posts/post-1.html`.
+3.  **Singular Parent:** `templates/post.html` (Perfect for generic blog posts).
+4.  **Plural Parent:** `templates/posts.html` (Perfect for section indexes).
+5.  **Fallback:** `templates/page.html`.
 
 ---
 
-## 🧩 Template Variables & Context
+## 📝 Frontmatter Configuration
 
-Moosey CMS injects a rich set of variables into every template. You can use these to build dynamic layouts, check active states, and perform conditional logic.
+You can control routing, visibility, and layout directly from the Markdown file YAML frontmatter.
 
-### Core Content
-| Variable | Type | Description |
-| :--- | :--- | :--- |
-| `content` | `HTML` | The fully rendered HTML content of the current Markdown file. |
-| `title` | `str` | The title of the page (from frontmatter or filename). |
-| `metadata` | `dict` | The complete key-value dictionary from the Markdown YAML frontmatter. |
-| `date` | `dict` | Auto-generated timestamps: `date.created`, `date.updated`. |
-
-### Navigation
-| Variable | Type | Description |
-| :--- | :--- | :--- |
-| `nav_items` | `list` | A list of sibling pages/folders in the current directory. Each item contains `.name`, `.url`, `.is_active`, and `.is_dir`. |
-| `breadcrumbs` | `list` | A list of parent paths leading to the current page. Each item contains `.name` and `.url`. |
-
-### System & Request
-| Variable | Type | Description |
-| :--- | :--- | :--- |
-| `request` | `Request` | The standard FastAPI Request object. Useful for inspecting the current URL or headers. |
-| `mode` | `str` | The current running mode (e.g., `"development"` or `"production"`). |
-| `debug_template_used`| `str` | The filename of the template currently being rendered (helpful for debugging). |
-
-### Global Config
-| Variable | Type | Description |
-| :--- | :--- | :--- |
-| `site_data` | `dict` | The global configuration dictionary passed to `init_cms` (Name, Author, Social Links). |
-| `site_code` | `dict` | The global code snippets dictionary passed to `init_cms`. |
-
-### 💡 Usage Examples
-
-**1. Conditional Logic based on URL**
-You can use the `request` object to change content based on the current path.
-```html
-<h3 class="font-bold text-slate-900 mb-4 border-b pb-2">
-    {% if '/docs' in request.url.path %}
-        Documentation
-    {% else %}
-        Latest Posts
-    {% endif %}
-</h3>
-```
-
-**2. Displaying Custom Frontmatter**
-If your markdown file has `tags: [python, fastpi]`:
-```html
-{% if metadata.tags %}
-    <div class="tags">
-        {% for tag in metadata.tags %}
-            <span class="badge">{{ tag }}</span>
-        {% endfor %}
-    </div>
-{% endif %}
-```
-
-**3. Active Sidebar Links**
-Highlight the current page in a navigation menu.
-```html
-<ul>
-{% for item in nav_items %}
-    <li>
-        <a href="{{ item.url }}" class="{{ 'text-blue-600 font-bold' if item.is_active else 'text-gray-600' }}">
-            {{ item.name }}
-        </a>
-    </li>
-{% endfor %}
-</ul>
-```
-
----
-
-## 📝 Markdown Features
-
-### Frontmatter
-You can define metadata at the top of any Markdown file. These values are passed to your template.
-
-```markdown
----
+### Basic Metadata
+```yaml
 title: My Amazing Post
 date: 2024-01-01
-tags: [fastapi, python]
----
-
-# Hello World
-
-This is content.
+description: A short summary for SEO.
 ```
 
-### Dynamic Content in Markdown
-You can use Jinja2 syntax **inside** your Markdown content! This is powered by a **Sandboxed Environment**, making it safe to use variables without exposing your server to vulnerabilities (SSTI).
+### Organization & Navigation
+| Key | Type | Description |
+| :--- | :--- | :--- |
+| `weight` | `int` | Sort order in sidebars. Lower numbers appear first. Default: `9999`. |
+| `nav_title` | `str` | Short title to display in sidebars (if different from `title`). |
+| `visible` | `bool` | Set to `false` to hide from sidebars/menus (page remains accessible via URL). |
+| `draft` | `bool` | If `true`, the page is only visible in `development` mode. |
+| `group` | `str` | Group sidebar items under a heading (requires template support). |
 
-**Example `about.md`:**
-```markdown
-# Welcome to {{ site_data.name }}
+### Advanced Routing
+| Key | Type | Description |
+| :--- | :--- | :--- |
+| `template` | `str` | Force a specific template file (e.g., `template: landing.html`). |
+| `external_link` | `str` | The sidebar link will point to this external URL instead of the page itself. |
+| `redirect` | `str` | Alias for `external_link`. |
 
-This page was generated by **{{ site_data.author }}**.
-Today is {{ metadata.date.created | fancy_date }}.
-```
-
-**Allowed Context:**
-*   `site_data`, `site_code`, `metadata`
-*   **Filters:** All standard Moosey filters (`fancy_date`, `read_time`, etc.) are available.
-
-### Included Extensions
-Moosey includes `pymdown-extensions` to provide:
-*   Tables
-*   Task Lists `[x]`
-*   Emojis `:smile:`
-*   Code Fences with highlighting
-*   Admonitions (Alerts/Callouts)
-*   Math/Arithmatex
-
+**Example:**
+```yaml
 ---
-
-## 🛠️ SEO & Metadata
-
-Moosey CMS includes a robust SEO helper. In your `base.html` `<head>`, simply add:
-
-```html
-<head>
-    <!-- Automatically generates Title, Meta Description, OpenGraph, 
-         Twitter Cards, and JSON-LD Structured Data -->
-    {{ seo() }}
-    
-    <!-- Or override specific values -->
-    {{ seo(title="Custom Title", image="/static/custom.jpg") }}
-</head>
+title: API Documentation
+nav_title: API Docs
+weight: 1
+group: "Developer Tools"
+external_link: "https://api.mysite.com"
+---
 ```
 
 ---
 
-## 🧩 Custom Filters
+## 🧩 Custom Filters & Logic
 
 Moosey CMS comes packed with a comprehensive library of Jinja2 filters to help you format your data effortlessly.
 
