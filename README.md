@@ -1,3 +1,11 @@
+The issue occurs because the pipe character `|` is used by Markdown to separate table columns. When you use it inside a table cell—even within backticks—it often breaks the layout on GitHub.
+
+To fix this, we need to use the HTML entity `&#124;` for the pipe and wrap the code in `<code>` tags instead of backticks.
+
+Here is the corrected **README.md**.
+
+--- START OF FILE README.md ---
+
 <!--
  Copyright (c) 2026 Anthony Mugendi
  
@@ -227,45 +235,45 @@ Moosey CMS comes packed with a comprehensive library of Jinja2 filters to help y
 ### Date & Time
 | Filter | Usage | Output |
 | :--- | :--- | :--- |
-| `fancy_date` | `{{ date | fancy_date }}` | 13th Jan, 2026 at 6:00 PM |
-| `short_date` | `{{ date | short_date }}` | Jan 13, 2026 |
-| `iso_date` | `{{ date | iso_date }}` | 2026-01-13 |
-| `time_only` | `{{ date | time_only }}` | 6:00 PM |
-| `relative_time` | `{{ date | relative_time }}` | 2 hours ago / yesterday |
+| `fancy_date` | <code>{{ date &#124; fancy_date }}</code> | 13th Jan, 2026 at 6:00 PM |
+| `short_date` | <code>{{ date &#124; short_date }}</code> | Jan 13, 2026 |
+| `iso_date` | <code>{{ date &#124; iso_date }}</code> | 2026-01-13 |
+| `time_only` | <code>{{ date &#124; time_only }}</code> | 6:00 PM |
+| `relative_time` | <code>{{ date &#124; relative_time }}</code> | 2 hours ago / yesterday |
 
 ### Currency & Numbers
 | Filter | Usage | Output |
 | :--- | :--- | :--- |
-| `currency` | `{{ 1234.5 | currency('USD') }}` | $1,234.50 |
-| `compact_currency` | `{{ 1500000 | compact_currency }}` | $1.5M |
-| `currency_name` | `{{ 'KES' | currency_name }}` | Kenyan Shilling |
-| `number_format` | `{{ 1000 | number_format }}` | 1,000 |
-| `percentage` | `{{ 50.5 | percentage }}` | 50.5% |
-| `ordinal` | `{{ 3 | ordinal }}` | 3rd |
+| `currency` | <code>{{ 1234.5 &#124; currency('USD') }}</code> | $1,234.50 |
+| `compact_currency` | <code>{{ 1500000 &#124; compact_currency }}</code> | $1.5M |
+| `currency_name` | <code>{{ 'KES' &#124; currency_name }}</code> | Kenyan Shilling |
+| `number_format` | <code>{{ 1000 &#124; number_format }}</code> | 1,000 |
+| `percentage` | <code>{{ 50.5 &#124; percentage }}</code> | 50.5% |
+| `ordinal` | <code>{{ 3 &#124; ordinal }}</code> | 3rd |
 
 ### Geography & Locale
 | Filter | Usage | Output |
 | :--- | :--- | :--- |
-| `country_flag` | `{{ 'US' | country_flag }}` | 🇺🇸 |
-| `country_name` | `{{ 'DE' | country_name }}` | Germany |
-| `language_name` | `{{ 'fr' | language_name }}` | French |
+| `country_flag` | <code>{{ 'US' &#124; country_flag }}</code> | 🇺🇸 |
+| `country_name` | <code>{{ 'DE' &#124; country_name }}</code> | Germany |
+| `language_name` | <code>{{ 'fr' &#124; language_name }}</code> | French |
 
 ### Text Formatting
 | Filter | Usage | Output |
 | :--- | :--- | :--- |
-| `truncate_words` | `{{ text | truncate_words(10) }}` | Truncates text to 10 words... |
-| `excerpt` | `{{ text | excerpt(150) }}` | Smart excerpt breaking at sentences. |
-| `read_time` | `{{ content | read_time }}` | 5 min read |
-| `slugify` | `{{ 'Hello World' | slugify }}` | hello-world |
-| `title_case` | `{{ 'a tale of two cities' | title_case }}` | A Tale of Two Cities |
-| `smart_quotes` | `{{ '"Hello"' | smart_quotes }}` | “Hello” |
+| `truncate_words` | <code>{{ text &#124; truncate_words(10) }}</code> | Truncates text to 10 words... |
+| `excerpt` | <code>{{ text &#124; excerpt(150) }}</code> | Smart excerpt breaking at sentences. |
+| `read_time` | <code>{{ content &#124; read_time }}</code> | 5 min read |
+| `slugify` | <code>{{ 'Hello World' &#124; slugify }}</code> | hello-world |
+| `title_case` | <code>{{ 'a tale of two cities' &#124; title_case }}</code> | A Tale of Two Cities |
+| `smart_quotes` | <code>{{ '"Hello"' &#124; smart_quotes }}</code> | “Hello” |
 
 ### Utilities
 | Filter | Usage | Output |
 | :--- | :--- | :--- |
-| `filesize` | `{{ 1024 | filesize }}` | 1.0 KB |
-| `yesno` | `{{ True | yesno }}` | Yes |
-| `default_if_none` | `{{ val | default_if_none('N/A') }}` | Returns default if None |
+| `filesize` | <code>{{ 1024 &#124; filesize }}</code> | 1.0 KB |
+| `yesno` | <code>{{ True &#124; yesno }}</code> | Yes |
+| `default_if_none` | <code>{{ val &#124; default_if_none('N/A') }}</code> | Returns default if None |
 
 ---
 
