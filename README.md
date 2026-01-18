@@ -104,6 +104,7 @@ Moosey CMS relies on a convention-over-configuration file structure.
 │       └── post-2.md
 └── templates/             <-- Your Jinja2 Templates
     ├── base.html          <-- Base layout
+    ├── index.html         <-- Home Page layout
     ├── page.html          <-- Default fallback
     ├── blog.html          <-- Layout for /blog (Listing)
     └── post.html          <-- Layout for /blog/post-1 (Single Item)
@@ -115,15 +116,12 @@ Moosey CMS relies on a convention-over-configuration file structure.
 
 When a user visits a URL, Moosey CMS searches for templates in a specific order to allow for granular control with minimal effort.
 
-**Example URL:** `/projects/web/portfolio`
+**Example URL:** `/projects/web`
 
-1.  **Exact Match:** `templates/projects/web/portfolio.html`
-2.  **Singular Parent:** `templates/projects/web/project.html` (Perfect for item views)
-3.  **Plural Parent:** `templates/projects/web.html` (Perfect for section views)
-4.  **...Recursive Upward Search:**
-    *   `templates/projects/project.html`
-    *   `templates/projects.html`
-5.  **Fallback:** `templates/page.html`
+1.  **Exact Match:** `templates/projects/web.html` (If this item has specific template)
+2.  **Singular Parent:** `templates/project.html` (If there is a specific view for single templates)
+3.  **Plural Parent:** `templates/projects.html` (Perfect for section views, fallback if above templates are missing)
+4.  **Fallback:** `templates/page.html` (Final Fallback)
 
 ### Inside a Template
 
@@ -178,7 +176,6 @@ You can define metadata at the top of any Markdown file. These values are passed
 title: My Amazing Post
 date: 2024-01-01
 tags: [fastapi, python]
-layout: custom-layout.html  # Optional: force a specific template
 ---
 
 # Hello World
@@ -225,16 +222,50 @@ Moosey CMS includes a robust SEO helper. In your `base.html` `<head>`, simply ad
 
 ## 🧩 Custom Filters
 
-We provide a suite of jinja filters for common tasks:
+Moosey CMS comes packed with a comprehensive library of Jinja2 filters to help you format your data effortlessly.
 
+### Date & Time
 | Filter | Usage | Output |
 | :--- | :--- | :--- |
 | `fancy_date` | `{{ date | fancy_date }}` | 13th Jan, 2026 at 6:00 PM |
-| `relative_time` | `{{ date | relative_time }}` | 2 hours ago |
-| `currency` | `{{ 1200 | currency('USD') }}` | $1,200.00 |
-| `read_time` | `{{ content | read_time }}` | 5 min read |
-| `truncate_words`| `{{ content | truncate_words(20) }}` | First 20 words... |
+| `short_date` | `{{ date | short_date }}` | Jan 13, 2026 |
+| `iso_date` | `{{ date | iso_date }}` | 2026-01-13 |
+| `time_only` | `{{ date | time_only }}` | 6:00 PM |
+| `relative_time` | `{{ date | relative_time }}` | 2 hours ago / yesterday |
+
+### Currency & Numbers
+| Filter | Usage | Output |
+| :--- | :--- | :--- |
+| `currency` | `{{ 1234.5 | currency('USD') }}` | $1,234.50 |
+| `compact_currency` | `{{ 1500000 | compact_currency }}` | $1.5M |
+| `currency_name` | `{{ 'KES' | currency_name }}` | Kenyan Shilling |
+| `number_format` | `{{ 1000 | number_format }}` | 1,000 |
+| `percentage` | `{{ 50.5 | percentage }}` | 50.5% |
+| `ordinal` | `{{ 3 | ordinal }}` | 3rd |
+
+### Geography & Locale
+| Filter | Usage | Output |
+| :--- | :--- | :--- |
 | `country_flag` | `{{ 'US' | country_flag }}` | 🇺🇸 |
+| `country_name` | `{{ 'DE' | country_name }}` | Germany |
+| `language_name` | `{{ 'fr' | language_name }}` | French |
+
+### Text Formatting
+| Filter | Usage | Output |
+| :--- | :--- | :--- |
+| `truncate_words` | `{{ text | truncate_words(10) }}` | Truncates text to 10 words... |
+| `excerpt` | `{{ text | excerpt(150) }}` | Smart excerpt breaking at sentences. |
+| `read_time` | `{{ content | read_time }}` | 5 min read |
+| `slugify` | `{{ 'Hello World' | slugify }}` | hello-world |
+| `title_case` | `{{ 'a tale of two cities' | title_case }}` | A Tale of Two Cities |
+| `smart_quotes` | `{{ '"Hello"' | smart_quotes }}` | “Hello” |
+
+### Utilities
+| Filter | Usage | Output |
+| :--- | :--- | :--- |
+| `filesize` | `{{ 1024 | filesize }}` | 1.0 KB |
+| `yesno` | `{{ True | yesno }}` | Yes |
+| `default_if_none` | `{{ val | default_if_none('N/A') }}` | Returns default if None |
 
 ---
 
