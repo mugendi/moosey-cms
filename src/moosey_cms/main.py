@@ -17,7 +17,7 @@ from fastapi.templating import Jinja2Templates
 from . import filters
 from . import helpers
 
-from .cache import clear_cache_on_file_change
+from .cache import clear_cache_on_file_change, clear_cache
 from .file_watcher import start_watching
 from .middlewares import inject_script_middleware
 
@@ -71,8 +71,7 @@ def init_cms(
 
     app.state.site_code = site_code
     app.state.site_data = site_data
-
-    inject_script_middleware(app, host, port)
+    app.state.mode = mode
 
     # resolve paths
     dirs = {k: p.resolve() for k, p in dirs.items()}
@@ -87,9 +86,8 @@ def init_cms(
     # We need to capture the current event loop to schedule the broadcast
     loop = asyncio.get_event_loop()
 
-    # init reloader
-    reloader = ConnectionManager()
-
+    # we want to watch even in production mode
+    # The logic is if one does a 'git pull' we want the site content to update
     def on_change_callback(file_path, event_type):
         # 1. Clear the cache (Sync)
         clear_cache_on_file_change(file_path, event_type)
@@ -103,26 +101,34 @@ def init_cms(
     for d in dirs:
         start_watching(dirs[d], on_change_callback)
 
-    init_routes(app=app, dirs=dirs, templates=templates, reloader=reloader)
+    reloader = None
+    # init manage hot reloading
+    if mode == "development":
+        reloader = ConnectionManager()
+        inject_script_middleware(app, host, port)
+
+    init_routes(app=app, dirs=dirs, templates=templates, reloader=reloader, mode=mode)
 
     return app
 
 
-def init_routes(app, dirs: Dirs, templates, reloader):
+def init_routes(app, dirs: Dirs, templates, mode, reloader):
 
     # init router
     router = APIRouter()
 
-    @app.websocket("/ws/hot-reload")
-    async def websocket_endpoint(websocket: WebSocket):
-        await reloader.connect(websocket)
-        try:
-            while True:
-                # Keep connection open. We don't really care what the client sends
-                # but we must await receive to keep the socket alive.
-                await websocket.receive_text()
-        except WebSocketDisconnect:
-            reloader.disconnect(websocket)
+    # only init hot reload websocket route in dvt mode
+    if mode == "development":
+        @app.websocket("/ws/hot-reload")
+        async def websocket_endpoint(websocket: WebSocket):
+            await reloader.connect(websocket)
+            try:
+                while True:
+                    # Keep connection open. We don't really care what the client sends
+                    # but we must await receive to keep the socket alive.
+                    await websocket.receive_text()
+            except WebSocketDisconnect:
+                reloader.disconnect(websocket)
 
     @router.get("/{full_path:path}", include_in_schema=False)
     async def catch_all(request: Request, full_path: str):
@@ -131,6 +137,11 @@ def init_routes(app, dirs: Dirs, templates, reloader):
 
         site_data = app.state.site_data
         site_code = app.state.site_code
+        mode = app.state.mode
+
+        # if dvt mode, no caches
+        if mode == "development":
+            clear_cache()
 
         # pprint(site_data)
 

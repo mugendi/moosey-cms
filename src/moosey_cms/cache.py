@@ -10,13 +10,14 @@ from functools import wraps
 # Cache with TTL of 30 days
 cache = TTLCache(maxsize=1000, ttl=3600 * 24 * 30)
 
-@cached(TTLCache(maxsize=100, ttl=5))
 def clear_cache():
-    print("Clearing cache!")
     cache.clear()
 
+
+# clear once even for multiple filess
+@cached(TTLCache(maxsize=100, ttl=5))
 def clear_cache_on_file_change(file_path, event_type):
-    print(f"File {file_path} changed.")
+    # print(f"File {file_path} changed.")
     clear_cache()
 
 # --- HELPER: Convert mutable types to immutable (hashable) ---
