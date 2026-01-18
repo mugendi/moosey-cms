@@ -157,50 +157,77 @@ A user visits **`/posts/post-1`**.
 4.  **`templates/page.html`** (Global Fallback):
     If no specific, singular, or plural templates are found, the system defaults to the generic page layout.
 
-**Important Notes:**
+---
 
-*   **The Index File:** For a directory route like `/posts` to work, a **`content/posts/index.md`** file must exist. This tells the CMS that the folder is a navigable section containing content. Without it, accessing `/posts` will return a 404 error.
-*   **Navigation:** If `content/posts/index.md` is missing, the `posts` folder will be omitted from auto-generated menus and sidebars (`nav_items`).
+## 🧩 Template Variables & Context
 
-### Inside a Template
+Moosey CMS injects a rich set of variables into every template. You can use these to build dynamic layouts, check active states, and perform conditional logic.
 
-Your templates have access to powerful context variables:
+### Core Content
+| Variable | Type | Description |
+| :--- | :--- | :--- |
+| `content` | `HTML` | The fully rendered HTML content of the current Markdown file. |
+| `title` | `str` | The title of the page (from frontmatter or filename). |
+| `metadata` | `dict` | The complete key-value dictionary from the Markdown YAML frontmatter. |
+| `date` | `dict` | Auto-generated timestamps: `date.created`, `date.updated`. |
 
-*   `content`: The rendered HTML from your Markdown.
-*   `metadata`: The YAML frontmatter from the markdown file.
-*   `site_data`: Global site configuration.
-*   `breadcrumbs`: Auto-generated breadcrumb navigation.
-*   `nav_items`: List of sibling pages/folders for sidebar navigation.
+### Navigation
+| Variable | Type | Description |
+| :--- | :--- | :--- |
+| `nav_items` | `list` | A list of sibling pages/folders in the current directory. Each item contains `.name`, `.url`, `.is_active`, and `.is_dir`. |
+| `breadcrumbs` | `list` | A list of parent paths leading to the current page. Each item contains `.name` and `.url`. |
 
-**Example `page.html`:**
+### System & Request
+| Variable | Type | Description |
+| :--- | :--- | :--- |
+| `request` | `Request` | The standard FastAPI Request object. Useful for inspecting the current URL or headers. |
+| `mode` | `str` | The current running mode (e.g., `"development"` or `"production"`). |
+| `debug_template_used`| `str` | The filename of the template currently being rendered (helpful for debugging). |
 
+### Global Config
+| Variable | Type | Description |
+| :--- | :--- | :--- |
+| `site_data` | `dict` | The global configuration dictionary passed to `init_cms` (Name, Author, Social Links). |
+| `site_code` | `dict` | The global code snippets dictionary passed to `init_cms`. |
+
+### 💡 Usage Examples
+
+**1. Conditional Logic based on URL**
+You can use the `request` object to change content based on the current path.
 ```html
-{% extends "base.html" %}
+<h3 class="font-bold text-slate-900 mb-4 border-b pb-2">
+    {% if '/docs' in request.url.path %}
+        Documentation
+    {% else %}
+        Latest Posts
+    {% endif %}
+</h3>
+```
 
-{% block content %}
-    <h1>{{ title }}</h1>
-    
-    <!-- Render Breadcrumbs -->
-    <nav>
-        {% for crumb in breadcrumbs %}
-            <a href="{{ crumb.url }}">{{ crumb.name }}</a> /
+**2. Displaying Custom Frontmatter**
+If your markdown file has `tags: [python, fastpi]`:
+```html
+{% if metadata.tags %}
+    <div class="tags">
+        {% for tag in metadata.tags %}
+            <span class="badge">{{ tag }}</span>
         {% endfor %}
-    </nav>
+    </div>
+{% endif %}
+```
 
-    <!-- Render Content -->
-    <article>
-        {{ content | safe }}
-    </article>
-    
-    <!-- Automatic Sidebar -->
-    <aside>
-        {% for item in nav_items %}
-            <a href="{{ item.url }}" class="{% if item.is_active %}active{% endif %}">
-                {{ item.name }}
-            </a>
-        {% endfor %}
-    </aside>
-{% endblock %}
+**3. Active Sidebar Links**
+Highlight the current page in a navigation menu.
+```html
+<ul>
+{% for item in nav_items %}
+    <li>
+        <a href="{{ item.url }}" class="{{ 'text-blue-600 font-bold' if item.is_active else 'text-gray-600' }}">
+            {{ item.name }}
+        </a>
+    </li>
+{% endfor %}
+</ul>
 ```
 
 ---
@@ -234,9 +261,7 @@ Today is {{ metadata.date.created | fancy_date }}.
 ```
 
 **Allowed Context:**
-*   `site_data`: Global configuration (Name, Author, etc.)
-*   `site_code`: Global code snippets.
-*   `metadata`: The frontmatter of the current file.
+*   `site_data`, `site_code`, `metadata`
 *   **Filters:** All standard Moosey filters (`fancy_date`, `read_time`, etc.) are available.
 
 ### Included Extensions
