@@ -1,0 +1,63 @@
+<!-- templates/post.html -->
+{% extends "layout/base.html" %}
+
+{% block content %}
+<article>
+    <!-- Post Header -->
+    <header class="relative py-20 bg-slate-900">
+        {% if image %}
+        <img src="{{ image }}" alt="{{ title }}" class="absolute inset-0 w-full h-full object-cover opacity-30">
+        {% endif %}
+        <div class="relative max-w-3xl mx-auto px-4 text-center">
+            
+            <!-- Breadcrumbs -->
+            <div class="flex justify-center gap-2 text-xs font-medium uppercase tracking-wider text-slate-400 mb-6">
+                 {% for crumb in breadcrumbs %}
+                    <a href="{{ crumb.url }}" class="hover:text-white transition">{{ crumb.name }}</a>
+                    {% if not loop.last %}<span>/</span>{% endif %}
+                {% endfor %}
+            </div>
+
+            <h1 class="text-3xl md:text-5xl font-serif font-bold text-white mb-6 leading-tight">
+                {{ title }}
+            </h1>
+
+            <div class="flex items-center justify-center gap-6 text-slate-300 text-sm">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs">
+                        {{ site_data.author[0] }}
+                    </div>
+                    <span>{{ site_data.author }}</span>
+                </div>
+                <span>&bull;</span>
+                <time>{{ date.created | fancy_date }}</time>
+                <span>&bull;</span>
+                <span>{{ content | read_time }}</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Body -->
+    <div class="max-w-3xl mx-auto px-4 py-16">
+        <div class="prose prose-lg prose-slate max-w-none 
+                    prose-headings:font-serif prose-headings:font-bold 
+                    prose-a:text-primary prose-img:rounded-xl prose-img:shadow-lg">
+            {{ content | safe }}
+        </div>
+        
+        <!-- Tags -->
+        {% if tags %}
+        <div class="mt-12 pt-8 border-t border-slate-200">
+            <h4 class="text-sm font-bold text-slate-900 uppercase tracking-wide mb-4">Filed Under</h4>
+            <div class="flex flex-wrap gap-2">
+                {% for tag in tags %}
+                <span class="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-sm font-medium hover:bg-primary hover:text-white transition cursor-pointer">
+                    #{{ tag }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</article>
+{% endblock %}

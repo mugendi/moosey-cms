@@ -1,0 +1,47 @@
+<!-- templates/page.html -->
+{% extends "layout/base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div class="flex flex-col sm:flex-row gap-12">
+        
+        <!-- Sidebar (Only if nav items exist) -->
+        {% if nav_items %}
+        <aside class="md:w-[20%] flex-shrink-0 bg-slate-50 p-5 ">
+            <div class="sticky top-24">
+                <h3 class="font-bold text-lg mt-0 mb-4 text-slate-900">Contents</h3>
+                <nav class="space-y-1">
+                    {% for item in nav_items %}
+                    <a href="{{ item.url }}" 
+                       class="block px-3 py-2 rounded-lg text-sm font-medium transition
+                              {% if item.is_active %}bg-blue-50 text-primary{% else %}text-slate-600 hover:bg-slate-50{% endif %}">
+                        {{ item.name }}
+                    </a>
+                    {% endfor %}
+                </nav>
+            </div>
+        </aside>
+        {% endif %}
+
+        <!-- Content -->
+        <div class="flex-grow min-w-0">
+            <div class="mb-8">
+                 <nav class="text-sm text-slate-500 mb-4">
+                    {% for crumb in breadcrumbs %}
+                        <a href="{{ crumb.url }}" class="hover:text-primary">{{ crumb.name }}</a> 
+                        {% if not loop.last %} / {% endif %}
+                    {% endfor %}
+                </nav>
+                <h1 class="text-4xl font-serif font-bold text-slate-900">{{ title }}</h1>
+                {% if description %}
+                <p class="mt-4 text-xl text-slate-500">{{ description }}</p>
+                {% endif %}
+            </div>
+
+            <div class="prose prose-lg prose-slate max-w-none">
+                {{ content | safe }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+<!-- templates/404.html -->
+{% extends "layout/base.html" %}
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center bg-slate-50 px-4">
+    <div class="text-center">
+        <h1 class="text-9xl font-bold text-primary opacity-20">404</h1>
+        <h2 class="text-3xl font-bold text-slate-900 -mt-12 mb-4">Page Not Found</h2>
+        <p class="text-slate-600 mb-8 max-w-md mx-auto">
+            Sorry, we couldn't find the page you're looking for. It might have been moved or doesn't exist.
+        </p>
+        <a href="/" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full text-white bg-primary hover:bg-blue-700 transition">
+            Go back home
+        </a>
+    </div>
+</div>
+{% endblock %}

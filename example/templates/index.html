@@ -1,0 +1,45 @@
+<!-- templates/index.html -->
+{% extends "layout/base.html" %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<div class="relative overflow-hidden bg-slate-900 pt-20 pb-24 sm:pt-32 sm:pb-40">
+    <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&q=80" alt="Background" class="absolute inset-0 -z-10 h-full w-full object-cover opacity-20">
+    
+    <div class="mx-auto max-w-7xl px-6 lg:px-8 text-center relative z-10">
+        <div class="mx-auto max-w-2xl">
+            <h1 class="text-4xl font-serif font-bold tracking-tight text-white sm:text-6xl mb-6">
+                {{ title }}
+            </h1>
+            <p class="text-lg leading-8 text-slate-300 mb-10">
+                {{ description }}
+            </p>
+            <div class="flex items-center justify-center gap-x-6">
+                <a href="/posts" class="rounded-full bg-primary px-8 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 transition transform hover:scale-105">
+                    Read the Blog
+                </a>
+                <a href="/about" class="text-sm font-semibold leading-6 text-white hover:text-primary transition">
+                    Learn more <span aria-hidden="true">→</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dynamic Content Injection (e.g., Features list from index.md) -->
+<div class="bg-white py-24 sm:py-32">
+    <div class="mx-auto max-w-7xl px-6 lg:px-8">
+        <div class="mx-auto max-w-2xl lg:text-center mb-16">
+            <h2 class="text-base font-semibold leading-7 text-primary">Deploy Faster</h2>
+            <p class="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Everything you need to blog</p>
+        </div>
+        
+        <!-- Render the markdown content here -->
+        <article class="prose prose-lg prose-slate mx-auto text-slate-600">
+            {{ content | safe }}
+        </article>
+    </div>
+</div>
+
+{% endblock %}

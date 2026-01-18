@@ -1,0 +1,37 @@
+<!--
+ Copyright (c) 2026 Anthony Mugendi
+ 
+ This software is released under the MIT License.
+ https://opensource.org/licenses/MIT
+-->
+
+<!-- templates/components/sidebar.html (or inline) -->
+<aside class="sidebar-nav" style="width: 250px; border-right: 1px solid #eee; padding-right: 20px;">
+    
+    <h3 style="font-size: 1.1rem; margin-bottom: 10px;">In this section</h3>
+    
+    {% if nav_items %}
+        <ul style="list-style: none; padding: 0;">
+            {% for item in nav_items %}
+                <li style="margin-bottom: 8px;">
+                    <a href="{{ item.url }}" 
+                       class="nav-link {% if item.is_active %}active{% endif %}"
+                       style="display: flex; align-items: center; text-decoration: none; 
+                              padding: 8px; border-radius: 4px;
+                              {% if item.is_active %}background-color: #f0f7ff; color: #007bff; font-weight: 600;{% else %}color: #333;{% endif %}">
+                        
+                        <!-- Icon Logic based on is_dir -->
+                        <span style="margin-right: 8px;">
+                            {% if item.is_dir %}📁{% else %}📄{% endif %}
+                        </span>
+                        
+                        {{ item.name }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p style="color: #999; font-style: italic;">No other pages here.</p>
+    {% endif %}
+
+</aside>

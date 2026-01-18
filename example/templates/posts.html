@@ -1,0 +1,49 @@
+<!-- templates/posts.html -->
+{% extends "layout/base.html" %}
+
+{% block content %}
+<div class="bg-slate-50 min-h-screen py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <!-- Header -->
+        <div class="text-center mb-16">
+            <h1 class="text-3xl font-serif font-bold text-slate-900 sm:text-4xl">{{ title }}</h1>
+            <p class="mt-4 text-lg text-slate-600">{{ description }}</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-12">
+            
+            <!-- Main Content Area (Renders index.md content) -->
+            <!-- We use this to render "Featured Posts" manually via HTML in Markdown -->
+            <div class="lg:col-span-3">
+                {{ content | safe }}
+            </div>
+
+            <!-- Sidebar: Archive / List -->
+            <aside class="lg:col-span-1 space-y-8">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-24">
+                    <h3 class="font-bold text-slate-900 mb-4 border-b pb-2">All Posts</h3>
+                    <nav class="space-y-3">
+                        {% for item in nav_items %}
+                        <a href="{{ item.url }}" 
+                           class="flex items-center group {% if item.is_active %}text-primary font-medium{% else %}text-slate-600{% endif %}">
+                            <span class="w-2 h-2 rounded-full mr-3 group-hover:bg-primary transition 
+                                  {% if item.is_active %}bg-primary{% else %}bg-slate-300{% endif %}"></span>
+                            <span class="group-hover:text-primary transition">{{ item.name }}</span>
+                        </a>
+                        {% endfor %}
+                    </nav>
+                </div>
+
+                <div class="bg-primary/5 p-6 rounded-2xl border border-primary/10">
+                    <h4 class="font-bold text-primary mb-2">Subscribe</h4>
+                    <p class="text-xs text-slate-600 mb-4">Get the latest updates directly to your inbox.</p>
+                    <input type="email" placeholder="Email address" class="w-full px-3 py-2 rounded-lg border-0 text-sm mb-2 focus:ring-2 ring-primary">
+                    <button class="w-full bg-primary text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition">Join</button>
+                </div>
+            </aside>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
