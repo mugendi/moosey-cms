@@ -69,9 +69,7 @@ def init_cms(
         site_code=site_code,
     )
 
-    app.state.site_code = site_code
-    app.state.site_data = site_data
-    app.state.mode = mode
+    
 
     # resolve paths
     dirs = {k: p.resolve() for k, p in dirs.items()}
@@ -79,6 +77,16 @@ def init_cms(
     # create templates
     # templates = Jinja2Templates(directory=str(dirs["templates"]))
     templates = Jinja2Templates(directory=str(dirs["templates"]), extensions=[])
+
+    # Important for filters like seo to access them
+    app.state.site_code = site_code
+    app.state.site_data = site_data
+    app.state.mode = mode
+
+    # This ensures site_data is available in 404.html and base.html automatically
+    templates.env.globals["site_data"] = site_data
+    templates.env.globals["site_code"] = site_code
+    templates.env.globals["mode"] = mode
 
     # Register all custom filters once
     filters.register_filters(templates.env)
@@ -134,16 +142,14 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
     async def catch_all(request: Request, full_path: str):
 
         app = request.app
-
-        site_data = app.state.site_data
-        site_code = app.state.site_code
+        # Note: We don't need to extract site_data here for templates anymore 
+        # because it's in env.globals, but we keep it for context logic if needed.
+        
         mode = app.state.mode
 
         # if dvt mode, no caches
         if mode == "development":
             clear_cache()
-
-        # pprint(site_data)
 
         # 1. Normalize Path
         clean_path = full_path.strip("/")
@@ -152,9 +158,6 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
 
         # 2. Security: Resolve Path
         try:
-            # We perform a speculative check. We don't know yet if the user means
-            # a directory ("posts") or a file ("posts").
-            # We start by securely resolving the raw path string.
             target_path_base = helpers.get_secure_target(
                 clean_path, relative_to_path=dirs["content"]
             )
@@ -169,13 +172,9 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
         is_index: bool = False
 
         if target_path_base.is_dir():
-            # Case A: URL is a directory (e.g. "/posts")
-            # We look for "/posts/index.md"
             target_file = target_path_base / "index.md"
             is_index = True
         else:
-            # Case B: URL is likely a file (e.g. "/posts/my-post")
-            # We must verify security again for the file extension
             try:
                 target_file = helpers.get_secure_target(
                     f"{clean_path}.md", relative_to_path=dirs["content"]
@@ -186,7 +185,6 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
                     "404.html", {"request": request}, status_code=404
                 )
 
-        # print(target_file)
         # 4. Existence Check
         if not target_file.exists():
             return templates.TemplateResponse(
@@ -196,36 +194,38 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
         # 5. Load Content
         # We use utf-8 strictly.
         html_content = None
-        template_data = {"site_code": site_code, "site_data": site_data}
+        
+        # Base template data (globals will be merged by Jinja automatically)
+        template_data = {} 
 
         try:
             md_data = helpers.parse_markdown_file(target_file)
             front_matter = md_data.metadata
+            
+            # Merge front matter
             template_data = {**template_data, **front_matter}
 
+            # Render jinja inside frontmatter strings
             for k in front_matter:
                 if isinstance(front_matter[k], str):
-                    # print('>>>>>', front_matter[k])
                     front_matter[k] = helpers.template_render_content(
                         templates, front_matter[k], template_data, False
                     )
 
             html_content = md_data.html
-            #  Ensure jinja templates  can also
+            
+            # Render jinja inside markdown body
             html_content = helpers.template_render_content(
                 templates, html_content, template_data, False
             )
 
         except Exception as e:
-            print(e)
-            # If file is unreadable or encoding is wrong
+            print(f"Error rendering content: {e}")
             return templates.TemplateResponse(
                 "404.html", {"request": request}, status_code=404
             )
 
         # 6. Determine Context Data (Nav, Breadcrumbs)
-        # The navigation needs to scan the directory that *contains* the content.
-        # If it's an index.md, the content is the folder itself.
         nav_folder = target_file.parent
         current_url = f"/{clean_path}" if clean_path != "index" else "/"
         nav_items = helpers.get_directory_navigation(
@@ -236,15 +236,12 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
         breadcrumbs = helpers.get_breadcrumbs(full_path)
 
         # 7. Find Template
-        # If it's root ("index"), we pass empty string for path matching
         search_path = "" if clean_path == "index" else clean_path
-
         template_name = helpers.find_best_template(
             templates, search_path, is_index_file=is_index
         )
 
         template_data = {**template_data, **md_data}
-        # pprint(template_data)
 
         # 8. Render
         return templates.TemplateResponse(
@@ -258,10 +255,7 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
                 ),
                 "breadcrumbs": breadcrumbs,
                 "nav_items": nav_items,
-                # Helper for debugging your template inheritance
                 "debug_template_used": template_name,
-                "site_data": site_data,
-                "site_code": site_code,
                 **template_data,
             },
         )
