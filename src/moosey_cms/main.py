@@ -69,8 +69,6 @@ def init_cms(
         site_code=site_code,
     )
 
-    
-
     # resolve paths
     dirs = {k: p.resolve() for k, p in dirs.items()}
 
@@ -139,6 +137,7 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
 
     # only init hot reload websocket route in dvt mode
     if mode == "development":
+
         @app.websocket("/ws/hot-reload")
         async def websocket_endpoint(websocket: WebSocket):
             await reloader.connect(websocket)
@@ -154,9 +153,7 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
     async def catch_all(request: Request, full_path: str):
 
         app = request.app
-        # Note: We don't need to extract site_data here for templates anymore 
-        # because it's in env.globals, but we keep it for context logic if needed.
-        
+
         mode = app.state.mode
 
         # if dvt mode, no caches
@@ -206,16 +203,22 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
         # 5. Load Content
         # We use utf-8 strictly.
         html_content = None
-        
+
         # Base template data (globals will be merged by Jinja automatically)
-        template_data = {} 
+        template_data = {}
 
         try:
             md_data = helpers.parse_markdown_file(target_file)
             front_matter = md_data.metadata
-            
+
             # Merge front matter
-            template_data = {**template_data, **front_matter}
+            template_data = {
+                **template_data,
+                **front_matter,
+                "site_data": app.state.site_data,
+                "site_code": app.state.site_code,
+            }
+
 
             # Render jinja inside frontmatter strings
             for k in front_matter:
@@ -224,8 +227,9 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
                         templates, front_matter[k], template_data, False
                     )
 
+
             html_content = md_data.html
-            
+
             # Render jinja inside markdown body
             html_content = helpers.template_render_content(
                 templates, html_content, template_data, False

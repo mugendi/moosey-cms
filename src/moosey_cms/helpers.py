@@ -10,16 +10,25 @@ import frontmatter
 from pathlib import Path
 from typing import List, Dict, Any
 from jinja2 import TemplateNotFound
+from jinja2.sandbox import SandboxedEnvironment 
 from datetime import datetime
 from slugify import slugify
 from inflection import singularize
 from pprint import pprint
 from markupsafe import Markup
 
-
 from .models import Dirs
 from .md import parse_markdown
 from .cache import cache, cache_fn
+
+from .seo import seo_tags
+from . import filters
+
+# We initialize this once. It denies access to dangerous attributes like __class__
+_safe_env = SandboxedEnvironment(
+    trim_blocks=True,
+    lstrip_blocks=True
+)
 
 cache_debug = True
 
@@ -151,16 +160,39 @@ def parse_markdown_file(file):
 
     return data
 
-@cache_fn(debug=cache_debug)
-def template_render_content(templates, content, data, safe=True):
-    if content:
-        try:
-            template = templates.env.from_string(content)
-            rendered = template.render(**data)
-            return Markup(rendered) if safe else rendered
-        except:
-            return content
 
+# We need the sandbox to have the same filters (fancy_date, etc) as the main app
+def ensure_sandbox_filters(main_templates):
+    if not _safe_env.filters:
+        _safe_env.filters.update(main_templates.env.filters)
+        # Also copy globals if they are safe data (like site_data)
+        # BUT be careful not to copy 'request' or 'app' objects
+        safe_globals = {
+            k: v for k, v in main_templates.env.globals.items() 
+            if k in ['site_data', 'site_code', 'mode'] # Whitelist specific globals
+        }
+        _safe_env.globals.update(safe_globals)
+
+# template_render_content only in sandbox mode
+@cache_fn(debug=cache_debug) 
+def template_render_content(templates, content, data, safe=True):
+    if not content:
+        return ""
+
+    try:
+        # Sync filters/globals from the main app to our sandbox
+        ensure_sandbox_filters(templates)
+        
+        # Use the SAFE environment, not the main one
+        template = _safe_env.from_string(content)
+        
+        # Render
+        rendered = template.render(**data)
+        return Markup(rendered) if safe else rendered
+    except Exception as e:
+        print(f"⚠️ Template Rendering Error: {e}")
+        # Fallback: Return raw content if injection fails, rather than crashing
+        return content
 
 @cache_fn(debug=cache_debug)
 def get_directory_navigation(
