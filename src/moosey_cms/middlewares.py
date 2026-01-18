@@ -17,25 +17,33 @@ class ScriptInjectorMiddleware(BaseHTTPMiddleware):
         self.script = script
 
     async def dispatch(self, request: Request, call_next):
-        # 1. Process the request and get the response
+        # Process the request and get the response
         response = await call_next(request)
 
-        # 2. Check if we should modify this response
         # We only want to touch HTML pages, not JSON APIs or Images
         content_type = response.headers.get("content-type", "")
+        # get content length
+        content_length = response.headers.get("content-length")
+
+        # Skip if not HTML
         if "text/html" not in content_type:
             return response
 
-        # 3. Read the response body
+        # Skip if too big (e.g. > 20KB) to prevent Memory DoS
+        if content_length and int(content_length) > 20 * 1024 :
+            return response
+
+
+        # Read the response body
         # Note: Response body is a stream, we must consume it to modify it
         response_body = [section async for section in response.body_iterator]
         full_body = b"".join(response_body)
 
-        # 4. Prepare the injection
+        # Prepare the injection
         # Encode the script to bytes
         injection = self.script.encode("utf-8")
 
-        # 5. Inject the script
+        # Inject the script
         # We look for the closing body tag
         if b"</body>" in full_body:
             full_body = full_body.replace(b"</body>", injection + b"</body>")
@@ -43,7 +51,7 @@ class ScriptInjectorMiddleware(BaseHTTPMiddleware):
             # Fallback: Just append if no body tag found
             full_body += injection
 
-        # 6. Create a NEW Response object
+        # Create a NEW Response object
         # We cannot modify the existing response easily because Content-Length
         # would be wrong. Creating a new one recalculates headers.
         new_response = Response(
