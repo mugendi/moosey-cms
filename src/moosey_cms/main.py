@@ -19,7 +19,7 @@ from . import helpers
 
 from .cache import clear_cache_on_file_change, clear_cache
 from .file_watcher import start_watching
-from .middlewares import inject_script_middleware
+from .hot_reload_script import inject_script_middleware
 
 
 from fastapi import WebSocket, WebSocketDisconnect
@@ -124,6 +124,18 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
 
     # init router
     router = APIRouter()
+
+    # middleware to add security headers
+    @app.middleware("http")
+    async def add_security_headers(request: Request, call_next):
+        response = await call_next(request)
+        # Prevent MIME-sniffing
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        # Enable XSS protection in older browsers
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        # Prevent clickjacking
+        response.headers["X-Frame-Options"] = "DENY"
+        return response
 
     # only init hot reload websocket route in dvt mode
     if mode == "development":
