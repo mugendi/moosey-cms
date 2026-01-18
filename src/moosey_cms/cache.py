@@ -32,33 +32,37 @@ def make_hashable(value):
         return tuple(make_hashable(v) for v in value)
     return value
 
-def cache_fn(cache=cache, debug=True):
+def cache_fn(cache=cache, debug=True, exclude_args=None):
+    """
+    exclude_args: list of argument indices or keyword names to ignore
+    """
+    if exclude_args is None:
+        exclude_args = []
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            # 1. Convert Args/Kwargs to Hashable types
-            # We don't change the actual args passed to the function,
-            # we only change what we use to generate the lookup key.
-            safe_args = tuple(make_hashable(a) for a in args)
-            safe_kwargs = {k: make_hashable(v) for k, v in kwargs.items()}
+            # Filter args for hashing
+            args_to_hash = tuple(
+                make_hashable(a) for i, a in enumerate(args) 
+                if i not in exclude_args
+            )
+            # Filter kwargs for hashing (e.g. ignore 'templates')
+            kwargs_to_hash = {
+                k: make_hashable(v) for k, v in kwargs.items() 
+                if k not in exclude_args
+            }
 
-            # 2. Generate Key using the safe versions
-            key = hashkey(*safe_args, **safe_kwargs)
-
-            # 3. Check Cache
+            key = hashkey(*args_to_hash, **kwargs_to_hash)
+            
             if key in cache:
                 if debug:
                     print(' '*4, f'> Cache Hit For: "{func.__name__}"')
                 return cache[key]
-
-            # 4. Run Function (Using original args)
+            
             result = func(*args, **kwargs)
-
-
-            # 5. Store in Cache
             cache[key] = result
             return result
-
         return wrapper
-
     return decorator
+    
