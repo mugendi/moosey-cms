@@ -1,5 +1,5 @@
 ---
-title: Building Modern Apps with FastAPI
+title: Building Modern Apps with FastAPI and {{site_data.name}}
 date: 2026-01-15
 image: https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80
 tags: [fastapi, python, architecture]
