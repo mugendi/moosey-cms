@@ -178,8 +178,15 @@ def get_directory_navigation(
         ):
             if entry.name.startswith("."):
                 continue  # Skip hidden
+
+            # Skip self-reference if inside index
             if entry.name == "index.md":
-                continue  # Skip self-reference if inside index
+                continue  
+
+            # if dir only list if it has an index.md
+            if  entry.is_dir() and not (entry / 'index.md').exists() :
+                continue
+
 
             # Build URL
             try:
