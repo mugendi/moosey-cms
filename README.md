@@ -345,6 +345,9 @@ Security is an ongoing process. If you discover a vulnerability, bug, or potenti
 
 ---
 
+## Gratitude
+This project is inspired by [fastapi-blog](https://github.com/pydanny/fastapi-blog) by [Daniel](https://github.com/pydanny). Initially, I wanted to use **fastapi-blog** and it worked really well till I needed features like hot-reloading. 
+
 ## License
 
 MIT License. Copyright (c) 2026 Anthony Mugendi.
