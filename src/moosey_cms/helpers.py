@@ -216,20 +216,20 @@ def get_directory_navigation(
                 # Load minimal metadata
                 post = frontmatter.load(meta_file)
                 meta = post.metadata
-                
+
                 # 1. Visibility & Draft Check
                 if meta.get('visible') is False:
                     is_visible = False
                 
                 if meta.get('draft') is True and mode != 'development':
                     is_visible = False
+
                 
                 if not is_visible:
                     continue
 
                 # 2. Ordering
-                if 'weight' in meta: sort_weight = int(meta['weight'])
-                elif 'order' in meta: sort_weight = int(meta['order'])
+                if 'order' in meta: sort_weight = int(meta['order'])
                 
                 # 3. Titles & Grouping
                 if 'nav_title' in meta: display_title = meta['nav_title']

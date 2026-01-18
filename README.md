@@ -167,7 +167,7 @@ description: A short summary for SEO.
 ### Organization & Navigation
 | Key | Type | Description |
 | :--- | :--- | :--- |
-| `weight` | `int` | Sort order in sidebars. Lower numbers appear first. Default: `9999`. |
+| `order` | `int` | Sort order in sidebars. Lower numbers appear first. Default: `9999`. |
 | `nav_title` | `str` | Short title to display in sidebars (if different from `title`). |
 | `visible` | `bool` | Set to `false` to hide from sidebars/menus (page remains accessible via URL). |
 | `draft` | `bool` | If `true`, the page is only visible in `development` mode. |
