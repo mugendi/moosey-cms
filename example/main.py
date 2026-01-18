@@ -31,7 +31,7 @@ init_cms(
     },
     mode="development",  # Enables hot-reloading
     site_data={
-        "name": "My Awesome Site",
+        "name": "Moosey",
         "description": "A site built with Moosey CMS",
         "author": "Jane Doe",
         "keywords": ["fastapi", "cms", "python"],
