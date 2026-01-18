@@ -1,11 +1,3 @@
-The issue occurs because the pipe character `|` is used by Markdown to separate table columns. When you use it inside a table cell—even within backticks—it often breaks the layout on GitHub.
-
-To fix this, we need to use the HTML entity `&#124;` for the pipe and wrap the code in `<code>` tags instead of backticks.
-
-Here is the corrected **README.md**.
-
---- START OF FILE README.md ---
-
 <!--
  Copyright (c) 2026 Anthony Mugendi
  
