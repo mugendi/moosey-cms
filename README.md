@@ -11,6 +11,9 @@
 
 Moosey CMS transforms your FastAPI application into a content-driven website without the need for a database. It bridges the gap between static site generators and dynamic web servers, offering hot-reloading, intelligent caching, SEO management, and a powerful templating hierarchy.
 
+![Example Screenshot](/example/assets/example-1.jpeg)
+
+![Example Screenshot](/example/assets/example-2.jpeg)
 ---
 
 ## 🚀 Features
@@ -102,8 +105,9 @@ Moosey CMS relies on a convention-over-configuration file structure.
 │       ├── index.md       <-- Blog Listing (/blog)
 │       ├── post-1.md      <-- Blog Post (/blog/post-1)
 │       └── post-2.md
-└── templates/             <-- Your Jinja2 Templates
-    ├── base.html          <-- Base layout
+└── templates/ 
+    ├── layout          
+        ├── base.html          <-- Base layout
     ├── index.html         <-- Home Page layout
     ├── page.html          <-- Default fallback
     ├── blog.html          <-- Layout for /blog (Listing)
@@ -114,14 +118,46 @@ Moosey CMS relies on a convention-over-configuration file structure.
 
 ## 🎨 Templating Logic (The Waterfall)
 
-When a user visits a URL, Moosey CMS searches for templates in a specific order to allow for granular control with minimal effort.
+When a user visits a URL, Moosey CMS searches for templates in a specific cascading order. This allows you to set global defaults while retaining the ability to customize specific pages or sections.
 
-**Example URL:** `/projects/web`
+**Example Scenario:**
+A user visits **`/posts/post-1`**.
 
-1.  **Exact Match:** `templates/projects/web.html` (If this item has specific template)
-2.  **Singular Parent:** `templates/project.html` (If there is a specific view for single templates)
-3.  **Plural Parent:** `templates/projects.html` (Perfect for section views, fallback if above templates are missing)
-4.  **Fallback:** `templates/page.html` (Final Fallback)
+**Directory Structure:**
+
+```text
+.
+├── content/
+│   └── posts/
+│       ├── index.md        <-- Required for the '/posts' listing page to work
+│       ├── post-1.md       <-- The article being requested
+│       └── post-2.md
+└── templates/
+    ├── posts/
+    │   └── post-1.html     <-- 1. Specific Override
+    ├── post.html           <-- 2. Singular (Item) Layout
+    ├── posts.html          <-- 3. Plural (Section) Layout
+    └── page.html           <-- 4. Global Fallback
+```
+
+**Resolution Order:**
+
+1.  **`templates/posts/post-1.html`** (Exact Match):
+    Checked first. Use this if a specific article requires a unique design completely different from other posts.
+
+2.  **`templates/post.html`** (Singular Parent):
+    The system automatically "singularizes" the parent folder name (`posts` → `post`). This is the standard template used to render individual blog items.
+
+3.  **`templates/posts.html`** (Plural Parent):
+    If no singular template exists, the system looks for the folder's name. This allows articles to inherit the layout of their parent section if desired.
+
+4.  **`templates/page.html`** (Global Fallback):
+    If no specific, singular, or plural templates are found, the system defaults to the generic page layout.
+
+**Important Notes:**
+
+*   **The Index File:** For a directory route like `/posts` to work, a **`content/posts/index.md`** file must exist. This tells the CMS that the folder is a navigable section containing content. Without it, accessing `/posts` will return a 404 error.
+*   **Navigation:** If `content/posts/index.md` is missing, the `posts` folder will be omitted from auto-generated menus and sidebars (`nav_items`).
 
 ### Inside a Template
 

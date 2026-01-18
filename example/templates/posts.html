@@ -11,11 +11,11 @@
             <p class="mt-4 text-lg text-slate-600">{{ description }}</p>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-12">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-12">
             
             <!-- Main Content Area (Renders index.md content) -->
             <!-- We use this to render "Featured Posts" manually via HTML in Markdown -->
-            <div class="lg:col-span-3">
+            <div class="lg:col-span-3 prose max-w-none">
                 {{ content | safe }}
             </div>
 

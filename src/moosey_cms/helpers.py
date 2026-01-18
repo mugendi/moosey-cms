@@ -115,6 +115,8 @@ def find_best_template(templates, path_str: str, is_index_file: bool = False) ->
             singular_name = singularize(current_folder)
             singular_candidate = "/".join(parent_path + [singular_name]) + ".html"
 
+            print('>>>>parts', parts)
+
             if template_exists(templates, singular_candidate):
                 return singular_candidate
 
