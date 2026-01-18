@@ -171,34 +171,22 @@ class EmoticonExtension(Extension):
         )
 
 
+
+# Initialize extensions ONCE at module level
+markdown_extensions = extensions + [EmoticonExtension()]
+
+# Create a global instance
+_markdowner = md.Markdown(
+    extensions=markdown_extensions, 
+    extension_configs=extension_configs
+)
+
 def parse_markdown(data):
     """
-    Returns a tuple: (metadata_dict, html_string)
+    Returns HTML string.
+    Note: We must reset the instance to clear state (like footnotes) between converts.
     """
-    # Initialize your custom extension
-    emoticon_ext = EmoticonExtension()
-
-    markdowner = md.Markdown(
-        extensions=extensions + [emoticon_ext], extension_configs=extension_configs
-    )
-
-    # 2. Convert the content (this strips the YAML and generates HTML)
-    html = markdowner.convert(data)
-
-
+    _markdowner.reset()
+    html = _markdowner.convert(data)
+    
     return html
-
-    # 3. Access the metadata (It is stored in the .Meta attribute)
-    # Note: The meta extension returns values as lists (e.g., {'title': ['My Title']})
-    raw_meta = markdowner.Meta
-
-    # 4. Clean up the metadata (Optional but recommended)
-    # This flattens the lists: {'title': ['Name']} -> {'title': 'Name'}
-    meta = {}
-    for key, value in raw_meta.items():
-        if isinstance(value, list) and len(value) == 1:
-            meta[key] = value[0]
-        else:
-            meta[key] = value
-
-    return meta, html
