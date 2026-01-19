@@ -264,6 +264,8 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
 
         template_data = {**template_data, **md_data}
 
+        pprint(nav_items)
+
         # 8. Render
         return templates.TemplateResponse(
             template_name,

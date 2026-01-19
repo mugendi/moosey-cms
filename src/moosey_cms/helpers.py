@@ -205,7 +205,7 @@ def get_directory_navigation(
             meta_file = entry / 'index.md' if entry.is_dir() else entry
             
             # Defaults
-            sort_weight = 9999
+            sort_order = 9999
             display_title = entry.stem.replace("-", " ").title()
             nav_group = None
             external_url = None
@@ -229,13 +229,13 @@ def get_directory_navigation(
                     continue
 
                 # 2. Ordering
-                if 'order' in meta: sort_weight = int(meta['order'])
+                if 'order' in meta: sort_order = int(meta['order'])
                 
                 # 3. Titles & Grouping
                 if 'nav_title' in meta: display_title = meta['nav_title']
                 elif 'title' in meta: display_title = meta['title']
                 
-                nav_group = meta.get('group')
+                nav_group = meta.get('group') or "" 
 
                 # 4. External Links
                 if 'external_link' in meta:
@@ -265,13 +265,36 @@ def get_directory_navigation(
                 "url": entry_url,
                 "is_active": is_active,
                 "is_dir": entry.is_dir(),
-                "weight": sort_weight,
+                "order": sort_order,
                 "group": nav_group,
                 "target": target
             })
             
-        # Sorting: Weight first, then Name
-        items.sort(key=lambda x: (x['weight'], x['name']))
+        # Sorting: order first, then Name
+        # items.sort(key=lambda x: (x['order'], x['name']))
+        group_min_orders = {}
+    
+        for item in items:
+            g = item['group']
+            w = item['order']
+            # If we haven't seen this group, or if this item is lighter (more important)
+            if g not in group_min_orders or w < group_min_orders[g]:
+                group_min_orders[g] = w
+
+        # 2. Sort the list with a Tuple Key
+        items.sort(key=lambda x: (
+            # Primary: Group order (Groups with important items float to top)
+            group_min_orders[x['group']], 
+            
+            # Secondary: Group Name (Keep groups clustered together)
+            x['group'], 
+            
+            # Tertiary: Item order (Sort items inside the group)
+            x['order'],
+            
+            # Quaternary: Item Name (Alphabetical fallback)
+            x['name']
+        ))
 
     except OSError:
         pass 
