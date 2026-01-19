@@ -254,7 +254,6 @@ The `init_cms` function accepts the following parameters:
 | `dirs` | `dict` | Dictionary containing `content` and `templates` Paths. |
 | `mode` | `str` | `"development"` (enables hot reload/no cache) or `"production"`. |
 | `site_data` | `dict` | Global data (Name, Author, Social Links). |
-| `site_code` | `dict` | Inject custom HTML (e.g., analytics) via `{{ site_code.footer_code }}`. |
 
 ---
 

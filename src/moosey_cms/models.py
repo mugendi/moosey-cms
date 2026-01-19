@@ -44,12 +44,6 @@ class SiteData(BaseModel):
     social: Optional[SocialConfig] = Field(..., description="Social media links")
 
 
-class SiteCode(BaseModel):
-    """Custom HTML/code snippets for the site"""
-    styled_name: Optional[str] = Field(None, description="Styled HTML name")
-    header_code: Optional[str] = Field(None, description="Code to inject in header")
-    footer_code: Optional[str] = Field(None, description="Code to inject in footer")
-
 
 class Dirs(BaseModel):
     """Directory paths configuration"""
@@ -76,4 +70,4 @@ class CMSConfig(BaseModel):
         description="Application mode"
     )
     site_data: Optional[SiteData] = Field(..., description="Site metadata")
-    site_code: Optional[SiteCode] = Field(..., description="Custom site code")
+    # site_code: Optional[SiteCode] = Field(..., description="Custom site code")

@@ -46,7 +46,7 @@ class ConnectionManager:
                 self.disconnect(connection)
 
 
-from .models import CMSConfig, Dirs, SiteCode, SiteData
+from .models import CMSConfig, Dirs,  SiteData
 
 
 def init_cms(
@@ -56,7 +56,6 @@ def init_cms(
     dirs: Dirs,
     mode: str,
     site_data: SiteData = {},
-    site_code: SiteCode = {},
 ):
 
     # validate dirs inputs
@@ -65,8 +64,7 @@ def init_cms(
         port=port,
         dirs=dirs,
         mode=mode,
-        site_data=site_data,
-        site_code=site_code,
+        site_data=site_data
     )
 
     # resolve paths
@@ -77,13 +75,11 @@ def init_cms(
     templates = Jinja2Templates(directory=str(dirs["templates"]), extensions=[])
 
     # Important for filters like seo to access them
-    app.state.site_code = site_code
     app.state.site_data = site_data
     app.state.mode = mode
 
     # This ensures site_data is available in 404.html and base.html automatically
     templates.env.globals["site_data"] = site_data
-    templates.env.globals["site_code"] = site_code
     templates.env.globals["mode"] = mode
 
     # Register all custom filters once
@@ -221,8 +217,7 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
             template_data = {
                 **template_data,
                 **front_matter,
-                "site_data": app.state.site_data,
-                "site_code": app.state.site_code,
+                "site_data": app.state.site_data
             }
 
             # Render jinja inside frontmatter strings
@@ -264,7 +259,7 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
 
         template_data = {**template_data, **md_data}
 
-        pprint(nav_items)
+        # pprint(nav_items)
 
         # 8. Render
         return templates.TemplateResponse(

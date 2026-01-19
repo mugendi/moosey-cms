@@ -29,8 +29,6 @@ def seo_tags(
     app = request.app
 
     site_data = app.state.site_data
-    site_code = app.state.site_code
-
 
     site_name = site_data.get("name")
     site_keywords = site_data.get("keywords")
