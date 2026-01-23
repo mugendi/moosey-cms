@@ -5,13 +5,13 @@ from watchdog.events import FileSystemEventHandler
 class FileChangeHandler(FileSystemEventHandler):
     def __init__(self, callback):
         self.callback = callback
-        self.ts =0
+        self.ts = 0
 
     def on_any_event(self, event):
         if event.is_directory:
             return
 
-        if event.event_type == "modified" or event.event_type == "created":
+        if event.event_type in ["modified", "created", "deleted"]:
             # Trigger the callback
             self.callback(event.src_path, event.event_type)
 
