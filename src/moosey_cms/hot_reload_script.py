@@ -17,11 +17,13 @@ class ScriptInjectorMiddleware(BaseHTTPMiddleware):
         self.script = script
 
     async def dispatch(self, request: Request, call_next):
+     
         # Process the request and get the response
         response = await call_next(request)
 
         # We only want to touch HTML pages, not JSON APIs or Images
         content_type = response.headers.get("content-type", "")
+        
         # get content length
         content_length = response.headers.get("content-length")
 
@@ -29,10 +31,9 @@ class ScriptInjectorMiddleware(BaseHTTPMiddleware):
         if "text/html" not in content_type:
             return response
 
-        # Skip if too big (e.g. > 20KB) to prevent Memory DoS
-        if content_length and int(content_length) > 20 * 1024 :
+        # Skip if too big (e.g. > 10mb) to prevent Memory DoS
+        if content_length and int(content_length) > 10 * 1024 * 1024 :
             return response
-
 
         # Read the response body
         # Note: Response body is a stream, we must consume it to modify it
@@ -50,6 +51,7 @@ class ScriptInjectorMiddleware(BaseHTTPMiddleware):
         else:
             # Fallback: Just append if no body tag found
             full_body += injection
+
 
         # Create a NEW Response object
         # We cannot modify the existing response easily because Content-Length
@@ -69,6 +71,7 @@ class ScriptInjectorMiddleware(BaseHTTPMiddleware):
 
 
 def inject_script_middleware(app, host, port):
+    # print('>>>>>>IIIIII')
     # Your custom script to inject
     package_root = Path(__file__).resolve().parent
     javascript_file = package_root / "static" / "js" / "reload-script.js"
@@ -84,6 +87,8 @@ def inject_script_middleware(app, host, port):
         "{{host}}",
         f"{host}:{port}",
     )
+
+    # print('RELOAD ', script_data)
 
     # Add the middleware
     app.add_middleware(
