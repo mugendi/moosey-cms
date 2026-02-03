@@ -472,6 +472,43 @@ def read_time(text: str) -> str:
         return "1 min read"
     return f"{minutes} min read"
 
+
+# ============================================================================
+# HTML UTILITIES
+# ============================================================================
+
+def strip_comments(text, enabled=True):
+    """
+    Removes HTML comments from the output.
+    Usage: {% filter strip_comments(enabled=True) %} ... {% endfilter %}
+    """
+    if not enabled or not text:
+        return text
+    
+    # Regex: Matches <!-- followed by anything (including newlines) until -->
+    # The *? ensures it is non-greedy (stops at the first closing tag)
+    return re.sub(r'<!--[\s\S]*?-->', '', str(text))
+
+def minify_html(text, enabled=True):
+    """
+    Minifies HTML by removing unnecessary whitespace and newlines.
+    WARNING: This is a regex-based minifier. It does not respect <pre> tags.
+    """
+    if not enabled or not text:
+        return text
+    
+    text = str(text)
+    
+    # 1. Normalize whitespace: 
+    # Replace sequences of whitespace (tabs, newlines) with a single space
+    text = re.sub(r'\s+', ' ', text)
+    
+    # 2. Remove space between tags:
+    # Turns "</div> <div..." into "</div><div..."
+    text = re.sub(r'>\s+<', '><', text)
+    
+    return text.strip()
+
 # ============================================================================
 # REGISTRATION FUNCTION
 # ============================================================================
@@ -511,7 +548,9 @@ def register_filters(jinja_env):
         'filesize': filesize,
         'default_if_none': default_if_none,
         'yesno': yesno,
-        'read_time':read_time
+        'read_time':read_time,
+        'strip_comments': strip_comments,
+        'minify_html': minify_html
     }
     
     for name, func in filters_dict.items():

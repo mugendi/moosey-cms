@@ -24,6 +24,30 @@ from .hot_reload_script import inject_script_middleware
 
 from fastapi import WebSocket, WebSocketDisconnect
 
+from jinja2 import Environment, FileSystemLoader
+from jinja2.ext import Extension
+import re
+
+class AutoRemoveCommentsExtension(Extension):
+    """Automatically removes HTML comments from all included files"""
+    
+    def __init__(self, environment):
+        super().__init__(environment)
+        
+        # Store original include function
+        original_include = environment.globals['include']
+        
+        # Create wrapper that removes comments
+        def include_no_comments(template_name, **kwargs):
+            # Get the included template
+            included = environment.get_template(template_name)
+            rendered = included.render(**kwargs)
+            # Remove comments
+            return re.sub(r'<!--.*?-->', '', rendered, flags=re.DOTALL)
+        
+        # Replace include function
+        environment.globals['include_no_comments'] = include_no_comments
+
 
 class ConnectionManager:
     def __init__(self):
@@ -81,6 +105,7 @@ def init_cms(
     # This ensures site_data is available in 404.html and base.html automatically
     templates.env.globals["site_data"] = site_data
     templates.env.globals["mode"] = mode
+    
 
     # Register all custom filters once
     filters.register_filters(templates.env)
