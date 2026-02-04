@@ -47,13 +47,15 @@ def iso_date(dt):
     return dt.strftime('%Y-%m-%d')
 
 
-def relative_time(dt):
+def relative_time(dt, showAgo=True):
     """Format date as relative time (e.g., '2 hours ago', 'yesterday')"""
     if not dt:
         return ""
     
     now = datetime.now()
     diff = now - dt
+
+    ago = " ago" if showAgo else ""
     
     seconds = diff.total_seconds()
     
@@ -61,10 +63,10 @@ def relative_time(dt):
         return "just now"
     elif seconds < 3600:
         minutes = int(seconds / 60)
-        return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+        return f"{minutes} minute{'s' if minutes != 1 else ''}{ago}"
     elif seconds < 86400:
         hours = int(seconds / 3600)
-        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+        return f"{hours} hour{'s' if hours != 1 else ''}{ago}"
     elif seconds < 172800:
         return "yesterday"
     elif seconds < 604800:
@@ -72,13 +74,13 @@ def relative_time(dt):
         return f"{days} days ago"
     elif seconds < 2592000:
         weeks = int(seconds / 604800)
-        return f"{weeks} week{'s' if weeks != 1 else ''} ago"
+        return f"{weeks} week{'s' if weeks != 1 else ''}{ago}"
     elif seconds < 31536000:
         months = int(seconds / 2592000)
-        return f"{months} month{'s' if months != 1 else ''} ago"
+        return f"{months} month{'s' if months != 1 else ''}{ago}"
     else:
         years = int(seconds / 31536000)
-        return f"{years} year{'s' if years != 1 else ''} ago"
+        return f"{years} year{'s' if years != 1 else ''}{ago}"
 
 
 def time_only(dt):
@@ -90,7 +92,8 @@ def time_only(dt):
         formatted = formatted[1:]
     return formatted
 
-
+def strptime(s, fmt):
+    return  datetime.strptime(s, fmt)
 # ============================================================================
 # CURRENCY FILTERS
 # ============================================================================
@@ -529,6 +532,7 @@ def register_filters(jinja_env):
         'short_date': short_date,
         'iso_date': iso_date,
         'relative_time': relative_time,
+        'strptime': strptime,
         'time_only': time_only,
         'currency': currency,
         'compact_currency': compact_currency,
@@ -550,7 +554,8 @@ def register_filters(jinja_env):
         'yesno': yesno,
         'read_time':read_time,
         'strip_comments': strip_comments,
-        'minify_html': minify_html
+        'minify_html': minify_html,
+        
     }
     
     for name, func in filters_dict.items():
