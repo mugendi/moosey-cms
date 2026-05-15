@@ -260,6 +260,7 @@ def get_directory_navigation(
                 except ValueError:
                     continue
 
+
             items.append({
                 "name": display_title,
                 "url": entry_url,
@@ -267,7 +268,8 @@ def get_directory_navigation(
                 "is_dir": entry.is_dir(),
                 "order": sort_order,
                 "group": nav_group,
-                "target": target
+                "target": target,
+                "metadata": meta
             })
             
         # Sorting: order first, then Name
