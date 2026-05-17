@@ -28,25 +28,26 @@ from jinja2 import Environment, FileSystemLoader
 from jinja2.ext import Extension
 import re
 
+
 class AutoRemoveCommentsExtension(Extension):
     """Automatically removes HTML comments from all included files"""
-    
+
     def __init__(self, environment):
         super().__init__(environment)
-        
+
         # Store original include function
-        original_include = environment.globals['include']
-        
+        original_include = environment.globals["include"]
+
         # Create wrapper that removes comments
         def include_no_comments(template_name, **kwargs):
             # Get the included template
             included = environment.get_template(template_name)
             rendered = included.render(**kwargs)
             # Remove comments
-            return re.sub(r'<!--.*?-->', '', rendered, flags=re.DOTALL)
-        
+            return re.sub(r"<!--.*?-->", "", rendered, flags=re.DOTALL)
+
         # Replace include function
-        environment.globals['include_no_comments'] = include_no_comments
+        environment.globals["include_no_comments"] = include_no_comments
 
 
 class ConnectionManager:
@@ -70,7 +71,7 @@ class ConnectionManager:
                 self.disconnect(connection)
 
 
-from .models import CMSConfig, Dirs,  SiteData
+from .models import CMSConfig, Dirs, SiteData
 
 
 def init_cms(
@@ -83,13 +84,7 @@ def init_cms(
 ):
 
     # validate dirs inputs
-    CMSConfig(
-        host=host,
-        port=port,
-        dirs=dirs,
-        mode=mode,
-        site_data=site_data
-    )
+    CMSConfig(host=host, port=port, dirs=dirs, mode=mode, site_data=site_data)
 
     # resolve paths
     dirs = {k: p.resolve() for k, p in dirs.items()}
@@ -105,7 +100,6 @@ def init_cms(
     # This ensures site_data is available in 404.html and base.html automatically
     templates.env.globals["site_data"] = site_data
     templates.env.globals["mode"] = mode
-    
 
     # Register all custom filters once
     filters.register_filters(templates.env)
@@ -121,7 +115,7 @@ def init_cms(
 
         # 2. Trigger WebSocket Broadcast (Thread-safe Async call)
         # This tells FastAPI loop to run the broadcast coroutine
-        if loop.is_running():
+        if loop.is_running() and reloader is not None:
             asyncio.run_coroutine_threadsafe(reloader.broadcast("reload"), loop)
 
     # start watching dirs with the NEW combined callback
@@ -242,7 +236,7 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
             template_data = {
                 **template_data,
                 **front_matter,
-                "site_data": app.state.site_data
+                "site_data": app.state.site_data,
             }
 
             # Render jinja inside frontmatter strings
@@ -284,8 +278,23 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
 
         template_data = {**template_data, **md_data}
 
-        # pprint(nav_items)
+        print("nav_folder", nav_folder)
 
+        def get_files(
+            physical_folder=nav_folder,
+            current_url=current_url,
+            relative_to_path=dirs["content"],
+        ):
+            physical_folder = Path(physical_folder).resolve()
+
+            return helpers.get_directory_navigation(
+                physical_folder=physical_folder,
+                current_url=current_url,
+                relative_to_path=relative_to_path,
+                mode=mode,
+            )
+
+     
         # 8. Render
         return templates.TemplateResponse(
             template_name,
@@ -299,6 +308,7 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
                 "breadcrumbs": breadcrumbs,
                 "nav_items": nav_items,
                 "debug_template_used": template_name,
+                "get_files": get_files,
                 **template_data,
             },
         )

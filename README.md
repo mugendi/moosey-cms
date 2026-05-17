@@ -242,7 +242,10 @@ Moosey CMS comes packed with a comprehensive library of Jinja2 filters to help y
 
 ---
 
-[Read More On Filters](docs/filters.md) and how to use some interesting ones such as stripping comments.
+[More On Filters](docs/filters.md) and how to use some interesting ones such as stripping comments.
+
+[Advanced Features](docs/advanced-features.md) and how to use some interesting ones such as stripping comments.
+
 
 ## ⚙️ Configuration Reference
 

@@ -21,7 +21,8 @@ extensions = [
     "pymdownx.tasklist",
     "pymdownx.superfences",
     "pymdownx.saneheaders",
-    "pymdownx.arithmatex",  # <--- ADD THIS for math support
+    "pymdownx.arithmatex",  
+    "pymdownx.blocks.admonition"
 ]
 
 extension_configs = {

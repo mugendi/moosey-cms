@@ -211,6 +211,7 @@ def get_directory_navigation(
             external_url = None
             is_visible = True
             target = "_self"
+            meta={}
 
             try:
                 # Load minimal metadata

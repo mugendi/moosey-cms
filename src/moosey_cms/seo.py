@@ -34,6 +34,8 @@ def seo_tags(
     site_keywords = site_data.get("keywords")
     site_social = site_data.get("social")
     open_graph = site_data.get("open_graph")
+    twitter_handle = None
+    og_image = None
 
     if site_social and len(site_social.keys()) > 0:
         twitter_handle = site_social["twitter"] if "twitter" in site_social else None
