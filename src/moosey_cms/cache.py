@@ -32,7 +32,7 @@ def make_hashable(value):
         return tuple(make_hashable(v) for v in value)
     return value
 
-def cache_fn(cache=cache, debug=True, exclude_args=None):
+def cache_fn(cache=cache, debug=False, exclude_args=None):
     """
     exclude_args: list of argument indices or keyword names to ignore
     """

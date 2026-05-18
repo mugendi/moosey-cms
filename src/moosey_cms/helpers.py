@@ -10,7 +10,7 @@ import frontmatter
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from jinja2 import TemplateNotFound
-from jinja2.sandbox import SandboxedEnvironment 
+from jinja2.sandbox import SandboxedEnvironment
 from datetime import datetime
 from slugify import slugify
 from inflection import singularize
@@ -25,10 +25,7 @@ from .seo import seo_tags
 from . import filters
 
 # We initialize this once. It denies access to dangerous attributes like __class__
-_safe_env = SandboxedEnvironment(
-    trim_blocks=True,
-    lstrip_blocks=True
-)
+_safe_env = SandboxedEnvironment(trim_blocks=True, lstrip_blocks=True)
 
 cache_debug = True
 
@@ -37,6 +34,7 @@ def validate_model(MyModel, data):
     if not isinstance(data, MyModel):
         MyModel(**data)
     return data
+
 
 @cache_fn(debug=cache_debug)
 def template_exists(templates, name: str) -> bool:
@@ -82,25 +80,30 @@ def get_secure_target(user_path: str, relative_to_path: Path) -> Path:
 
 
 @cache_fn(debug=cache_debug)
-def find_best_template(templates, path_str: str, is_index_file: bool = False, frontmatter: Optional[dict] = None) -> str:
+def find_best_template(
+    templates,
+    path_str: str,
+    is_index_file: bool = False,
+    frontmatter: Optional[dict] = None,
+) -> str:
     """
     Determines the best template based on hierarchy or Frontmatter override.
     """
-    
+
     # 0. Check Frontmatter Override First
-    if frontmatter and frontmatter.get('template'):
-        candidate = frontmatter.get('template')
+    if frontmatter and frontmatter.get("template"):
+        candidate = frontmatter.get("template")
         # Ensure it ends with .html if user forgot
-        if not candidate.endswith('.html'):
-            candidate += '.html'
-        
+        if not candidate.endswith(".html"):
+            candidate += ".html"
+
         if template_exists(templates, candidate):
             return candidate
 
     parts = [p for p in path_str.strip("/").split("/") if p]
 
     if len(parts) == 0:
-        index_candidate = 'index.html'
+        index_candidate = "index.html"
         if template_exists(templates, index_candidate):
             return index_candidate
 
@@ -139,11 +142,11 @@ def find_best_template(templates, path_str: str, is_index_file: bool = False, fr
 def parse_markdown_file(file):
     data = frontmatter.load(file)
     stats = file.stat()
-    
+
     # Ensure date metadata exists
     if "date" not in data.metadata or not isinstance(data.metadata["date"], dict):
         data.metadata["date"] = {}
-        
+
     data.metadata["date"]["updated"] = datetime.fromtimestamp(stats.st_mtime)
     data.metadata["date"]["created"] = datetime.fromtimestamp(stats.st_ctime)
     data.metadata["slug"] = slugify(str(file.stem))
@@ -159,23 +162,26 @@ def ensure_sandbox_filters(main_templates):
         # Also copy globals if they are safe data (like site_data)
         # BUT be careful not to copy 'request' or 'app' objects
         safe_globals = {
-            k: v for k, v in main_templates.env.globals.items() 
-            if k in ['site_data', 'site_code', 'mode'] # Whitelist specific globals
+            k: v
+            for k, v in main_templates.env.globals.items()
+            if k in ["site_data", "site_code", "mode"]  # Whitelist specific globals
         }
         _safe_env.globals.update(safe_globals)
 
+
 # template_render_content only in sandbox mode
-@cache_fn(debug=cache_debug) 
+@cache_fn(debug=cache_debug)
 def template_render_content(templates, content, data, safe=True):
-    if not content: return ""
+    if not content:
+        return ""
 
     try:
         # Sync filters/globals from the main app to our sandbox
         ensure_sandbox_filters(templates)
-        
+
         # Use the SAFE environment, not the main one
         template = _safe_env.from_string(content)
-        
+
         # Render
         rendered = template.render(**data)
         return Markup(rendered) if safe else rendered
@@ -184,9 +190,13 @@ def template_render_content(templates, content, data, safe=True):
         # Fallback: Return raw content if injection fails, rather than crashing
         return content
 
+
 @cache_fn(debug=cache_debug)
 def get_directory_navigation(
-    physical_folder: Path, current_url: str, relative_to_path: Path, mode: str = "production"
+    physical_folder: Path,
+    current_url: str = "/",
+    relative_to_path: Path = "/",
+    mode: str = "production",
 ) -> List[Dict[str, Any]]:
     """
     Scans folder for sidebar menu. Supports advanced frontmatter features.
@@ -197,13 +207,16 @@ def get_directory_navigation(
     items = []
     try:
         for entry in physical_folder.iterdir():
-            if entry.name.startswith("."): continue
-            if entry.name == "index.md": continue  
-            if entry.is_dir() and not (entry / 'index.md').exists(): continue
+            if entry.name.startswith("."):
+                continue
+            if entry.name == "index.md":
+                continue
+            if entry.is_dir() and not (entry / "index.md").exists():
+                continue
 
             # Determine Metadata Source
-            meta_file = entry / 'index.md' if entry.is_dir() else entry
-            
+            meta_file = entry / "index.md" if entry.is_dir() else entry
+
             # Defaults
             sort_order = 9999
             display_title = entry.stem.replace("-", " ").title()
@@ -211,7 +224,7 @@ def get_directory_navigation(
             external_url = None
             is_visible = True
             target = "_self"
-            meta={}
+            meta = {}
 
             try:
                 # Load minimal metadata
@@ -219,88 +232,90 @@ def get_directory_navigation(
                 meta = post.metadata
 
                 # 1. Visibility & Draft Check
-                if meta.get('visible') is False:
-                    is_visible = False
-                
-                if meta.get('draft') is True and mode != 'development':
+                if meta.get("visible") is False:
                     is_visible = False
 
-                
+                if meta.get("draft") is True and mode != "development":
+                    is_visible = False
+
                 if not is_visible:
                     continue
 
                 # 2. Ordering
-                if 'order' in meta: sort_order = int(meta['order'])
-                
+                if "order" in meta:
+                    sort_order = int(meta["order"])
+
                 # 3. Titles & Grouping
-                if 'nav_title' in meta: display_title = meta['nav_title']
-                elif 'title' in meta: display_title = meta['title']
-                
-                nav_group = meta.get('group') or "" 
+                if "nav_title" in meta:
+                    display_title = meta["nav_title"]
+                elif "title" in meta:
+                    display_title = meta["title"]
+
+                nav_group = meta.get("group") or ""
 
                 # 4. External Links
-                if 'external_link' in meta:
-                    external_url = meta['external_link']
+                if "external_link" in meta:
+                    external_url = meta["external_link"]
                     target = "_blank"
-                elif 'redirect' in meta:
-                    external_url = meta['redirect']
+                elif "redirect" in meta:
+                    external_url = meta["redirect"]
 
             except Exception:
-                pass 
+                pass
 
             # Build URL
             if external_url:
                 entry_url = external_url
-                is_active = False # External links are never 'active' page
+                is_active = False  # External links are never 'active' page
             else:
                 try:
                     rel_path = entry.relative_to(relative_to_path)
                     url_slug = str(rel_path).replace(".md", "").replace("\\", "/")
                     entry_url = f"/{url_slug}"
-                    is_active = (entry_url == current_url)
+                    is_active = entry_url == current_url
                 except ValueError:
                     continue
 
+            items.append(
+                {
+                    "name": display_title,
+                    "url": entry_url,
+                    "is_active": is_active,
+                    "is_dir": entry.is_dir(),
+                    "order": sort_order,
+                    "group": nav_group,
+                    "target": target,
+                    "metadata": meta,
+                }
+            )
 
-            items.append({
-                "name": display_title,
-                "url": entry_url,
-                "is_active": is_active,
-                "is_dir": entry.is_dir(),
-                "order": sort_order,
-                "group": nav_group,
-                "target": target,
-                "metadata": meta
-            })
-            
         # Sorting: order first, then Name
         # items.sort(key=lambda x: (x['order'], x['name']))
         group_min_orders = {}
-    
+
         for item in items:
-            g = item['group']
-            w = item['order']
+            g = item["group"]
+            w = item["order"]
             # If we haven't seen this group, or if this item is lighter (more important)
             if g not in group_min_orders or w < group_min_orders[g]:
                 group_min_orders[g] = w
 
         # 2. Sort the list with a Tuple Key
-        items.sort(key=lambda x: (
-            # Primary: Group order (Groups with important items float to top)
-            group_min_orders[x['group']], 
-            
-            # Secondary: Group Name (Keep groups clustered together)
-            x['group'], 
-            
-            # Tertiary: Item order (Sort items inside the group)
-            x['order'],
-            
-            # Quaternary: Item Name (Alphabetical fallback)
-            x['name']
-        ))
+        items.sort(
+            key=lambda x: (
+                # Primary: Group order (Groups with important items float to top)
+                group_min_orders[x["group"]],
+                # Secondary: Group Name (Keep groups clustered together)
+                x["group"],
+                # Tertiary: Item order (Sort items inside the group)
+                x["order"],
+                # Quaternary: Item Name (Alphabetical fallback)
+                x["name"],
+            )
+        )
 
     except OSError:
-        pass 
+        pass
 
     return items
 

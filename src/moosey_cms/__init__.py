@@ -8,5 +8,5 @@
 
 
 from .main import init_cms
-
+from .helpers import get_directory_navigation as get_files
 from .cache import *
