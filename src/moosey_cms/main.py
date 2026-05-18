@@ -278,8 +278,6 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
 
         template_data = {**template_data, **md_data}
 
-        print("nav_folder", nav_folder)
-
         def get_files(
             physical_folder=nav_folder,
             current_url=current_url,
@@ -294,7 +292,6 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
                 mode=mode,
             )
 
-     
         # 8. Render
         return templates.TemplateResponse(
             template_name,
