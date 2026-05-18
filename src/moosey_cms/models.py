@@ -16,8 +16,8 @@ class OpenGraphConfig(BaseModel):
     og_title: Optional[str] = Field(None, description="Open Graph title")
     og_description: Optional[str] = Field(None, description="Open Graph description")
     og_url: Optional[str] = Field(None, description="Open Graph URL")
-
-
+ 
+ 
 class SocialConfig(BaseModel):
     """Social media links configuration"""
     twitter: Optional[str] = Field(None, description="Twitter/X profile URL")
@@ -25,15 +25,15 @@ class SocialConfig(BaseModel):
     linkedin: Optional[str] = Field(None, description="LinkedIn profile URL")
     instagram: Optional[str] = Field(None, description="Instagram profile URL")
     github: Optional[str] = Field(None, description="GitHub profile URL")
-
+ 
     @field_validator('twitter', 'facebook', 'linkedin', 'instagram', 'github')
     @classmethod
     def validate_url(cls, v: Optional[str]) -> Optional[str]:
         if v and not v.startswith(('http://', 'https://')):
             raise ValueError('Social media links must be valid URLs starting with http:// or https://')
         return v
-
-
+ 
+ 
 class SiteData(BaseModel):
     """Site metadata and configuration"""
     name: Optional[str] = Field(..., description="Site name")
@@ -42,14 +42,14 @@ class SiteData(BaseModel):
     author: Optional[str] = Field(..., description="Site author")
     open_graph: Optional[OpenGraphConfig] = Field(..., description="Open Graph configuration")
     social: Optional[SocialConfig] = Field(..., description="Social media links")
-
-
-
+ 
+ 
+ 
 class Dirs(BaseModel):
     """Directory paths configuration"""
     content: Path = Field(..., description="Content directory path")
     templates: Path = Field(..., description="Templates directory path")
-
+ 
     @field_validator('content', 'templates')
     @classmethod
     def validate_path_exists(cls, v: Path) -> Path:
@@ -58,8 +58,8 @@ class Dirs(BaseModel):
         if not v.is_dir():
             raise ValueError(f'Path is not a directory: {v}')
         return v
-
-
+ 
+ 
 class CMSConfig(BaseModel):
     """Complete CMS initialization configuration"""
     host: str = Field(..., description="Server host address")
@@ -70,4 +70,13 @@ class CMSConfig(BaseModel):
         description="Application mode"
     )
     site_data: Optional[SiteData] = Field(..., description="Site metadata")
-    # site_code: Optional[SiteCode] = Field(..., description="Custom site code")
+    reload_delay: float = Field(
+        default=0,
+        ge=0,
+        description=(
+            "Seconds to wait before sending the hot-reload signal to connected "
+            "browsers. Useful when a build step runs after a file change and you "
+            "want the browser to wait until the build has finished before "
+            "refreshing. Only has an effect in development mode."
+        ),
+    )

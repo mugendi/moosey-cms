@@ -88,7 +88,8 @@ init_cms(
             "twitter": "https://x.com/myhandle",
             "github": "https://github.com/myhandle"
         }
-    }
+    },
+    reload_delay=2.5 # Triggers hot-reload after this duration
 )
 ```
 

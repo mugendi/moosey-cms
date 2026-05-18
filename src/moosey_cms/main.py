@@ -13,7 +13,6 @@ from pprint import pprint
 
 from fastapi.templating import Jinja2Templates
 
-
 from . import filters
 from . import helpers
 
@@ -81,10 +80,36 @@ def init_cms(
     dirs: Dirs,
     mode: str,
     site_data: SiteData = {},
+    reload_delay: float = 0,
 ):
+    """
+    Initialize the Moosey CMS.
+
+    Args:
+        app:          Your FastAPI application instance.
+        host:         Server host (used for hot-reload script injection).
+        port:         Server port.
+        dirs:         Dictionary containing ``content`` and ``templates`` Paths.
+        mode:         ``"development"`` (enables hot reload / no cache) or
+                      ``"production"``.
+        site_data:    Global data (name, author, social links, …).
+        reload_delay: Seconds to wait before sending the hot-reload signal to
+                      connected browsers.  Useful when a build step runs after
+                      a file change and you want the browser to wait until the
+                      build has finished before refreshing.  Defaults to ``0``
+                      (immediate reload).  Only has an effect in
+                      ``"development"`` mode.
+    """
 
     # validate dirs inputs
-    CMSConfig(host=host, port=port, dirs=dirs, mode=mode, site_data=site_data)
+    CMSConfig(
+        host=host,
+        port=port,
+        dirs=dirs,
+        mode=mode,
+        site_data=site_data,
+        reload_delay=reload_delay,
+    )
 
     # resolve paths
     dirs = {k: p.resolve() for k, p in dirs.items()}
@@ -116,7 +141,12 @@ def init_cms(
         # 2. Trigger WebSocket Broadcast (Thread-safe Async call)
         # This tells FastAPI loop to run the broadcast coroutine
         if loop.is_running() and reloader is not None:
-            asyncio.run_coroutine_threadsafe(reloader.broadcast("reload"), loop)
+            async def _delayed_broadcast():
+                if reload_delay > 0:
+                    await asyncio.sleep(reload_delay)
+                await reloader.broadcast("reload")
+
+            asyncio.run_coroutine_threadsafe(_delayed_broadcast(), loop)
 
     # start watching dirs with the NEW combined callback
     for d in dirs:
