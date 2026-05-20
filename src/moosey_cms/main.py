@@ -22,10 +22,18 @@ from .hot_reload_script import inject_script_middleware
 
 
 from fastapi import WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
 
 from jinja2 import Environment, FileSystemLoader
 from jinja2.ext import Extension
 import re
+
+
+async def async_template_response(templates, name, context, status_code=200):
+    template = templates.get_template(name)
+    rendered = await template.render_async(context)
+    return HTMLResponse(content=rendered, status_code=status_code)
+
 
 
 class AutoRemoveCommentsExtension(Extension):
@@ -116,7 +124,12 @@ def init_cms(
 
     # create templates
     # templates = Jinja2Templates(directory=str(dirs["templates"]))
-    templates = Jinja2Templates(directory=str(dirs["templates"]), extensions=[])
+    templates = Jinja2Templates(
+        #
+        directory=str(dirs["templates"]),
+        extensions=[],
+        enable_async=True,
+    )
 
     # Important for filters like seo to access them
     app.state.site_data = site_data
@@ -141,6 +154,7 @@ def init_cms(
         # 2. Trigger WebSocket Broadcast (Thread-safe Async call)
         # This tells FastAPI loop to run the broadcast coroutine
         if loop.is_running() and reloader is not None:
+
             async def _delayed_broadcast():
                 if reload_delay > 0:
                     await asyncio.sleep(reload_delay)
@@ -217,8 +231,8 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
             )
         except ValueError:
             # Path traversal detected or invalid chars
-            return templates.TemplateResponse(
-                "404.html", {"request": request}, status_code=404
+            return await async_template_response(
+                templates, "404.html", {"request": request}, status_code=404
             )
 
         # 3. File Resolution Logic
@@ -235,14 +249,14 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
                 )
                 is_index = False
             except ValueError:
-                return templates.TemplateResponse(
-                    "404.html", {"request": request}, status_code=404
+                return await async_template_response(
+                    templates, "404.html", {"request": request}, status_code=404
                 )
 
         # 4. Existence Check
         if not target_file.exists():
-            return templates.TemplateResponse(
-                "404.html", {"request": request}, status_code=404
+            return await async_template_response(
+                templates, "404.html", {"request": request}, status_code=404
             )
 
         # 5. Load Content
@@ -258,8 +272,8 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
 
             # never render drafts in production
             if front_matter.get("draft") is True and mode != "development":
-                return templates.TemplateResponse(
-                    "404.html", {"request": request}, status_code=404
+                return await async_template_response(
+                    templates, "404.html", {"request": request}, status_code=404
                 )
 
             # Merge front matter
@@ -272,21 +286,21 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
             # Render jinja inside frontmatter strings
             for k in front_matter:
                 if isinstance(front_matter[k], str):
-                    front_matter[k] = helpers.template_render_content(
+                    front_matter[k] = await helpers.template_render_content(
                         templates, front_matter[k], template_data, False
                     )
 
             html_content = md_data.html
 
             # Render jinja inside markdown body
-            html_content = helpers.template_render_content(
+            html_content = await helpers.template_render_content(
                 templates, html_content, template_data, False
             )
 
         except Exception as e:
             print(f"Error rendering content: {e}")
-            return templates.TemplateResponse(
-                "404.html", {"request": request}, status_code=404
+            return await async_template_response(
+                templates, "404.html", {"request": request}, status_code=404
             )
 
         # 6. Determine Context Data (Nav, Breadcrumbs)
@@ -323,23 +337,25 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
             )
 
         # 8. Render
-        return templates.TemplateResponse(
-            template_name,
-            {
-                "app_state": request.app.state,
-                "request": request,
-                "content": html_content,
-                "title": template_data.get(
-                    "title", clean_path.split("/")[-1].replace("-", " ").title()
-                ),
-                "breadcrumbs": breadcrumbs,
-                "nav_items": nav_items,
-                "debug_template_used": template_name,
-                "get_files": get_files,
-                **template_data,
-            },
-        )
+
+        context = {
+            "app_state": request.app.state,
+            "request": request,
+            "content": html_content,
+            "title": template_data.get(
+                "title", clean_path.split("/")[-1].replace("-", " ").title()
+            ),
+            "breadcrumbs": breadcrumbs,
+            "nav_items": nav_items,
+            "debug_template_used": template_name,
+            "get_files": get_files,
+            **template_data,
+        }
+
+        return await async_template_response(templates, template_name, context)
 
     app.include_router(router, prefix="")
 
     return router
+
+

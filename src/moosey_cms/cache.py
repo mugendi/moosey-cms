@@ -6,6 +6,7 @@ This software is released under the MIT License.
 from cachetools import TTLCache, cached
 from cachetools.keys import hashkey
 from functools import wraps
+import inspect
 
 # Cache with TTL of 30 days
 cache = TTLCache(maxsize=1000, ttl=3600 * 24 * 30)
@@ -34,35 +35,83 @@ def make_hashable(value):
 
 def cache_fn(cache=cache, debug=False, exclude_args=None):
     """
-    exclude_args: list of argument indices or keyword names to ignore
+    Works with BOTH sync and async functions.
     """
+
     if exclude_args is None:
         exclude_args = ['templates']
 
     def decorator(func):
+
+        is_async = inspect.iscoroutinefunction(func)
+
+        # =========================================================
+        # ASYNC VERSION
+        # =========================================================
+        if is_async:
+
+            @wraps(func)
+            async def async_wrapper(*args, **kwargs):
+
+                args_to_hash = tuple(
+                    make_hashable(a)
+                    for i, a in enumerate(args)
+                    if i not in exclude_args
+                )
+
+                kwargs_to_hash = {
+                    k: make_hashable(v)
+                    for k, v in kwargs.items()
+                    if k not in exclude_args
+                }
+
+                key = hashkey(*args_to_hash, **kwargs_to_hash)
+
+                if key in cache:
+                    if debug:
+                        print(' ' * 4, f'> Async Cache Hit For: "{func.__name__}"')
+                    return cache[key]
+
+                result = await func(*args, **kwargs)
+
+                cache[key] = result
+
+                return result
+
+            return async_wrapper
+
+        # =========================================================
+        # SYNC VERSION
+        # =========================================================
         @wraps(func)
-        def wrapper(*args, **kwargs):
-            # Filter args for hashing
+        def sync_wrapper(*args, **kwargs):
+
             args_to_hash = tuple(
-                make_hashable(a) for i, a in enumerate(args) 
+                make_hashable(a)
+                for i, a in enumerate(args)
                 if i not in exclude_args
             )
-            # Filter kwargs for hashing (e.g. ignore 'templates')
+
             kwargs_to_hash = {
-                k: make_hashable(v) for k, v in kwargs.items() 
+                k: make_hashable(v)
+                for k, v in kwargs.items()
                 if k not in exclude_args
             }
 
             key = hashkey(*args_to_hash, **kwargs_to_hash)
-            
+
             if key in cache:
                 if debug:
-                    print(' '*4, f'> Cache Hit For: "{func.__name__}"')
+                    print(' ' * 4, f'> Cache Hit For: "{func.__name__}"')
                 return cache[key]
-            
+
             result = func(*args, **kwargs)
+
             cache[key] = result
+
             return result
-        return wrapper
+
+        return sync_wrapper
+
     return decorator
     

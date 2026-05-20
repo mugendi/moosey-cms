@@ -9,7 +9,7 @@ import os
 import frontmatter
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-from jinja2 import TemplateNotFound
+from jinja2 import TemplateNotFound, TemplateSyntaxError
 from jinja2.sandbox import SandboxedEnvironment
 from datetime import datetime
 from slugify import slugify
@@ -25,7 +25,9 @@ from .seo import seo_tags
 from . import filters
 
 # We initialize this once. It denies access to dangerous attributes like __class__
-_safe_env = SandboxedEnvironment(trim_blocks=True, lstrip_blocks=True)
+_safe_env = SandboxedEnvironment(
+    trim_blocks=True, lstrip_blocks=True, enable_async=True
+)
 
 cache_debug = True
 
@@ -43,6 +45,11 @@ def template_exists(templates, name: str) -> bool:
         return True
     except TemplateNotFound as e:
         return False
+    except TemplateSyntaxError as e:
+        import logging
+        logging.error(f"Template syntax error in '{name}': {e}")
+        # Re-raise so the developer sees the real error clearly
+        raise
 
 
 @cache_fn(debug=cache_debug)
@@ -171,7 +178,7 @@ def ensure_sandbox_filters(main_templates):
 
 # template_render_content only in sandbox mode
 @cache_fn(debug=cache_debug)
-def template_render_content(templates, content, data, safe=True):
+async def template_render_content(templates, content, data, safe=True):
     if not content:
         return ""
 
@@ -183,9 +190,10 @@ def template_render_content(templates, content, data, safe=True):
         template = _safe_env.from_string(content)
 
         # Render
-        rendered = template.render(**data)
+        rendered = await template.render_async(**data)
         return Markup(rendered) if safe else rendered
     except Exception as e:
+        traceback.print_exc()
         print(f"⚠️ Template Rendering Error: {e}")
         # Fallback: Return raw content if injection fails, rather than crashing
         return content
