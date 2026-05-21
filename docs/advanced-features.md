@@ -27,9 +27,10 @@ This document covers the advanced capabilities of Moosey CMS that go beyond basi
 12. [External Links in Navigation](#12-external-links-in-navigation)
 13. [date Object — File Timestamps](#13-date-object--file-timestamps)
 14. [app_state — Accessing Application State](#14-app_state--accessing-application-state)
-15. [debug_template_used](#15-debug_template_used)
-16. [Security: The Sandboxed Jinja2 Environment](#16-security-the-sandboxed-jinja2-environment)
-17. [Caching Behaviour](#17-caching-behaviour)
+15. [app.state.templates — Custom Routes with Full Template Access](#15-appstatetemplates--custom-routes-with-full-template-access)
+16. [debug_template_used](#16-debug_template_used)
+17. [Security: The Sandboxed Jinja2 Environment](#17-security-the-sandboxed-jinja2-environment)
+18. [Caching Behaviour](#18-caching-behaviour)
 
 ---
 
@@ -265,7 +266,7 @@ This is most useful for building sidebars in section layouts like `page.html` or
 
 Moosey CMS renders Jinja2 expressions inside Markdown files **before** converting them to HTML. This means you can use template variables, filters, and logic directly in your content.
 
-This runs inside a **sandboxed environment** (see [Section 16](#16-security-the-sandboxed-jinja2-environment)), so it is safe for user-editable content.
+This runs inside a **sandboxed environment** (see [Section 17](#17-security-the-sandboxed-jinja2-environment)), so it is safe for user-editable content.
 
 ### Accessing Site Data
 
@@ -673,7 +674,86 @@ app.state.feature_flags = {"new_editor": True, "beta_api": False}
 
 ---
 
-## 15. `debug_template_used`
+## 15. `app.state.templates` — Custom Routes with Full Template Access
+
+After `init_cms()` runs, Moosey CMS stores the fully configured `Jinja2Templates` instance on `app.state.templates`. This means any custom FastAPI route you add — completely outside Moosey's routing — can render templates that carry all the same filters, globals, and SEO helpers that Moosey registers automatically.
+
+### Why This Matters
+
+Moosey registers custom Jinja2 filters (like `seo`, `fancy_date`, `slugify`, `read_time`, and all others) on the shared template environment once during `init_cms()`. Because `app.state.templates` points to that same environment, your custom routes get every filter for free. You never need to re-register anything.
+
+### Accessing the Templates Instance
+
+```python
+from fastapi import Request
+
+@router.get("/guides/{slug}")
+def get_guide(slug: str, request: Request):
+    templates = request.app.state.templates
+
+    return templates.TemplateResponse(
+        name="guide.html",
+        context={
+            "title": f"{guide.title} | Complete Guide",
+            "description": f"{guide.description}",
+            "request": request,
+            "site_data": build_site_data(),
+            "guide": guide,
+        },
+    )
+```
+
+The template at `templates/guide.html` can use every Moosey filter and the `seo()` global exactly as it would in any Moosey-managed page:
+
+```jinja2
+{# templates/guide.html #}
+{% extends "base.html" %}
+
+{% block head %}
+    {{ seo(title=title, description=description) }}
+{% endblock %}
+
+{% block content %}
+<article>
+    <h1>{{ guide.title }}</h1>
+    <p class="meta">
+        Updated {{ guide.updated_at | relative_time }}
+        &bull; {{ guide.body | read_time }} read
+    </p>
+    {{ guide.body | markdown | safe }}
+</article>
+{% endblock %}
+```
+
+### Accessing the Jinja2 Environment Directly
+
+If you need access to the raw Jinja2 environment (to register additional globals or filters at runtime, for example), it is also available:
+
+```python
+env = app.state.moosey_env   # the Jinja2 Environment object
+
+# Register a runtime global available in all templates
+env.globals["current_year"] = 2026
+```
+
+### Mixing Custom Routes with Moosey Routes
+
+Custom routes and Moosey-managed routes are fully compatible. A page served by your own `@router.get(...)` handler can extend the same `base.html` that Moosey uses, and share layout, navigation, and SEO output without any duplication:
+
+```python
+# main.py
+app = init_cms(app, site_data=site_data, mode=mode)
+
+# Your additional routes — registered after init_cms
+app.include_router(guides_router)
+app.include_router(api_router)
+```
+
+> **Note:** Always register your custom routers **after** calling `init_cms()`. The `app.state.templates` object is only available once `init_cms()` has run.
+
+---
+
+## 16. `debug_template_used`
 
 In development, every template context includes `debug_template_used` — a string showing exactly which template file was resolved for the current page. This is invaluable for debugging the Waterfall resolution logic.
 
@@ -690,7 +770,7 @@ Add this to the bottom of `base.html` during development to always see which tem
 
 ---
 
-## 16. Security: The Sandboxed Jinja2 Environment
+## 17. Security: The Sandboxed Jinja2 Environment
 
 When Moosey CMS renders Jinja2 inside Markdown files or frontmatter strings, it uses Jinja2's `SandboxedEnvironment` — not the main application environment. This prevents Server-Side Template Injection (SSTI) attacks.
 
@@ -719,7 +799,7 @@ This means content authors can use template logic freely without being able to r
 
 ---
 
-## 17. Caching Behaviour
+## 18. Caching Behaviour
 
 Moosey CMS uses an in-memory TTL cache (30-day expiry, 1000 item max) to avoid re-parsing Markdown and re-scanning directories on every request.
 

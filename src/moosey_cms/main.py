@@ -142,6 +142,9 @@ def init_cms(
     # Register all custom filters once
     filters.register_filters(templates.env)
 
+    app.state.moosey_env = templates.env
+    app.state.templates = templates
+
     # We need to capture the current event loop to schedule the broadcast
     loop = asyncio.get_event_loop()
 
