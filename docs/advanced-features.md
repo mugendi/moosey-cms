@@ -7,27 +7,27 @@
 
 # Advanced Features
 
-This document covers the advanced capabilities of Moosey CMS that go beyond basic content rendering — including template globals, dynamic navigation, Jinja2 inside Markdown, SEO customization, reusable template macros, content grouping, draft workflows, and more.
+This document covers the advanced capabilities of Moosey CMS that go beyond basic content rendering - including template globals, dynamic navigation, Jinja2 inside Markdown, SEO customization, reusable template macros, content grouping, draft workflows, and more.
 
 ---
 
 ## Table of Contents
 
 1. [Template Globals](#1-template-globals)
-2. [get_files — Dynamic Directory Navigation](#2-get_files--dynamic-directory-navigation)
-3. [nav_items — Automatic Sidebar Navigation](#3-nav_items--automatic-sidebar-navigation)
-4. [breadcrumbs — Auto-generated Breadcrumbs](#4-breadcrumbs--auto-generated-breadcrumbs)
+2. [get_files - Dynamic Directory Navigation](#2-get_files--dynamic-directory-navigation)
+3. [nav_items - Automatic Sidebar Navigation](#3-nav_items--automatic-sidebar-navigation)
+4. [breadcrumbs - Auto-generated Breadcrumbs](#4-breadcrumbs--auto-generated-breadcrumbs)
 5. [Jinja2 Inside Markdown](#5-jinja2-inside-markdown)
 6. [Jinja2 Inside Frontmatter](#6-jinja2-inside-frontmatter)
 7. [Reusable Template Macros](#7-reusable-template-macros)
-8. [SEO Function — Advanced Usage](#8-seo-function--advanced-usage)
+8. [SEO Function - Advanced Usage](#8-seo-function--advanced-usage)
 9. [Frontmatter-Driven Routing & Layout](#9-frontmatter-driven-routing--layout)
 10. [Draft Mode & Visibility Control](#10-draft-mode--visibility-control)
 11. [Content Grouping in Navigation](#11-content-grouping-in-navigation)
 12. [External Links in Navigation](#12-external-links-in-navigation)
-13. [date Object — File Timestamps](#13-date-object--file-timestamps)
-14. [app_state — Accessing Application State](#14-app_state--accessing-application-state)
-15. [app.state.templates — Custom Routes with Full Template Access](#15-appstatetemplates--custom-routes-with-full-template-access)
+13. [date Object - File Timestamps](#13-date-object--file-timestamps)
+14. [app_state - Accessing Application State](#14-app_state--accessing-application-state)
+15. [app.state.templates - Custom Routes with Full Template Access](#15-appstatetemplates--custom-routes-with-full-template-access)
 16. [debug_template_used](#16-debug_template_used)
 17. [Security: The Sandboxed Jinja2 Environment](#17-security-the-sandboxed-jinja2-environment)
 18. [Caching Behaviour](#18-caching-behaviour)
@@ -43,7 +43,7 @@ Every template rendered by Moosey CMS automatically receives the following varia
 | `request` | `Request` | The FastAPI/Starlette request object. |
 | `site_data` | `dict` | The `site_data` dict you passed to `init_cms()`. |
 | `mode` | `str` | The current mode: `"development"` or `"production"`. |
-| `title` | `str` | Page title — from frontmatter or derived from the URL slug. |
+| `title` | `str` | Page title - from frontmatter or derived from the URL slug. |
 | `description` | `str` | Page description from frontmatter. |
 | `content` | `str` | The rendered HTML content from the Markdown file. |
 | `nav_items` | `list` | Auto-generated sibling navigation for the current page. |
@@ -56,7 +56,7 @@ Every template rendered by Moosey CMS automatically receives the following varia
 | `tags` | `list` | Tags list from frontmatter (if defined). |
 | `image` | `str` | Featured image URL from frontmatter (if defined). |
 
-**Example — accessing site data:**
+**Example - accessing site data:**
 
 ```jinja2
 <footer>
@@ -64,7 +64,7 @@ Every template rendered by Moosey CMS automatically receives the following varia
 </footer>
 ```
 
-**Example — conditional dev-only banner:**
+**Example - conditional dev-only banner:**
 
 ```jinja2
 {% if mode == 'development' %}
@@ -74,9 +74,9 @@ Every template rendered by Moosey CMS automatically receives the following varia
 
 ---
 
-## 2. `get_files` — Dynamic Directory Navigation
+## 2. `get_files` - Dynamic Directory Navigation
 
-`get_files` is a callable injected into every template context. It scans any directory under your `content/` folder and returns a structured list of pages — ideal for building custom navigation, index pages, grids, or sitemaps.
+`get_files` is a callable injected into every template context. It scans any directory under your `content/` folder and returns a structured list of pages - ideal for building custom navigation, index pages, grids, or sitemaps.
 
 ### Signature
 
@@ -84,7 +84,7 @@ Every template rendered by Moosey CMS automatically receives the following varia
 get_files(physical_folder, current_url, relative_to_path)
 ```
 
-All three arguments have sensible defaults (the current page's folder), so calling it with no arguments returns siblings of the current page — the same as `nav_items`. Its real power is when you point it at a *different* directory.
+All three arguments have sensible defaults (the current page's folder), so calling it with no arguments returns siblings of the current page - the same as `nav_items`. Its real power is when you point it at a *different* directory.
 
 ### Basic Usage
 
@@ -128,7 +128,7 @@ Each item in the returned list is a dict with the following keys:
 }
 ```
 
-### Practical Example — Cross-section Navigation
+### Practical Example - Cross-section Navigation
 
 Use `get_files` to render a "Related Sections" panel on any page, pulling from a completely different content directory:
 
@@ -151,7 +151,7 @@ Use `get_files` to render a "Related Sections" panel on any page, pulling from a
 </aside>
 ```
 
-### Practical Example — Content Grid / Card Layout
+### Practical Example - Content Grid / Card Layout
 
 ```jinja2
 <div class="card-grid">
@@ -176,7 +176,7 @@ Use `get_files` to render a "Related Sections" panel on any page, pulling from a
 
 ---
 
-## 3. `nav_items` — Automatic Sidebar Navigation
+## 3. `nav_items` - Automatic Sidebar Navigation
 
 `nav_items` is automatically populated with the siblings of the current page (files in the same directory, excluding `index.md`). It uses the same structure as `get_files` results.
 
@@ -213,11 +213,11 @@ This is most useful for building sidebars in section layouts like `page.html` or
 
 ---
 
-## 4. `breadcrumbs` — Auto-generated Breadcrumbs
+## 4. `breadcrumbs` - Auto-generated Breadcrumbs
 
 `breadcrumbs` is a list of dicts automatically built from the current URL path. Each crumb has a `name` (title-cased) and a `url`.
 
-**Example — `/pages/guides/farming` generates:**
+**Example - `/pages/guides/farming` generates:**
 
 ```python
 [
@@ -315,7 +315,7 @@ team:
 ## Our Team
 
 {% for member in team %}
-- **{{ member.name }}** — {{ member.role }}
+- **{{ member.name }}** - {{ member.role }}
 {% endfor %}
 ```
 
@@ -400,7 +400,7 @@ Import the same macro file in `base.html` or any layout, and it becomes availabl
 
 ---
 
-## 8. SEO Function — Advanced Usage
+## 8. SEO Function - Advanced Usage
 
 The `seo()` function is a Jinja2 global registered on every template. In its simplest form, calling `{{ seo() }}` with no arguments auto-detects everything from the current page context.
 
@@ -440,7 +440,7 @@ For each field, the resolution order is:
 ```jinja2
 {# Force a specific title and description for a landing page #}
 {{ seo(
-    title="Special Offer — " ~ site_data.name,
+    title="Special Offer - " ~ site_data.name,
     description="Exclusive pricing for the next 24 hours.",
     noindex=True
 ) }}
@@ -599,7 +599,7 @@ order: 1
 {% endfor %}
 ```
 
-The sorting algorithm accounts for groups automatically — the group whose items have the lowest `order` values floats to the top.
+The sorting algorithm accounts for groups automatically - the group whose items have the lowest `order` values floats to the top.
 
 ---
 
@@ -621,7 +621,7 @@ This file will never render as a page (visiting `/guides/github` will serve this
 
 ---
 
-## 13. `date` Object — File Timestamps
+## 13. `date` Object - File Timestamps
 
 Every page automatically receives a `date` dict with two datetime objects derived from the file system. These complement any date you set manually in frontmatter.
 
@@ -646,7 +646,7 @@ If you also set `date:` in frontmatter (e.g. `date: 2026-01-21`), that value is 
 
 ---
 
-## 14. `app_state` — Accessing Application State
+## 14. `app_state` - Accessing Application State
 
 The full `request.app.state` object is exposed as `app_state` in every template. This gives access to anything you have stored on the application state from FastAPI.
 
@@ -674,9 +674,9 @@ app.state.feature_flags = {"new_editor": True, "beta_api": False}
 
 ---
 
-## 15. `app.state.templates` — Custom Routes with Full Template Access
+## 15. `app.state.templates` - Custom Routes with Full Template Access
 
-After `init_cms()` runs, Moosey CMS stores the fully configured `Jinja2Templates` instance on `app.state.templates`. This means any custom FastAPI route you add — completely outside Moosey's routing — can render templates that carry all the same filters, globals, and SEO helpers that Moosey registers automatically.
+After `init_cms()` runs, Moosey CMS stores the fully configured `Jinja2Templates` instance on `app.state.templates`. This means any custom FastAPI route you add - completely outside Moosey's routing - can render templates that carry all the same filters, globals, and SEO helpers that Moosey registers automatically.
 
 ### Why This Matters
 
@@ -744,7 +744,7 @@ Custom routes and Moosey-managed routes are fully compatible. A page served by y
 # main.py
 app = init_cms(app, site_data=site_data, mode=mode)
 
-# Your additional routes — registered after init_cms
+# Your additional routes - registered after init_cms
 app.include_router(guides_router)
 app.include_router(api_router)
 ```
@@ -755,7 +755,7 @@ app.include_router(api_router)
 
 ## 16. `debug_template_used`
 
-In development, every template context includes `debug_template_used` — a string showing exactly which template file was resolved for the current page. This is invaluable for debugging the Waterfall resolution logic.
+In development, every template context includes `debug_template_used` - a string showing exactly which template file was resolved for the current page. This is invaluable for debugging the Waterfall resolution logic.
 
 ```jinja2
 {% if mode == 'development' %}
@@ -772,12 +772,12 @@ Add this to the bottom of `base.html` during development to always see which tem
 
 ## 17. Security: The Sandboxed Jinja2 Environment
 
-When Moosey CMS renders Jinja2 inside Markdown files or frontmatter strings, it uses Jinja2's `SandboxedEnvironment` — not the main application environment. This prevents Server-Side Template Injection (SSTI) attacks.
+When Moosey CMS renders Jinja2 inside Markdown files or frontmatter strings, it uses Jinja2's `SandboxedEnvironment` - not the main application environment. This prevents Server-Side Template Injection (SSTI) attacks.
 
 **What the sandbox blocks:**
 
 ```jinja2
-{# These will raise errors in the sandbox — good! #}
+{# These will raise errors in the sandbox - good! #}
 {{ ''.__class__.__mro__ }}
 {{ config.__class__.__init__.__globals__ }}
 {{ ''.__class__.__bases__[0].__subclasses__() }}
@@ -809,7 +809,7 @@ In `development` mode, **the cache is cleared on every request.** You will alway
 
 ### Production Mode
 
-In `production` mode, parsed content and directory listings are cached for up to 30 days. The cache is invalidated automatically by the file watcher whenever a file is created, modified, or deleted — even in production. This means a `git pull` that updates content files will reflect immediately on the next page load.
+In `production` mode, parsed content and directory listings are cached for up to 30 days. The cache is invalidated automatically by the file watcher whenever a file is created, modified, or deleted - even in production. This means a `git pull` that updates content files will reflect immediately on the next page load.
 
 ### Manual Cache Control
 
