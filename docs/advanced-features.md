@@ -34,8 +34,8 @@ This document covers the advanced capabilities of Moosey CMS that go beyond basi
 19. [Hot Reload Behavior](#19-hot-reload-behavior)
 20. [Application Modes](#20-application-modes)
 21. [Security Headers](#21-security-headers)
-22. [include_no_comments - Including Templates Without HTML Comments](#22-include_no_comments---including-templates-without-html-comments)
-23. [slug - URL Slug in Templates](#23-slug---url-slug-in-templates)
+22. [slug - URL Slug in Templates](#22-slug---url-slug-in-templates)
+23. [Real-World Site Patterns](#23-real-world-site-patterns)
 
 ---
 
@@ -862,7 +862,7 @@ When `reload_delay` is set in `init_cms()`, the broadcast is delayed by that man
 
 ### Browser Reconnect
 
-The injected JavaScript (`static/js/reload-script.js`) implements **exponential backoff** reconnection:
+The injected JavaScript (`moosey_cms/static/js/reload-script.js` in the package) implements **exponential backoff** reconnection:
 
 1. Initial reconnect delay: 1 second
 2. Each failed attempt doubles the delay
@@ -877,7 +877,7 @@ The script injection middleware in `hot_reload_script.py` includes safeguards:
 
 - Only HTML responses are modified (JSON, images, and other content types pass through unchanged)
 - Responses larger than 10 MB are skipped entirely to prevent memory exhaustion
-- Content-Length headers are recalculated after injection to ensure correct responses
+- Content-Length headers are removed after injection so the ASGI response can send the correct body length
 
 ---
 
@@ -902,7 +902,7 @@ The `mode` parameter in `init_cms()` accepts four values:
 
 ## 21. Security Headers
 
-Moosey CMS applies security headers to every HTTP response via middleware (`main.py:189-198`):
+Moosey CMS applies security headers to every HTTP response via middleware in `moosey_cms.main`:
 
 | Header | Value | Purpose |
 | :--- | :--- | :--- |
@@ -914,31 +914,7 @@ These headers are set on **every** response automatically and cannot be disabled
 
 ---
 
-## 22. `include_no_comments` - Including Templates Without HTML Comments
-
-Moosey CMS registers a `include_no_comments` global function on the Jinja2 environment. It works identically to Jinja2's built-in `{% include %}` but **strips all HTML comments** (`<!-- ... -->`) from the included template's output.
-
-### Why This Exists
-
-When using `{% include %}` to compose layouts from components, those components may contain HTML comments that are useful during development but should not appear in production output. Rather than writing two versions of every component, use `include_no_comments` in production contexts.
-
-### Usage
-
-```jinja2
-{# In production, include without comments #}
-{% if mode == 'production' %}
-    {% set header_html = include_no_comments('components/header.html') %}
-    {{ header_html | safe }}
-{% else %}
-    {% include 'components/header.html' %}
-{% endif %}
-```
-
-See also the [`strip_comments`](filters.md#strip_comments) filter for a block-level alternative that wraps entire template sections.
-
----
-
-## 23. `slug` - URL Slug in Templates
+## 22. `slug` - URL Slug in Templates
 
 Every page template receives a `slug` variable derived from the Markdown file's stem (filename without extension). It is generated using the `python-slugify` library.
 
@@ -957,6 +933,144 @@ Every page template receives a `slug` variable derived from the Markdown file's 
 ```
 
 This is particularly useful for CSS targeting, JavaScript hooks, and analytics event labels where you need a stable, predictable identifier for each page.
+
+---
+
+## 23. Real-World Site Patterns
+
+The features above can be combined into small production patterns. These examples are intentionally simple; adapt the field names to your own content model.
+
+### Nested Frontmatter as Page Data
+
+Frontmatter can hold nested page-builder data, not just SEO metadata. This keeps structured page content close to the Markdown file while templates stay reusable.
+
+```yaml
+---
+title: Process
+process_tabs:
+  - id: design
+    label: Design
+    steps:
+      - title: Site survey
+        body: Confirm slope, access, utilities, and local constraints.
+---
+```
+
+```jinja2
+{% for tab in process_tabs | default([]) %}
+<button data-process-tab="{{ tab.id }}">{{ tab.label }}</button>
+{% endfor %}
+```
+
+### Page-Level and Route-Level Assets
+
+Use frontmatter arrays for assets that belong to one page, then add route checks for assets shared by a whole section. This keeps the base layout global while avoiding unnecessary scripts and styles on every page.
+
+```yaml
+---
+title: Home
+styles:
+  - https://cdn.example.com/widget.css
+scripts:
+  - https://cdn.example.com/widget.js
+---
+```
+
+```jinja2
+{% set current_path = request.path.rstrip('/') or '/' %}
+
+{% for href in styles | default([]) %}
+<link rel="stylesheet" href="{{ href }}">
+{% endfor %}
+
+{% if current_path == '/blog' %}
+<script src="https://example.com/list.js"></script>
+{% endif %}
+
+{% for src in scripts | default([]) %}
+<script src="{{ src }}"></script>
+{% endfor %}
+```
+
+### Collection Pages From nav_items Metadata
+
+`nav_items` exposes each sibling page's `metadata`, so section index pages can sort, group, filter, or build related-content blocks without a separate database.
+
+```jinja2
+{% for item in nav_items | sort(attribute='metadata.date.published', reverse=True) %}
+<article
+  data-category="{{ item.metadata.category | default('') }}"
+  data-tags="{{ item.metadata.tags | default([]) | join(',') }}">
+  <a href="{{ item.url }}">{{ item.name }}</a>
+</article>
+{% endfor %}
+```
+
+The same pattern works for recent posts, posts in the same category, faceted lists, and client-side search/filter pages.
+
+### Request-Aware Templates
+
+The `request` global is useful beyond breadcrumbs. Use `request.url` when a widget needs the absolute current URL, and `request.url.path` when excluding the current page from a list.
+
+```jinja2
+<a class="share" data-url="{{ request.url }}">Share</a>
+
+{% for post in nav_items if post.url != request.url.path %}
+<a href="{{ post.url }}">{{ post.name }}</a>
+{% endfor %}
+```
+
+### site_data as a Layout Config Hub
+
+`site_data` can hold more than strings. It is a good place for navigation trees, CTA config, brand fragments, social links, and small helper functions that many templates need.
+
+```python
+def country_lookup(code):
+    return COUNTRIES.get(code.upper())
+
+init_cms(
+    app=app,
+    mode=MODE,
+    dirs={"content": CONTENT_DIR, "templates": TEMPLATE_DIR},
+    site_data={
+        "navs": navs,
+        "nav_cta": {"label": "Book a consultation", "href": "/contact"},
+        "brand": {"name": "Acme Homes"},
+        "country_lookup": country_lookup,
+    },
+)
+```
+
+```jinja2
+{% for item in site_data.navs %}
+<a href="{{ item.href }}">{{ item.label }}</a>
+{% endfor %}
+```
+
+### Lifespan-Safe Initialization
+
+When wrapping FastAPI in a custom ASGI lifespan app, guard `init_cms()` so it only runs once per process. This avoids duplicate mounts, middleware, or watcher setup during lifespan handling.
+
+```python
+def init_cms_once(app):
+    if not getattr(app.state, "cms_initialized", False):
+        init_cms(app=app, mode=MODE, dirs=dirs, site_data=site_data)
+        app.state.cms_initialized = True
+```
+
+### Production Deployment Mode
+
+For production process managers, set `mode="production"` or `MODE=production` explicitly and run any static asset build before starting or reloading the app process.
+
+```make
+PM2_WEB_CMD = MODE=production uv run python -m uvicorn main:app --host 127.0.0.1 --port 2323
+
+build-css:
+	npm run build:css
+
+pm2-start: build-css
+	pm2 start "$(PM2_WEB_CMD)" --name site --cwd "$(CURDIR)"
+```
 
 ---
 
