@@ -20,7 +20,7 @@ def seo_tags(
     keywords: Optional[str] = None,
     author: Optional[str] = None,
     publish_date: Optional[str] = None,  # ISO 8601 format YYYY-MM-DD
-    noindex: bool = False,
+    noindex: Optional[bool] = None,
 ):
     """
     Renders full suite of SEO, OpenGraph, and Twitter Card meta tags.
@@ -51,21 +51,22 @@ def seo_tags(
         keywords or context.get("keywords") or site_keywords or context.get("tags")
     )
 
-    meta_keywords = (
-        ", ".join(meta_keywords)
-        if isinstance(meta_keywords, list)
-        else str(meta_keywords)
-    )
+    if isinstance(meta_keywords, list):
+        meta_keywords = ", ".join(str(keyword) for keyword in meta_keywords)
+    elif meta_keywords is None:
+        meta_keywords = ""
+    else:
+        meta_keywords = str(meta_keywords)
 
     # 2. Handle URLs (Absolute URLs are required for SEO/Social)
     base_url = str(request.base_url).rstrip("/") if request else ""
 
     # Resolve Image
     meta_image = None
-    if og_image:
-
-        raw_image = image or context.get("image") or og_image
-        if raw_image and raw_image.startswith("http"):
+    raw_image = image or context.get("image") or og_image
+    if raw_image:
+        raw_image = str(raw_image)
+        if raw_image.startswith("http"):
             meta_image = raw_image
         else:
             # Ensure path starts with /
@@ -75,7 +76,13 @@ def seo_tags(
 
     # Resolve Current URL & Canonical
     current_url = str(request.url) if request else ""
-    final_canonical = canonical_url or current_url
+    final_canonical = (
+        canonical_url
+        or context.get("canonical_url")
+        or context.get("canonical")
+        or current_url
+    )
+    final_noindex = bool(context.get("noindex", False)) if noindex is None else bool(noindex)
 
     # 3. Determine Content Type
     # If a publish date exists, Google treats it as an Article
@@ -93,7 +100,7 @@ def seo_tags(
     tags.append(f'<link rel="canonical" href="{final_canonical}">')
 
     # Robots (Block indexing if needed, e.g., for search results pages)
-    if noindex:
+    if final_noindex:
         tags.append('<meta name="robots" content="noindex, nofollow">')
     else:
         tags.append('<meta name="robots" content="index, follow">')

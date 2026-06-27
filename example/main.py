@@ -35,7 +35,7 @@ from fastapi.staticfiles import StaticFiles
 # ---------------------------------------------------------------------------
 # Moosey CMS – the one import you need
 # ---------------------------------------------------------------------------
-from moosey_cms import init_cms
+from moosey_cms import init_cms, get_content_index
 
 # ===========================================================================
 # APPLICATION SETUP
@@ -101,6 +101,7 @@ if STATIC_DIR.exists():
 #   keywords     – Default SEO keywords (comma-separated string or list)
 #   open_graph   – Dict with at least og_image for social preview images
 #   social       – Dict with twitter, github, etc. (URLs -> template links)
+#   web          – Site-management config for sitemap.xml, robots.txt, RSS
 #
 # You can add ANY custom keys here. They are all available as template globals.
 # For example, navigation trees, brand colours, CTA config, or helper
@@ -124,6 +125,24 @@ site_data = {
     "social": {
         "twitter": "https://x.com/myhandle",
         "github": "https://github.com/myhandle",
+    },
+
+    # -- Built-in website-management routes -----------------------------
+    # Moosey registers /sitemap.xml, /robots.txt, /feed.xml, and /rss.xml
+    # automatically.  site_url lets those routes emit absolute URLs that
+    # match your public production domain.
+    "web": {
+        "site_url": "http://localhost:8000",
+        "feed": {
+            "collection": "/posts",
+            "title": "Moosey Example Feed",
+            "description": "Latest posts from the Moosey example site",
+            "limit": 20,
+        },
+        "sitemap": {
+            "default_changefreq": "weekly",
+            "default_priority": "0.5",
+        },
     },
 
     # -- Custom: navigation tree for the header -------------------------
@@ -194,6 +213,7 @@ def init_cms_once(app):
 #   - Hot-reload middleware + WebSocket (only in development mode)
 #   - All Jinja2 filters (fancy_date, slugify, read_time, seo, …)
 #   - Template globals (site_data, mode, seo, …)
+#   - Website-management routes (/sitemap.xml, /robots.txt, /feed.xml)
 
 init_cms_once(app)
 
@@ -246,6 +266,10 @@ async def custom_greeting(request: Request):
 
 env = app.state.moosey_env  # The Jinja2 Environment object
 env.globals["current_year"] = 2026  # Available in all templates as {{ current_year }}
+
+# get_content_index() is also exported for custom archives/search APIs.
+# The built-in sitemap/RSS routes use the same helper internally.
+content_index = get_content_index(CONTENT_DIR, mode="development")
 
 # ===========================================================================
 # RUN

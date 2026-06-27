@@ -36,6 +36,7 @@ This document covers the advanced capabilities of Moosey CMS that go beyond basi
 21. [Security Headers](#21-security-headers)
 22. [slug - URL Slug in Templates](#22-slug---url-slug-in-templates)
 23. [Real-World Site Patterns](#23-real-world-site-patterns)
+24. [Website Management Routes & Content Index](#24-website-management-routes--content-index)
 
 ---
 
@@ -473,21 +474,23 @@ A single call produces all of the following, fully populated:
 - Twitter Card tags (`twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`)
 - JSON-LD structured data (`Article` or `WebSite`)
 
-### Known Limitation: `canonical_url` and `noindex` from Frontmatter
+### Frontmatter `canonical_url` and `noindex`
 
-The `seo()` function currently reads `title`, `description`, `image`, and `keywords` from the page context automatically. However, **`canonical_url` and `noindex` are NOT automatically picked up from frontmatter**. They must be passed explicitly:
+`seo()` reads `canonical_url`, `canonical`, and `noindex` from frontmatter automatically when called as `{{ seo() }}`:
+
+```yaml
+---
+title: Search Results
+canonical_url: https://example.com/search
+noindex: true
+---
+```
+
+You can still override either value explicitly in templates:
 
 ```jinja2
 {{ seo(canonical_url="https://example.com/canonical", noindex=True) }}
 ```
-
-To make this work for specific pages, override the `seo()` call in your template or pass the value from frontmatter:
-
-```jinja2
-{{ seo(canonical_url=canonical_url | default(None), noindex=noindex | default(False)) }}
-```
-
-Where `canonical_url` and `noindex` are set in the Markdown frontmatter as needed.
 
 ---
 
@@ -1086,6 +1089,122 @@ build-css:
 
 pm2-start: build-css
 	pm2 start "$(PM2_WEB_CMD)" --name site --cwd "$(CURDIR)"
+```
+
+---
+
+## 24. Website Management Routes & Content Index
+
+Moosey CMS registers common website-management endpoints before the catch-all content route:
+
+| Route | Default | Description |
+| :--- | :---: | :--- |
+| `/sitemap.xml` | Enabled | XML sitemap built from publishable Markdown files. |
+| `/robots.txt` | Enabled | Environment-aware robots rules with a sitemap pointer. |
+| `/feed.xml` | Enabled | RSS 2.0 feed from the content index. |
+| `/rss.xml` | Enabled | Alias for `/feed.xml` unless `rss_alias` is false. |
+
+### Configuration
+
+Configure these routes with `site_data.web`:
+
+```python
+site_data = {
+    "name": "Example Site",
+    "description": "A Moosey CMS site",
+    "web": {
+        "site_url": "https://example.com",
+        "sitemap": {
+            "path": "/sitemap.xml",
+            "default_changefreq": "weekly",
+            "default_priority": "0.5",
+        },
+        "robots": {
+            "path": "/robots.txt",
+            "production": {"allow": ["/"], "disallow": []},
+            "staging": {"disallow": ["/"]},
+            "testing": {"disallow": ["/"]},
+        },
+        "feed": {
+            "path": "/feed.xml",
+            "collection": "/blog",
+            "limit": 50,
+            "title": "Example Site Articles",
+            "description": "Latest articles from Example Site",
+            "content": "excerpt",
+        },
+    },
+}
+```
+
+Set a feature to `false` to disable it:
+
+```python
+site_data = {
+    "web": {
+        "feed": False,
+        "sitemap": {"enabled": True},
+    }
+}
+```
+
+### Frontmatter Controls
+
+```yaml
+---
+title: Hidden Landing Page
+visible: false
+noindex: true
+sitemap: false
+feed: false
+---
+```
+
+Rules:
+
+- `draft: true` is excluded outside development.
+- `visible: false` is excluded from generated indexes by default.
+- `noindex: true` is excluded from sitemap and feed output.
+- `sitemap: false` excludes only from `/sitemap.xml`.
+- `feed: false` or `rss: false` excludes from RSS.
+- `sitemap.changefreq` and `sitemap.priority` override sitemap defaults per page.
+
+### Content Index Helper
+
+For custom routes, import `get_content_index`:
+
+```python
+from moosey_cms import get_content_index
+
+pages = get_content_index(
+    content_dir=CONTENT_DIR,
+    mode="production",
+    include_hidden=False,
+    include_drafts=False,
+    include_noindex=False,
+)
+```
+
+Each page entry includes:
+
+| Key | Description |
+| :--- | :--- |
+| `url` | Public URL path. |
+| `title` / `name` | Display title. |
+| `description` | Frontmatter description or summary. |
+| `excerpt` | Plain-text excerpt. |
+| `metadata` | Full frontmatter dict with normalized `date` and `slug`. |
+| `date` | Dict containing `created`, `updated`, and optional `published`. |
+| `content` | Raw Markdown body. |
+| `html` | Rendered Markdown HTML when `render_html=True`. |
+| `source_path` | Markdown file path. |
+
+### Feed Link in Templates
+
+Add a feed discovery link to `base.html`:
+
+```jinja2
+<link rel="alternate" type="application/rss+xml" title="{{ site_data.name }} Feed" href="{{ '/feed.xml' | absolute_url }}">
 ```
 
 ---

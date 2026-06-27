@@ -54,6 +54,9 @@
     #}
     {{ seo() }}
 
+    {# ---- RSS Feed Discovery ---- #}
+    <link rel="alternate" type="application/rss+xml" title="{{ site_data.name }} Feed" href="{{ '/feed.xml' | absolute_url }}">
+
     {# ---- Block: head ----
        Child templates can inject extra <head> content here.
        For example, page-specific stylesheets or meta tags. #}

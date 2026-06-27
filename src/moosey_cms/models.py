@@ -36,12 +36,12 @@ class SocialConfig(BaseModel):
  
 class SiteData(BaseModel):
     """Site metadata and configuration"""
-    name: Optional[str] = Field(..., description="Site name")
-    keywords: Optional[list[str]] = Field(..., description="SEO keywords")
-    description: Optional[str] = Field(..., description="Site description")
-    author: Optional[str] = Field(..., description="Site author")
-    open_graph: Optional[OpenGraphConfig] = Field(..., description="Open Graph configuration")
-    social: Optional[SocialConfig] = Field(..., description="Social media links")
+    name: Optional[str] = Field(None, description="Site name")
+    keywords: list[str] = Field(default_factory=list, description="SEO keywords")
+    description: Optional[str] = Field(None, description="Site description")
+    author: Optional[str] = Field(None, description="Site author")
+    open_graph: Optional[OpenGraphConfig] = Field(None, description="Open Graph configuration")
+    social: Optional[SocialConfig] = Field(None, description="Social media links")
  
  
  

@@ -63,7 +63,7 @@ This filter is "aggressive." It does not detect `<pre>` or `<textarea>` tags. If
 **Usage Example:**
 
 ```jinja
-{% minify_html(enabled=(mode != 'development')) %}
+{% filter minify_html(enabled=(mode != 'development')) %}
     <html>
       ...
     </html>
@@ -105,6 +105,7 @@ Assuming `date_obj` is a Python datetime object (e.g., from `date: 2026-01-21` i
 | **`time_only`** | Extracts just the time. | `2026-01-21 18:00` | 6:00 PM |
 | **`relative_time`** | Human readable time difference. | `(Now - 2 hours)` | 2 hours ago |
 | **`strptime`** | Parse a string to datetime using a format string. | `"2026-01-21" \| strptime("%Y-%m-%d")` | `datetime(2026, 1, 21)` |
+| **`rfc822_date`** | Format a date for RSS feeds. | `2026-01-21` | Thu, 21 Jan 2026 00:00:00 GMT |
 
 **Usage:**
 ```jinja
@@ -124,6 +125,7 @@ Assuming `date_obj` is a Python datetime object (e.g., from `date: 2026-01-21` i
 | **`smart_quotes`** | Converts straight quotes to curly quotes. | `"Hello"` | “Hello” |
 | **`read_time`** | Calculates reading time (approx 200 wpm). | *500 words text* | 3 min read |
 | **`reading_time`** | Alias for `read_time`. | *500 words text* | 3 min read |
+| **`strip_html`** | Removes HTML tags/comments and collapses whitespace. | `<p>Hello</p>` | Hello |
 
 **Usage:**
 ```jinja
@@ -186,6 +188,7 @@ Requires valid ISO 3166-1 alpha-2 or alpha-3 codes.
 | **`filesize`** | Bytes to human readable size. | `1048576` | `1.0 MB` |
 | **`yesno`** | Boolean to text. | `True` | `Yes` (or custom) |
 | **`default_if_none`** | Fallback if value is None. | `None` | *(Default string)* |
+| **`absolute_url`** | Resolves a relative path against `site_data.web.site_url` or the request base URL. | `/about` | `https://example.com/about` |
 
 **Usage:**
 ```jinja

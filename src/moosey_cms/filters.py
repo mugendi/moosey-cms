@@ -3,10 +3,15 @@ Jinja2 template filters for content management.
 Usage: Import and register with Jinja2Templates environment.
 """
 
-from datetime import datetime
+from datetime import date, datetime, time, timezone
+from email.utils import format_datetime
+from html import unescape
 from typing import Any
+from urllib.parse import urljoin
 import re
 import math
+
+from jinja2 import pass_context
 
 from .seo import seo_tags
 
@@ -94,6 +99,24 @@ def time_only(dt):
 
 def strptime(s, fmt):
     return  datetime.strptime(s, fmt)
+
+
+def rfc822_date(value):
+    """Format a date/datetime for RSS feeds."""
+    if not value:
+        return ""
+    if isinstance(value, datetime):
+        dt = value
+    elif isinstance(value, date):
+        dt = datetime.combine(value, time.min)
+    else:
+        try:
+            dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            return str(value)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return format_datetime(dt, usegmt=True)
 # ============================================================================
 # CURRENCY FILTERS
 # ============================================================================
@@ -476,9 +499,43 @@ def read_time(text: str) -> str:
     return f"{minutes} min read"
 
 
+@pass_context
+def absolute_url(context, value, base_url=None):
+    """Resolve a relative URL against site_data.web.site_url or request.base_url."""
+    if not value:
+        return ""
+    value = str(value)
+    if re.match(r"^[a-z][a-z0-9+.-]*:", value, re.IGNORECASE) or value.startswith("#"):
+        return value
+
+    request = context.get("request")
+    site_data = context.get("site_data") or {}
+    web = site_data.get("web", {}) if isinstance(site_data, dict) else {}
+    base = (
+        base_url
+        or web.get("site_url")
+        or site_data.get("site_url")
+        or site_data.get("base_url")
+        or (str(request.base_url) if request else "")
+    )
+    if not base:
+        return value
+    return urljoin(str(base).rstrip("/") + "/", value.lstrip("/"))
+
+
 # ============================================================================
 # HTML UTILITIES
 # ============================================================================
+
+def strip_html(text):
+    """Remove HTML tags/comments and collapse whitespace."""
+    if not text:
+        return ""
+    text = re.sub(r'<!--[\s\S]*?-->', '', str(text))
+    text = re.sub(r'<[^>]+>', ' ', text)
+    text = unescape(text)
+    return re.sub(r'\s+', ' ', text).strip()
+
 
 def strip_comments(text, enabled=True):
     """
@@ -533,6 +590,7 @@ def register_filters(jinja_env):
         'iso_date': iso_date,
         'relative_time': relative_time,
         'strptime': strptime,
+        'rfc822_date': rfc822_date,
         'time_only': time_only,
         'currency': currency,
         'compact_currency': compact_currency,
@@ -553,6 +611,8 @@ def register_filters(jinja_env):
         'default_if_none': default_if_none,
         'yesno': yesno,
         'read_time':read_time,
+        'absolute_url': absolute_url,
+        'strip_html': strip_html,
         'strip_comments': strip_comments,
         'minify_html': minify_html,
         

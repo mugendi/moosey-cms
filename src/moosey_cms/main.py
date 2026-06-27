@@ -15,6 +15,7 @@ from fastapi.templating import Jinja2Templates
 
 from . import filters
 from . import helpers
+from . import site
 
 from .cache import clear_cache_on_file_change, clear_cache
 from .file_watcher import start_watching
@@ -196,6 +197,8 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
         # Prevent clickjacking
         response.headers["X-Frame-Options"] = "DENY"
         return response
+
+    site.register_web_routes(router=router, dirs=dirs, mode=mode, site_data=app.state.site_data)
 
     # only init hot reload websocket route in dvt mode
     if mode == "development":
