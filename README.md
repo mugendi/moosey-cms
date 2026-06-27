@@ -186,7 +186,7 @@ description: A short summary for SEO.
 ---
 title: API Documentation
 nav_title: API Docs
-weight: 1
+order: 1
 group: "Developer Tools"
 external_link: "https://api.mysite.com"
 ---

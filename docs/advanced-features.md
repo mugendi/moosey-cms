@@ -473,6 +473,22 @@ A single call produces all of the following, fully populated:
 - Twitter Card tags (`twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`)
 - JSON-LD structured data (`Article` or `WebSite`)
 
+### Known Limitation: `canonical_url` and `noindex` from Frontmatter
+
+The `seo()` function currently reads `title`, `description`, `image`, and `keywords` from the page context automatically. However, **`canonical_url` and `noindex` are NOT automatically picked up from frontmatter**. They must be passed explicitly:
+
+```jinja2
+{{ seo(canonical_url="https://example.com/canonical", noindex=True) }}
+```
+
+To make this work for specific pages, override the `seo()` call in your template or pass the value from frontmatter:
+
+```jinja2
+{{ seo(canonical_url=canonical_url | default(None), noindex=noindex | default(False)) }}
+```
+
+Where `canonical_url` and `noindex` are set in the Markdown frontmatter as needed.
+
 ---
 
 ## 9. Frontmatter-Driven Routing & Layout
