@@ -1,28 +1,82 @@
-<!-- templates/layout/base.html -->
+{#
+=============================================================================
+ layout/base.html — Moosey CMS Shared Base Layout
+=============================================================================
+
+ This is the root template that every page in the site extends.
+ It provides:
+
+  • HTML5 doctype with responsive viewport meta tag
+  • Automatic SEO tags via {{ seo() }} (OpenGraph, Twitter Cards, JSON-LD)
+  • Tailwind CSS (loaded from CDN for the example; bundle in production)
+  • Responsive navigation bar with desktop + mobile menu
+  • Main content block for child templates to fill
+  • Footer with site_data-driven copyright and social links
+  • Mobile menu toggle script
+
+ Template Globals Available (all injected by Moosey automatically):
+   site_data  – The dict you passed to init_cms()
+   mode       – "development" | "production" | "staging" | "testing"
+   request    – The FastAPI/Starlette Request object
+   seo()      – Global function that renders all SEO meta tags
+   current_year – Custom global registered in main.py
+
+ Extends:
+   None — this is the root layout.
+
+ Blocks:
+   head   – Override to add extra <head> elements (e.g. page-specific CSS)
+   content – Child templates fill this with page-specific HTML
+=============================================================================
+#}
+
 <!DOCTYPE html>
+{# The scroll-smooth class enables smooth anchor scrolling #}
 <html lang="en" class="scroll-smooth">
 <head>
+    {# ---- Core Meta Tags ---- #}
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
-    <!-- SEO Injection -->
-    {{ seo() }} 
 
-    <!-- Fonts -->
+    {#
+         ---- SEO Injection ----
+         {{ seo() }} renders the full suite of meta tags:
+           <title>, <meta name="description">, <meta name="keywords">,
+           <meta name="author">, <link rel="canonical">,
+           OpenGraph (og:title, og:description, og:image, og:url, …),
+           Twitter Cards (twitter:card, twitter:site, …),
+           JSON-LD structured data (Article or WebSite schema).
+
+         To override values for a specific page, pass arguments:
+           {{ seo(title="My Title", description="…", noindex=True) }}
+
+         Resolution priority: explicit arg > frontmatter > site_data default.
+    #}
+    {{ seo() }}
+
+    {# ---- Block: head ----
+       Child templates can inject extra <head> content here.
+       For example, page-specific stylesheets or meta tags. #}
+    {% block head %}{% endblock %}
+
+    {# ---- Fonts (Google Fonts CDN) ---- #}
+    {# In production, self-host these fonts or subset them for performance. #}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
 
-    <!-- Tailwind & Prose Configuration -->
+    {# ---- Tailwind CSS + Typography Plugin ---- #}
+    {# Loaded from CDN for demo convenience. In production, run the Tailwind
+       CLI build and serve the compiled CSS from /static/css/style.css. #}
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#2563EB', // Blue 600
+                        primary: '#2563EB',  // Blue 600
                         secondary: '#1E293B', // Slate 800
-                        accent: '#F59E0B', // Amber 500
+                        accent: '#F59E0B',   // Amber 500
                     },
                     fontFamily: {
                         sans: ['Outfit', 'sans-serif'],
@@ -32,99 +86,183 @@
             }
         }
     </script>
-    
-  
 </head>
+
+{#
+   Body classes:
+     flex flex-col min-h-screen — ensures the footer sticks to the bottom
+     selection:bg-primary       — custom highlight colour
+#}
 <body class="flex flex-col min-h-screen text-slate-800 bg-white selection:bg-primary selection:text-white">
 
-    <!-- Navbar -->
+    {# ==================================================================
+       NAVIGATION BAR
+       ==================================================================
+       A sticky top nav with:
+         - Logo linking to /
+         - Desktop menu links (iterated from site_data.navs)
+         - A "Get Started" CTA button
+         - Mobile hamburger menu
+    #}
     <nav class="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-slate-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <!-- Logo -->
+
+                {# -- Logo -- #}
                 <a href="/" class="flex items-center gap-2 group">
                     <span class="text-2xl font-bold font-serif text-slate-900 group-hover:text-primary transition">Moosey 🫎</span>
                 </a>
 
-                <!-- Desktop Menu -->
+                {# -- Desktop Menu -- #}
+                {#
+                   site_data.navs is a custom list defined in example/main.py.
+                   Each item has:
+                     .href  – the URL path
+                     .label – display text
+                   You can expand this structure with .active, .children, etc.
+                #}
                 <div class="hidden md:flex space-x-8 items-center">
-                     <a href="/about" class="text-sm font-medium text-slate-600 hover:text-primary transition">About</a>
-                     <a href="/pages/features" class="text-sm font-medium text-slate-600 hover:text-primary transition">Features</a>
-                    <a href="/posts" class="text-sm font-medium text-slate-600 hover:text-primary transition">Blog</a>                   
-                    <a href="https://github.com/mugendi/moosey-cms" class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-full hover:bg-blue-700 transition shadow-lg shadow-blue-500/30">Get Started</a>
+                    {% for nav in site_data.navs | default([]) %}
+                    <a href="{{ nav.href }}"
+                       class="text-sm font-medium text-slate-600 hover:text-primary transition">
+                        {{ nav.label }}
+                    </a>
+                    {% endfor %}
+                    {# -- CTA button -- #}
+                    <a href="https://github.com/mugendi/moosey-cms"
+                       class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-full hover:bg-blue-700 transition shadow-lg shadow-blue-500/30">
+                        Get Started
+                    </a>
                 </div>
-                
-                <!-- Mobile Menu Button -->
+
+                {# -- Mobile Menu Toggle -- #}
                 <div class="md:hidden flex items-center">
-                    <button id="mobile-menu-btn" class="text-slate-500 hover:text-slate-900 focus:outline-none p-2">
+                    <button id="mobile-menu-btn"
+                            class="text-slate-500 hover:text-slate-900 focus:outline-none p-2"
+                            aria-label="Toggle mobile menu">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M4 6h16M4 12h16M4 18h16"></path>
                         </svg>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Mobile Menu Dropdown (Hidden by default) -->
-        <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-slate-100 absolute w-full left-0 top-16 shadow-lg">
+        {# -- Mobile Menu Dropdown (hidden by default) -- #}
+        <div id="mobile-menu"
+             class="hidden md:hidden bg-white border-b border-slate-100 absolute w-full left-0 top-16 shadow-lg">
             <div class="px-4 pt-4 pb-6 space-y-3 flex flex-col">
-                <a href="/pages/features" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:text-primary hover:bg-slate-50 transition">Features</a>
-                <a href="/posts" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:text-primary hover:bg-slate-50 transition">Blog</a>
-                <a href="/about" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:text-primary hover:bg-slate-50 transition">About</a>
+                {% for nav in site_data.navs | default([]) %}
+                <a href="{{ nav.href }}"
+                   class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:text-primary hover:bg-slate-50 transition">
+                    {{ nav.label }}
+                </a>
+                {% endfor %}
                 <div class="pt-4 border-t border-slate-100">
-                    <a href="https://github.com/your-repo" class="block w-full text-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-blue-700 transition">Get Started</a>
+                    <a href="https://github.com/mugendi/moosey-cms"
+                       class="block w-full text-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:blue-700 transition">
+                        Get Started
+                    </a>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="flex-grow ">
+    {# ==================================================================
+       MAIN CONTENT AREA
+       ==================================================================
+       Child templates (page.html, post.html, index.html, etc.) fill the
+       "content" block with their page-specific markup.
+
+       The flex-grow class ensures the footer is pushed to the bottom even
+       when the page content is shorter than the viewport.
+    #}
+    <main class="flex-grow">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer -->
+    {# ==================================================================
+       FOOTER
+       ==================================================================
+       Three-column footer with:
+         - Brand description
+         - Quick links
+         - Social / copyright
+
+       Note the use of:
+         {{ site_data.author }} – populated from your init_cms() site_data
+         {{ current_year }}     – custom global registered in main.py
+    #}
     <footer class="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+
+            {# -- Brand Column -- #}
             <div>
                 <span class="text-xl font-bold text-white font-serif">Moosey 🫎</span>
                 <p class="mt-4 text-sm leading-relaxed">
                     A lightweight, database-free CMS built for speed and simplicity using FastAPI.
                 </p>
             </div>
+
+            {# -- Links Column -- #}
             <div>
                 <h3 class="text-white font-semibold mb-4">Links</h3>
                 <ul class="space-y-2 text-sm">
-                    <li><a href="/" class="hover:text-white transition">Home</a></li>
-                    <li><a href="/posts" class="hover:text-white transition">Blog</a></li>
-                    <li><a href="/about" class="hover:text-white transition">About Me</a></li>
+                    {% for nav in site_data.navs | default([]) %}
+                    <li><a href="{{ nav.href }}" class="hover:text-white transition">{{ nav.label }}</a></li>
+                    {% endfor %}
                 </ul>
             </div>
+
+            {# -- Social / Copyright -- #}
             <div>
                 <h3 class="text-white font-semibold mb-4">Connect</h3>
                 <div class="flex space-x-4">
-                    <!-- Social Icons placeholders -->
-                    <a href="#" class="w-8 h-8 bg-slate-800 flex items-center justify-center rounded-full hover:bg-primary hover:text-white transition">𝕏</a>
-                    <a href="#" class="w-8 h-8 bg-slate-800 flex items-center justify-center rounded-full hover:bg-primary hover:text-white transition">G</a>
+                    {# social links from site_data.social – defined in main.py #}
+                    {% if site_data.social.twitter %}
+                    <a href="{{ site_data.social.twitter }}"
+                       class="w-8 h-8 bg-slate-800 flex items-center justify-center rounded-full hover:bg-primary hover:text-white transition"
+                       target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+                       𝕏
+                    </a>
+                    {% endif %}
+                    {% if site_data.social.github %}
+                    <a href="{{ site_data.social.github }}"
+                       class="w-8 h-8 bg-slate-800 flex items-center justify-center rounded-full hover:bg-primary hover:text-white transition"
+                       target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                       G
+                    </a>
+                    {% endif %}
                 </div>
+                {#
+                     {{ current_year }} was registered in example/main.py
+                     via app.state.moosey_env.globals["current_year"] = 2026
+                #}
                 <div class="mt-6 text-xs">
-                    &copy; 2026 {{ site_data.author }}. Powered by Moosey CMS.
+                    &copy; {{ current_year | default(2026) }} {{ site_data.author }}. Powered by Moosey CMS.
                 </div>
             </div>
         </div>
     </footer>
 
-    <!-- Mobile Menu Script -->
+    {# ==================================================================
+       MOBILE MENU JAVASCRIPT
+       ==================================================================
+       Simple vanilla JS toggle for the mobile hamburger menu.
+       In a production site, move this to a separate .js file.
+    #}
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const btn = document.getElementById('mobile-menu-btn');
             const menu = document.getElementById('mobile-menu');
 
             if (btn && menu) {
+                // Toggle menu open/close
                 btn.addEventListener('click', () => {
                     menu.classList.toggle('hidden');
                 });
-                
+
                 // Close menu when clicking outside
                 document.addEventListener('click', (e) => {
                     if (!btn.contains(e.target) && !menu.contains(e.target) && !menu.classList.contains('hidden')) {

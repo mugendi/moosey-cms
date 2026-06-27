@@ -1,0 +1,64 @@
+{#
+=============================================================================
+ advanced/templates/layout/base.html — Advanced Demo Base Layout
+=============================================================================
+ Extended version of the base layout for the advanced demo.
+ Adds support for:
+   - Page-level styles/scripts arrays from frontmatter
+   - Route-conditional assets
+   - site_data.cta for the nav button
+=============================================================================
+#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    {{ seo() }}
+    {#
+         PATTERN: Page-Level Styles
+         Frontmatter can include a "styles" array. Each entry is a URL
+         that gets injected into the <head> as a <link> tag.
+         See advanced/content/pages/process.md for an example.
+    #}
+    {% for href in styles | default([]) %}
+    <link rel="stylesheet" href="{{ href }}">
+    {% endfor %}
+    {#
+         PATTERN: Route-Conditional Assets
+         Sometimes only one section needs a script. Check request.path
+         to conditionally include assets without adding them globally.
+    #}
+    {% set current_path = request.path.rstrip('/') or '/' %}
+    {% if current_path == '/page-builder-demo' %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    {% endif %}
+</head>
+<body>
+    <nav class="bg-slate-900 text-white p-4">
+        <div class="max-w-6xl mx-auto flex gap-6 items-center">
+            <a href="/" class="font-bold text-lg">{{ site_data.name }}</a>
+            {% for nav in site_data.navs | default([]) %}
+            <a href="{{ nav.href }}" class="hover:text-blue-300">{{ nav.label }}</a>
+            {% endfor %}
+            {# -- site_data.cta as a layout config hub pattern -- #}
+            {% if site_data.cta %}
+            <a href="{{ site_data.cta.href }}" class="ml-auto bg-blue-600 px-4 py-2 rounded">
+                {{ site_data.cta.label }}
+            </a>
+            {% endif %}
+        </div>
+    </nav>
+    <main class="max-w-6xl mx-auto p-6">
+        {% block content %}{% endblock %}
+    </main>
+    {#
+         PATTERN: Page-Level Scripts
+         Frontmatter can include a "scripts" array. Each entry is a URL
+         injected just before </body>.
+    #}
+    {% for src in scripts | default([]) %}
+    <script src="{{ src }}"></script>
+    {% endfor %}
+</body>
+</html>

@@ -1,0 +1,111 @@
+{#
+=============================================================================
+ advanced/templates/page-builder.html — Page Builder Demo Template
+=============================================================================
+ Renders nested frontmatter data from content/pages/process.md into
+ structured page sections:
+   - Hero section (from frontmatter.hero)
+   - Card grid (from frontmatter.cards)
+   - Tabbed process steps (from frontmatter.process_tabs)
+   - Testimonials (from frontmatter.testimonials)
+
+ This demonstrates the pattern of using frontmatter as structured
+ page-builder data rather than just SEO metadata.
+=============================================================================
+#}
+{% extends "layout/base.html" %}
+
+{% block content %}
+
+{# ==================================================================
+   HERO SECTION — from frontmatter.hero
+   ================================================================== #}
+{% if hero %}
+<section class="text-center py-16 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl mb-12">
+    <h1 class="text-4xl font-bold mb-4">{{ hero.heading }}</h1>
+    {% if hero.subheading %}
+    <p class="text-xl text-slate-600 mb-8">{{ hero.subheading }}</p>
+    {% endif %}
+    {% if hero.cta_label %}
+    <a href="{{ hero.cta_href | default('#') }}"
+       class="inline-block bg-blue-600 text-white px-8 py-3 rounded-full font-medium">
+        {{ hero.cta_label }}
+    </a>
+    {% endif %}
+</section>
+{% endif %}
+
+{# ==================================================================
+   CARD GRID — from frontmatter.cards
+   ================================================================== #}
+{% if cards %}
+<section class="mb-12">
+    <h2 class="text-2xl font-bold mb-6">How We Work</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {% for card in cards %}
+        <div class="bg-white rounded-xl shadow-md p-6 border border-slate-100">
+            <div class="text-3xl mb-3">{{ card.icon | default('📄') }}</div>
+            <h3 class="font-bold text-lg mb-2">{{ card.title }}</h3>
+            <p class="text-slate-600 text-sm">{{ card.body }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{# ==================================================================
+   PROCESS TABS — from frontmatter.process_tabs
+   ================================================================== #}
+{% if process_tabs %}
+<section class="mb-12">
+    <h2 class="text-2xl font-bold mb-6">Our Process</h2>
+    <div class="space-y-4">
+        {% for tab in process_tabs %}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+            <h3 class="font-bold text-xl text-blue-600 mb-3">{{ tab.label }}</h3>
+            {% if tab.steps %}
+            <ol class="list-decimal list-inside space-y-2 text-slate-700">
+                {% for step in tab.steps %}
+                <li>
+                    <strong>{{ step.title }}</strong>
+                    {% if step.body %}: {{ step.body }}{% endif %}
+                </li>
+                {% endfor %}
+            </ol>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{# ==================================================================
+   TESTIMONIALS — from frontmatter.testimonials
+   ================================================================== #}
+{% if testimonials %}
+<section class="mb-12">
+    <h2 class="text-2xl font-bold mb-6">What Clients Say</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for testimonial in testimonials %}
+        <blockquote class="bg-slate-50 rounded-xl p-6 border-l-4 border-blue-500">
+            <p class="text-slate-700 italic mb-4">{{ testimonial.quote }}</p>
+            <footer class="text-sm text-slate-500">
+                <strong>{{ testimonial.author }}</strong>
+                {% if testimonial.location %} · {{ testimonial.location }}{% endif %}
+            </footer>
+        </blockquote>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{# ==================================================================
+   FALLBACK — raw Markdown body if no structured data is present
+   ================================================================== #}
+{% if not hero and not cards and not process_tabs and not testimonials %}
+<div class="prose max-w-none">
+    {{ content | safe }}
+</div>
+{% endif %}
+
+{% endblock %}

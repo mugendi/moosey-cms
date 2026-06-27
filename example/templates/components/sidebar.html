@@ -1,37 +1,97 @@
-<!--
- Copyright (c) 2026 Anthony Mugendi
- 
- This software is released under the MIT License.
- https://opensource.org/licenses/MIT
--->
+{#
+=============================================================================
+ components/sidebar.html — Reusable Sidebar Navigation Component
+=============================================================================
 
-<!-- templates/components/sidebar.html (or inline) -->
-<aside class="sidebar-nav" style="width: 250px; border-right: 1px solid #eee; padding-right: 20px;">
-    
-    <h3 style="font-size: 1.1rem; margin-bottom: 10px;">In this section</h3>
-    
-    {% if nav_items %}
-        <ul style="list-style: none; padding: 0;">
-            {% for item in nav_items %}
-                <li style="margin-bottom: 8px;">
-                    <a href="{{ item.url }}" 
-                       class="nav-link {% if item.is_active %}active{% endif %}"
-                       style="display: flex; align-items: center; text-decoration: none; 
-                              padding: 8px; border-radius: 4px;
-                              {% if item.is_active %}background-color: #f0f7ff; color: #007bff; font-weight: 600;{% else %}color: #333;{% endif %}">
-                        
-                        <!-- Icon Logic based on is_dir -->
-                        <span style="margin-right: 8px;">
-                            {% if item.is_dir %}📁{% else %}📄{% endif %}
-                        </span>
-                        
-                        {{ item.name }}
-                    </a>
+ A macro-based sidebar component that renders nav_items with:
+
+   • Group headings (when items share a "group" frontmatter key)
+   • Active page highlighting
+   • Directory vs. file icons
+   • External link handling (target="_blank")
+
+ This component can be imported from any template.
+
+ Usage:
+   {% from 'components/sidebar.html' import sidebar_nav %}
+   {{ sidebar_nav(nav_items=nav_items) }}
+
+ Required:
+   nav_items – list of dicts from Moosey's get_files() or the built-in
+               nav_items global. Each item must have:
+                 .name, .url, .is_active, .is_dir, .target, .group
+=============================================================================
+#}
+
+{#
+  sidebar_nav macro
+  -----------------
+  Renders a full sidebar navigation list from Moosey nav_items.
+
+  Parameters:
+    nav_items  – list of navigation item dicts (required)
+    title      – section heading text (default: "In this section")
+#}
+{% macro sidebar_nav(nav_items=[], title='In this section') %}
+{% if nav_items %}
+<aside class="sidebar-nav"
+       style="width: 250px; border-right: 1px solid #eee; padding-right: 20px;">
+
+    <h3 style="font-size: 1.1rem; margin-bottom: 10px;">{{ title }}</h3>
+
+    {#
+         Group tracking: we use a namespace to track which groups have
+         been rendered. When we encounter a new group, we render a
+         group heading before that item.
+    #}
+    {% set seen_groups = namespace(value=[]) %}
+
+    <ul style="list-style: none; padding: 0;">
+        {% for item in nav_items %}
+
+            {# -- Render group heading if this item belongs to a new group -- #}
+            {% if item.group and item.group not in seen_groups.value %}
+                {% set _ = seen_groups.value.append(item.group) %}
+                <li style="margin: 12px 0 4px; font-weight: 700; font-size: 0.8rem;
+                           text-transform: uppercase; letter-spacing: 0.5px; color: #666;">
+                    {{ item.group }}
                 </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p style="color: #999; font-style: italic;">No other pages here.</p>
-    {% endif %}
+            {% endif %}
+
+            {# -- Render nav item -- #}
+            <li style="margin-bottom: 8px;">
+                <a href="{{ item.url }}"
+                   class="nav-link {% if item.is_active %}active{% endif %}"
+                   style="display: flex; align-items: center; text-decoration: none;
+                          padding: 8px; border-radius: 4px;
+                          {% if item.is_active %}background-color: #f0f7ff;
+                             color: #007bff; font-weight: 600;
+                          {% else %}color: #333;{% endif %}"
+                   {% if item.target == '_blank' %}target="_blank" rel="noopener noreferrer"{% endif %}>
+
+                    {# -- File/folder icon -- #}
+                    {#
+                         is_dir is True for directories (sections).
+                         In nav_items, directories represent content folders
+                         that have their own index.md.
+                    #}
+                    <span style="margin-right: 8px;">
+                        {% if item.is_dir %}📁{% else %}📄{% endif %}
+                    </span>
+
+                    {{ item.name }}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
 
 </aside>
+{% else %}
+    {#
+         When nav_items is empty (single page or no siblings), show a
+         placeholder message. You could also hide the sidebar entirely
+         by checking {% if nav_items %} before calling this macro.
+    #}
+    <p style="color: #999; font-style: italic;">No other pages here.</p>
+{% endif %}
+{% endmacro %}
