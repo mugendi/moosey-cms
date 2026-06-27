@@ -9,7 +9,7 @@ hero:
 cards:
   - icon: 📐
     title: Design
-    body: We listen to your needs and translate them into buildable plans — with your approval at every milestone.
+    body: We listen to your needs and translate them into buildable plans - with your approval at every milestone.
   - icon: 🏗️
     title: Construct
     body: Our crews follow the plans precisely, with daily progress updates and zero surprises.

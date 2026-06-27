@@ -1,5 +1,5 @@
 # ============================================================================
-# Makefile — Production Deployment for Moosey CMS Advanced Example
+# Makefile - Production Deployment for Moosey CMS Advanced Example
 # ============================================================================
 # Usage:
 #   make build-css     Build Tailwind CSS for production

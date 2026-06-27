@@ -1,6 +1,6 @@
 {#
 =============================================================================
- posts.html — Blog Listing Layout (Plural Template)
+ posts.html - Blog Listing Layout (Plural Template)
 =============================================================================
 
  This template is resolved by Moosey's Waterfall for section index
@@ -8,7 +8,7 @@
 
    • Section title and description from frontmatter
    • Main content area rendering posts/index.md body
-   • Sidebar with sibling navigation (nav_items) — sorted by frontmatter
+   • Sidebar with sibling navigation (nav_items) - sorted by frontmatter
 
  Waterfall Resolution (for /posts):
    1. Frontmatter override    →  (not set)
@@ -90,7 +90,7 @@
                Each item.metadata contains the full frontmatter of the
                referenced Markdown file, enabling rich list entries:
 
-               Example — showing metadata in a nav item:
+               Example - showing metadata in a nav item:
                  <p>{{ item.metadata.description }}</p>
                  <img src="{{ item.metadata.image }}" alt="{{ item.name }}">
                  <span class="tag">{{ item.metadata.tags[0] }}</span>

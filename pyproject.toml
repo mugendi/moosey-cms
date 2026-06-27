@@ -1,8 +1,25 @@
 [project]
 name = "moosey-cms"
-version = "0.9.1"
-description = "Add your description here"
+version = "0.9.2"
+description = "A lightweight, drop-in Markdown CMS for FastAPI with hot reloading"
 readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Anthony Mugendi", github = "https://github.com/mugendi" }
+]
+keywords = ["fastapi", "cms", "markdown", "hot-reload", "jinja2", "seo"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content :: Content Management System",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Framework :: FastAPI",
+]
 requires-python = ">=3.10"
 dependencies = [
     "cachetools>=6.2.4",
@@ -16,6 +33,13 @@ dependencies = [
     "uvicorn>=0.40.0",
     "watchdog>=6.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/mugendi/moosey-cms"
+Repository = "https://github.com/mugendi/moosey-cms"
+"Bug Tracker" = "https://github.com/mugendi/moosey-cms/issues"
+Documentation = "https://github.com/mugendi/moosey-cms/blob/master/docs"
+Changelog = "https://github.com/mugendi/moosey-cms/commits/master/"
 
 [build-system]
 requires = ["hatchling"]

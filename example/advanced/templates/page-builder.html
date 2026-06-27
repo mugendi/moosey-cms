@@ -1,6 +1,6 @@
 {#
 =============================================================================
- advanced/templates/page-builder.html — Page Builder Demo Template
+ advanced/templates/page-builder.html - Page Builder Demo Template
 =============================================================================
  Renders nested frontmatter data from content/pages/process.md into
  structured page sections:
@@ -18,7 +18,7 @@
 {% block content %}
 
 {# ==================================================================
-   HERO SECTION — from frontmatter.hero
+   HERO SECTION - from frontmatter.hero
    ================================================================== #}
 {% if hero %}
 <section class="text-center py-16 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl mb-12">
@@ -36,7 +36,7 @@
 {% endif %}
 
 {# ==================================================================
-   CARD GRID — from frontmatter.cards
+   CARD GRID - from frontmatter.cards
    ================================================================== #}
 {% if cards %}
 <section class="mb-12">
@@ -54,7 +54,7 @@
 {% endif %}
 
 {# ==================================================================
-   PROCESS TABS — from frontmatter.process_tabs
+   PROCESS TABS - from frontmatter.process_tabs
    ================================================================== #}
 {% if process_tabs %}
 <section class="mb-12">
@@ -80,7 +80,7 @@
 {% endif %}
 
 {# ==================================================================
-   TESTIMONIALS — from frontmatter.testimonials
+   TESTIMONIALS - from frontmatter.testimonials
    ================================================================== #}
 {% if testimonials %}
 <section class="mb-12">
@@ -100,7 +100,7 @@
 {% endif %}
 
 {# ==================================================================
-   FALLBACK — raw Markdown body if no structured data is present
+   FALLBACK - raw Markdown body if no structured data is present
    ================================================================== #}
 {% if not hero and not cards and not process_tabs and not testimonials %}
 <div class="prose max-w-none">

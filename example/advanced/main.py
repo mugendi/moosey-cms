@@ -1,5 +1,5 @@
 """
-example/advanced/main.py — Advanced Moosey CMS Usage Patterns
+example/advanced/main.py - Advanced Moosey CMS Usage Patterns
 ===============================================================
 
 This example demonstrates real-world patterns that build on Moosey CMS
@@ -9,7 +9,7 @@ and heavily documented.
 Patterns covered:
   1. Custom sitemap.xml route using app.state.templates
   2. Custom robots.txt route (environment-aware)
-  3. Content index helper — walks the full content tree
+  3. Content index helper - walks the full content tree
   4. Custom Jinja2 filters registered at runtime
   5. site_data as a layout config hub
   6. Lifespan-safe initialisation
@@ -58,11 +58,11 @@ if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 # ===========================================================================
-# SITE DATA — LAYOUT CONFIG HUB
+# SITE DATA - LAYOUT CONFIG HUB
 # ===========================================================================
 # site_data can hold more than strings.  It is the right place for nav trees,
 # CTA configuration, brand fragments, social links, and small helper functions
-# that many templates need — all accessible as {{ site_data.key }} everywhere.
+# that many templates need - all accessible as {{ site_data.key }} everywhere.
 site_data = {
     # -- Core branding ---------------------------------------------------
     "name": "Moosey Advanced Demo",
@@ -155,7 +155,7 @@ init_cms_once(app)
 # CUSTOM JINJA2 FILTERS (registered at runtime via moosey_env)
 # ===========================================================================
 # After init_cms, app.state.moosey_env holds the raw Jinja2 Environment.
-# You can register additional filters or globals here — they become available
+# You can register additional filters or globals here - they become available
 # in every template automatically.
 
 env = app.state.moosey_env
@@ -202,8 +202,8 @@ env.globals["current_year"] = datetime.now().year
 # This route walks the content directory and generates a sitemap.xml that
 # search engines can use to discover all pages on the site.
 #
-# It uses get_files() — the same function Moosey uses internally for
-# navigation — to enumerate all content paths.
+# It uses get_files() - the same function Moosey uses internally for
+# navigation - to enumerate all content paths.
 
 @app.get("/sitemap.xml")
 async def sitemap(request: Request):
@@ -334,7 +334,7 @@ async def robots(request: Request):
 #   - Building tag/category archive pages
 #
 # The helper handles draft filtering, visibility, and external link exclusion
-# automatically — mirroring Moosey's own navigation logic.
+# automatically - mirroring Moosey's own navigation logic.
 
 def get_all_content(content_dir=None, mode=None):
     """
@@ -394,7 +394,7 @@ def get_all_content(content_dir=None, mode=None):
 @app.get("/api/content-index.json")
 async def content_index(request: Request):
     """
-    Return all content pages as JSON — useful for client-side search.
+    Return all content pages as JSON - useful for client-side search.
 
     This endpoint:
       1. Walks the full content tree via get_all_content()
@@ -432,7 +432,7 @@ async def content_index(request: Request):
 
 
 # ===========================================================================
-# PATTERN 5: NESTED FRONTMATTER — PAGE-BUILDER DATA
+# PATTERN 5: NESTED FRONTMATTER - PAGE-BUILDER DATA
 # ===========================================================================
 # Frontmatter can hold arbitrary nested structures, not just flat metadata.
 # This enables page-builder patterns where a Markdown file defines
