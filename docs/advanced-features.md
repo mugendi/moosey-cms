@@ -31,6 +31,11 @@ This document covers the advanced capabilities of Moosey CMS that go beyond basi
 16. [debug_template_used](#16-debug_template_used)
 17. [Security: The Sandboxed Jinja2 Environment](#17-security-the-sandboxed-jinja2-environment)
 18. [Caching Behaviour](#18-caching-behaviour)
+19. [Hot Reload Behavior](#19-hot-reload-behavior)
+20. [Application Modes](#20-application-modes)
+21. [Security Headers](#21-security-headers)
+22. [include_no_comments - Including Templates Without HTML Comments](#22-include_no_comments---including-templates-without-html-comments)
+23. [slug - URL Slug in Templates](#23-slug---url-slug-in-templates)
 
 ---
 
@@ -42,7 +47,7 @@ Every template rendered by Moosey CMS automatically receives the following varia
 | :--- | :--- | :--- |
 | `request` | `Request` | The FastAPI/Starlette request object. |
 | `site_data` | `dict` | The `site_data` dict you passed to `init_cms()`. |
-| `mode` | `str` | The current mode: `"development"` or `"production"`. |
+| `mode` | `str` | The current mode: `"development"`, `"staging"`, `"testing"`, or `"production"`. |
 | `title` | `str` | Page title - from frontmatter or derived from the URL slug. |
 | `description` | `str` | Page description from frontmatter. |
 | `content` | `str` | The rendered HTML content from the Markdown file. |
@@ -833,6 +838,125 @@ async def bust_cache():
 - Breadcrumb generation
 
 The cache key for each item is derived from its arguments, so the same function called with different paths produces independently cached results.
+
+---
+
+## 19. Hot Reload Behavior
+
+Moosey CMS uses **WebSockets** to deliver hot-reload signals to the browser during development. When a file changes, the file watcher triggers a cache clear and broadcasts a `"reload"` message to every connected browser tab, which then executes `window.location.reload()`.
+
+### How It Works
+
+1. The file watcher (`file_watcher.py`) monitors all content and template directories in a background thread using `watchdog`.
+2. On change, `clear_cache_on_file_change()` is called (debounced to avoid duplicate clears).
+3. If in `development` mode, a `"reload"` message is broadcast to all connected WebSocket clients.
+4. The browser's injected reload script receives the message and refreshes the page.
+
+### WebSocket Endpoint
+
+The hot-reload WebSocket is served at `/ws/hot-reload` and is only registered in `development` mode. The connection manager tracks all open sockets and gracefully handles disconnections.
+
+### Reload Delay
+
+When `reload_delay` is set in `init_cms()`, the broadcast is delayed by that many seconds. This is useful when a build step (e.g., Tailwind CSS, image optimization) runs after a file save and you want the browser to wait until the build completes before refreshing.
+
+### Browser Reconnect
+
+The injected JavaScript (`static/js/reload-script.js`) implements **exponential backoff** reconnection:
+
+1. Initial reconnect delay: 1 second
+2. Each failed attempt doubles the delay
+3. Maximum delay: 30 seconds
+4. Delay resets to 1 second on successful connection
+
+This ensures the browser keeps trying to reconnect if the server restarts, without overwhelming it.
+
+### DoS Protection
+
+The script injection middleware in `hot_reload_script.py` includes safeguards:
+
+- Only HTML responses are modified (JSON, images, and other content types pass through unchanged)
+- Responses larger than 10 MB are skipped entirely to prevent memory exhaustion
+- Content-Length headers are recalculated after injection to ensure correct responses
+
+---
+
+## 20. Application Modes
+
+The `mode` parameter in `init_cms()` accepts four values:
+
+| Mode | Hot Reload | Caching | Draft Visibility |
+| :--- | :---: | :---: | :---: |
+| `"development"` | ✅ Enabled | ❌ Cleared per request | ✅ Visible |
+| `"staging"` | ❌ Disabled | ✅ Enabled | ❌ Hidden |
+| `"testing"` | ❌ Disabled | ✅ Enabled | ❌ Hidden |
+| `"production"` | ❌ Disabled | ✅ Enabled | ❌ Hidden |
+
+**Key behaviors:**
+
+- **Development mode:** Cache is cleared on every request so changes appear immediately. Hot-reload WebSocket is registered. Draft pages are visible.
+- **Production / Staging / Testing modes:** Cache is active (30-day TTL) and only invalidated by the file watcher. Drafts return 404. Hot-reload middleware is not injected.
+- File watching runs in **all modes** so that a `git pull` updating content files triggers an immediate cache refresh even in production.
+
+---
+
+## 21. Security Headers
+
+Moosey CMS applies security headers to every HTTP response via middleware (`main.py:189-198`):
+
+| Header | Value | Purpose |
+| :--- | :--- | :--- |
+| `X-Content-Type-Options` | `nosniff` | Prevents MIME-type sniffing |
+| `X-XSS-Protection` | `1; mode=block` | Enables XSS filtering in older browsers |
+| `X-Frame-Options` | `DENY` | Prevents clickjacking by blocking embedding in frames |
+
+These headers are set on **every** response automatically and cannot be disabled via configuration. They represent a sensible baseline for most sites.
+
+---
+
+## 22. `include_no_comments` - Including Templates Without HTML Comments
+
+Moosey CMS registers a `include_no_comments` global function on the Jinja2 environment. It works identically to Jinja2's built-in `{% include %}` but **strips all HTML comments** (`<!-- ... -->`) from the included template's output.
+
+### Why This Exists
+
+When using `{% include %}` to compose layouts from components, those components may contain HTML comments that are useful during development but should not appear in production output. Rather than writing two versions of every component, use `include_no_comments` in production contexts.
+
+### Usage
+
+```jinja2
+{# In production, include without comments #}
+{% if mode == 'production' %}
+    {% set header_html = include_no_comments('components/header.html') %}
+    {{ header_html | safe }}
+{% else %}
+    {% include 'components/header.html' %}
+{% endif %}
+```
+
+See also the [`strip_comments`](filters.md#strip_comments) filter for a block-level alternative that wraps entire template sections.
+
+---
+
+## 23. `slug` - URL Slug in Templates
+
+Every page template receives a `slug` variable derived from the Markdown file's stem (filename without extension). It is generated using the `python-slugify` library.
+
+| Context | File Path | `slug` Value |
+| :--- | :--- | :--- |
+| `/my-post` | `content/my-post.md` | `my-post` |
+| `/blog/hello-world` | `content/blog/hello-world.md` | `hello-world` |
+| `/guides` (section index) | `content/guides/index.md` | `guides` |
+
+### Usage
+
+```jinja2
+<div class="page" id="page-{{ slug }}">
+    <h1>{{ title }}</h1>
+</div>
+```
+
+This is particularly useful for CSS targeting, JavaScript hooks, and analytics event labels where you need a stable, predictable identifier for each page.
 
 ---
 

@@ -258,8 +258,9 @@ The `init_cms` function accepts the following parameters:
 | `host` | `str` | Server host (used for hot-reload script injection). |
 | `port` | `int` | Server port. |
 | `dirs` | `dict` | Dictionary containing `content` and `templates` Paths. |
-| `mode` | `str` | `"development"` (enables hot reload/no cache) or `"production"`. |
+| `mode` | `str` | `"development"` (enables hot reload/no cache), `"production"`, `"staging"`, or `"testing"`. |
 | `site_data` | `dict` | Global data (Name, Author, Social Links). |
+| `reload_delay` | `float` | Seconds to delay hot-reload broadcast after a file change. Useful when a build step runs post-save. Default: `0` (immediate). Development mode only. |
 
 ---
 

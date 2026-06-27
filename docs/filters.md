@@ -70,17 +70,26 @@ This filter is "aggressive." It does not detect `<pre>` or `<textarea>` tags. If
 {% endfilter %}
 ```
 
-**Combined Usage Example:**
+**Production Base Layout Example:**
 
-This is the recommended setup for your `base.html` file to ensure maximum performance in production while keeping development easy.
+For most sites, wrap the entire `base.html` document with both filters and enable them only when Moosey CMS is running in production mode. This keeps development output readable while stripping comments and minifying the final HTML served by production.
 
 ```jinja
-{% filter strip_comments(enabled=(mode != 'development')) | minify_html(enabled=(mode != 'development')) %}
-    <html>
-      ...
-    </html>
+{% filter strip_comments(enabled=(mode == 'production')) | minify_html(enabled=(mode == 'production')) %}
+<!doctype html>
+<html lang="en">
+  <head>
+    {{ seo() }}
+    <!-- Development notes stay visible outside production. -->
+  </head>
+  <body>
+    {% block content %}{% endblock %}
+  </body>
+</html>
 {% endfilter %}
 ```
+
+Use `mode == 'production'` when you only want this behavior for production deployments. Use a broader condition, such as `mode != 'development'`, if you also want minified output in staging or testing.
 
 ---
 
@@ -95,6 +104,7 @@ Assuming `date_obj` is a Python datetime object (e.g., from `date: 2026-01-21` i
 | **`iso_date`** | ISO 8601 format (good for meta tags). | `2026-01-21` | 2026-01-21 |
 | **`time_only`** | Extracts just the time. | `2026-01-21 18:00` | 6:00 PM |
 | **`relative_time`** | Human readable time difference. | `(Now - 2 hours)` | 2 hours ago |
+| **`strptime`** | Parse a string to datetime using a format string. | `"2026-01-21" \| strptime("%Y-%m-%d")` | `datetime(2026, 1, 21)` |
 
 **Usage:**
 ```jinja
@@ -113,6 +123,7 @@ Assuming `date_obj` is a Python datetime object (e.g., from `date: 2026-01-21` i
 | **`slugify`** | Converts text to URL-friendly format. | `Hello World!` | `hello-world` |
 | **`smart_quotes`** | Converts straight quotes to curly quotes. | `"Hello"` | “Hello” |
 | **`read_time`** | Calculates reading time (approx 200 wpm). | *500 words text* | 3 min read |
+| **`reading_time`** | Alias for `read_time`. | *500 words text* | 3 min read |
 
 **Usage:**
 ```jinja
@@ -123,6 +134,8 @@ Assuming `date_obj` is a Python datetime object (e.g., from `date: 2026-01-21` i
 ---
 
 ## 💰 Currency & Finance
+
+> **Note:** The currency, country, and locale filters optionally use `pycountry` for comprehensive name/flag resolution. When `pycountry` is not installed, they fall back to a built-in lookup table with common entries. All filters remain functional without the extra dependency.
 
 | Filter | Description | Arguments | Output |
 | :--- | :--- | :--- | :--- |
