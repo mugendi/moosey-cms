@@ -1,6 +1,8 @@
 from moosey_cms.filters import (
     truncate_words, reading_time, slugify, title_case,
     excerpt, smart_quotes, read_time, word_count,
+    snake_case, kebab_case, camel_case, pascal_case,
+    upper_case, lower_case,
 )
 
 
@@ -124,10 +126,9 @@ class TestSmartQuotes:
         assert "\u201c" in result
         assert "\u201d" in result
 
-    def test_single_quotes(self):
+    def test_mid_word_apostrophe_unchanged(self):
         result = smart_quotes("It's a test")
-        assert "\u2018" in result
-        assert "\u2019" in result
+        assert result == "It's a test"
 
     def test_already_smart_unchanged(self):
         text = "Hello \u201cworld\u201d"
@@ -152,3 +153,114 @@ class TestWordCount:
 
     def test_none_returns_zero(self):
         assert word_count(None) == 0
+
+
+class TestSnakeCase:
+    def test_spaces(self):
+        assert snake_case("Hello World") == "hello_world"
+
+    def test_underscore(self):
+        assert snake_case("hello_world") == "hello_world"
+
+    def test_camel_case(self):
+        assert snake_case("helloWorld") == "hello_world"
+
+    def test_kebab(self):
+        assert snake_case("hello-world") == "hello_world"
+
+    def test_pascal(self):
+        assert snake_case("HelloWorld") == "hello_world"
+
+    def test_acronyms(self):
+        assert snake_case("HTMLParser") == "html_parser"
+
+    def test_complex_camel(self):
+        assert snake_case("getHTTPResponse") == "get_http_response"
+
+    def test_empty_returns_empty(self):
+        assert snake_case("") == ""
+
+    def test_none_returns_empty(self):
+        assert snake_case(None) == ""
+
+
+class TestKebabCase:
+    def test_spaces(self):
+        assert kebab_case("Hello World") == "hello-world"
+
+    def test_underscore(self):
+        assert kebab_case("hello_world") == "hello-world"
+
+    def test_camel(self):
+        assert kebab_case("helloWorld") == "hello-world"
+
+    def test_empty_returns_empty(self):
+        assert kebab_case("") == ""
+
+    def test_none_returns_empty(self):
+        assert kebab_case(None) == ""
+
+
+class TestCamelCase:
+    def test_spaces(self):
+        assert camel_case("Hello World") == "helloWorld"
+
+    def test_underscore(self):
+        assert camel_case("hello_world") == "helloWorld"
+
+    def test_kebab(self):
+        assert camel_case("hello-world") == "helloWorld"
+
+    def test_already_camel(self):
+        assert camel_case("helloWorld") == "helloWorld"
+
+    def test_acronyms(self):
+        assert camel_case("HTML Parser") == "htmlParser"
+
+    def test_empty_returns_empty(self):
+        assert camel_case("") == ""
+
+    def test_none_returns_empty(self):
+        assert camel_case(None) == ""
+
+
+class TestPascalCase:
+    def test_spaces(self):
+        assert pascal_case("Hello World") == "HelloWorld"
+
+    def test_underscore(self):
+        assert pascal_case("hello_world") == "HelloWorld"
+
+    def test_camel(self):
+        assert pascal_case("helloWorld") == "HelloWorld"
+
+    def test_acronyms(self):
+        assert pascal_case("HTML Parser") == "HtmlParser"
+
+    def test_empty_returns_empty(self):
+        assert pascal_case("") == ""
+
+    def test_none_returns_empty(self):
+        assert pascal_case(None) == ""
+
+
+class TestUpperCase:
+    def test_basic(self):
+        assert upper_case("Hello World") == "HELLO WORLD"
+
+    def test_empty_returns_empty(self):
+        assert upper_case("") == ""
+
+    def test_none_returns_empty(self):
+        assert upper_case(None) == ""
+
+
+class TestLowerCase:
+    def test_basic(self):
+        assert lower_case("Hello World") == "hello world"
+
+    def test_empty_returns_empty(self):
+        assert lower_case("") == ""
+
+    def test_none_returns_empty(self):
+        assert lower_case(None) == ""

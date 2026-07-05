@@ -1,4 +1,4 @@
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from unittest.mock import patch
 
 from moosey_cms.filters import (
@@ -88,7 +88,7 @@ class TestRelativeTime:
             now = sample_dates["normal"]
             mock_dt.now.return_value = now
             mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
-            then = now.replace(minute=now.minute - 5)
+            then = now - timedelta(minutes=5)
             result = relative_time(then)
             assert result == "5 minutes ago"
 
@@ -97,7 +97,7 @@ class TestRelativeTime:
             now = sample_dates["normal"]
             mock_dt.now.return_value = now
             mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
-            then = now.replace(minute=now.minute - 1)
+            then = now - timedelta(minutes=1)
             result = relative_time(then)
             assert result == "1 minute ago"
 
@@ -106,7 +106,7 @@ class TestRelativeTime:
             now = sample_dates["normal"]
             mock_dt.now.return_value = now
             mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
-            then = now.replace(hour=now.hour - 3)
+            then = now - timedelta(hours=3)
             result = relative_time(then)
             assert result == "3 hours ago"
 
@@ -133,13 +133,13 @@ class TestRelativeTime:
             now = sample_dates["normal"]
             mock_dt.now.return_value = now
             mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
-            then = now.replace(day=now.day - 14)
+            then = now - timedelta(days=14)
             result = relative_time(then)
             assert result == "2 weeks ago"
 
     def test_months_ago(self, sample_dates):
         with patch("moosey_cms.filters.datetime") as mock_dt:
-            now = sample_dates["normal"]
+            now = sample_dates["midnight"]
             mock_dt.now.return_value = now
             mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
             then = now.replace(month=now.month - 3)

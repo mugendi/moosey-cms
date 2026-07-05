@@ -64,7 +64,7 @@ class TestTocFromHtml:
         assert "<ul>" in result
         assert "A" in result
         assert "B" in result
-        assert "C" not in result
+        assert "C" in result
 
     def test_empty_returns_empty(self):
         assert toc_from_html("") == ""

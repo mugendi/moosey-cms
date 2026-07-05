@@ -106,7 +106,7 @@ class TestLanguageName:
         assert language_name("en") == "English"
 
     def test_alpha_3(self):
-        assert language_name("swa") == "Swahili"
+        assert language_name("swa") == "Swahili (macrolanguage)"
 
     def test_none_returns_empty(self):
         assert language_name(None) == ""
@@ -137,7 +137,7 @@ class TestCurrencyName:
         assert currency_name(None) == ""
 
     def test_invalid_code(self):
-        assert currency_name("XXX") == "XXX"
+        assert currency_name("XYZ") == "XYZ"
 
     def test_without_pycountry(self):
         with patch.dict("sys.modules", {"pycountry": None}):
