@@ -1,6 +1,6 @@
 [project]
 name = "moosey-cms"
-version = "0.9.4"
+version = "0.9.5"
 description = "A lightweight, drop-in Markdown CMS for FastAPI with hot reloading"
 readme = "README.md"
 license = { text = "MIT" }
