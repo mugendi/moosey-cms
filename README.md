@@ -47,6 +47,27 @@ pip install moosey-cms
 
 ---
 
+## 🧪 Running Tests
+
+```bash
+# Install dev dependencies
+pip install -e ".[dev]"
+
+# Run all tests
+pytest
+
+# Run a specific test file
+pytest tests/test_schemas.py
+
+# Run a specific test class
+pytest tests/test_schemas.py::TestSchemaArticle
+
+# Run with verbose output
+pytest -v tests/test_schemas.py
+```
+
+---
+
 ## ⚡ Quick Start
 
 Integrate Moosey CMS into your existing FastAPI app in just a few lines.

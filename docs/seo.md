@@ -48,7 +48,41 @@ Use the schema builders in combination with the `json_ld` filter:
 {{ schema_article(title=title, description=description, author="Jane") | json_ld | safe }}
 ```
 
-Available builders: `schema_article`, `schema_breadcrumbs`, `schema_faqpage`, `schema_howto`, `schema_localbusiness`, `schema_product`, `schema_event`, `schema_organization`, `schema_website`, `schema_person`.
+### `schema_article()` Reference
+
+| Parameter | Type | Schema.org Prop | Description |
+|-----------|------|-----------------|-------------|
+| `title` *(required)* | `str` | `headline` | Article headline |
+| `description` | `str` | `description` | Short description |
+| `image` | `str` | `image` | Image URL |
+| `author` | `str` | `author` | Author name (wraps in `Person`) |
+| `date_published` | `str` | `datePublished` | ISO 8601 publish date |
+| `date_modified` | `str` | `dateModified` | ISO 8601 modify date |
+| `url` | `str` | `mainEntityOfPage` | Page URL |
+| `keywords` | `str` / `list[str]` | `keywords` | Comma-joined if list |
+| `in_language` | `str` | `inLanguage` | IETF BCP 47 language code |
+| `article_section` | `str` | `articleSection` | Section (e.g. "Tech") |
+| `article_body` | `str` | `articleBody` | Full body text |
+| `word_count` | `int` | `wordCount` | Auto-calc from `article_body` if omitted |
+| `speakable` | `list[str]` | `speakable` | CSS selectors for voice highlight |
+| `backstory` | `str` | `backstory` | Context for how article was created |
+| `date_created` | `str` | `dateCreated` | ISO 8601 creation date |
+| `publisher` | `str` / `dict` | `publisher` | Name string or `{"name", "logo"}` dict |
+| `comment_count` | `int` | `commentCount` | Number of comments |
+| `about` | `str` / `list[str]` | `about` | Subject matter keywords |
+| `abstract` | `str` | `abstract` | Brief summary |
+| `alternative_headline` | `str` | `alternativeHeadline` | Secondary headline |
+| `genre` | `str` / `list[str]` | `genre` | Genre/category |
+| `license` | `str` | `license` | License URL |
+| `is_part_of` | `dict` | `isPartOf` | Parent work `{"name", "url"}` |
+| `is_accessible_for_free` | `bool` | `isAccessibleForFree` | Free access flag |
+| `copyright_year` | `int` | `copyrightYear` | Copyright year |
+| `copyright_holder` | `str` / `dict` | `copyrightHolder` | Name string or `{"name", "url"}` dict |
+| `discussion_url` | `str` | `discussionUrl` | Link to comment page |
+
+### Other Schema Builders
+
+`schema_breadcrumbs`, `schema_faqpage`, `schema_howto`, `schema_localbusiness`, `schema_product`, `schema_event`, `schema_organization`, `schema_website`, `schema_person`.
 
 You can also pass raw dicts:
 

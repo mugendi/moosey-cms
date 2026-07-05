@@ -15,7 +15,7 @@ builders are convenience helpers that return dicts ready to pipe into
 """
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from markupsafe import Markup
 
@@ -60,6 +60,27 @@ def schema_article(
     date_published: Optional[str] = None,
     date_modified: Optional[str] = None,
     url: Optional[str] = None,
+    *,
+    keywords: Optional[Union[str, List[str]]] = None,
+    in_language: Optional[str] = None,
+    article_section: Optional[str] = None,
+    article_body: Optional[str] = None,
+    word_count: Optional[int] = None,
+    speakable: Optional[List[str]] = None,
+    backstory: Optional[str] = None,
+    date_created: Optional[str] = None,
+    publisher: Optional[Union[str, Dict[str, Any]]] = None,
+    comment_count: Optional[int] = None,
+    about: Optional[Union[str, List[str]]] = None,
+    abstract: Optional[str] = None,
+    alternative_headline: Optional[str] = None,
+    genre: Optional[Union[str, List[str]]] = None,
+    license: Optional[str] = None,
+    is_part_of: Optional[Dict[str, str]] = None,
+    is_accessible_for_free: Optional[bool] = None,
+    copyright_year: Optional[int] = None,
+    copyright_holder: Optional[Union[str, Dict[str, Any]]] = None,
+    discussion_url: Optional[str] = None,
 ) -> Dict[str, Any]:
     out: Dict[str, Any] = {
         "@context": "https://schema.org",
@@ -72,6 +93,43 @@ def schema_article(
     if date_published: out["datePublished"] = date_published
     if date_modified: out["dateModified"] = date_modified
     if url: out["mainEntityOfPage"] = {"@type": "WebPage", "@id": url}
+
+    if keywords: out["keywords"] = ", ".join(keywords) if isinstance(keywords, list) else keywords
+    if in_language: out["inLanguage"] = in_language
+    if article_section: out["articleSection"] = article_section
+    if article_body: out["articleBody"] = article_body
+    if word_count is not None:
+        out["wordCount"] = word_count
+    elif article_body:
+        out["wordCount"] = len(article_body.split())
+    if speakable: out["speakable"] = {"@type": "SpeakableSpecification", "cssSelector": speakable}
+    if backstory: out["backstory"] = backstory
+    if date_created: out["dateCreated"] = date_created
+    if publisher:
+        if isinstance(publisher, str):
+            out["publisher"] = {"@type": "Organization", "name": publisher}
+        else:
+            obj = {"@type": "Organization", **publisher}
+            out["publisher"] = obj
+    if comment_count is not None: out["commentCount"] = comment_count
+    if about: out["about"] = ", ".join(about) if isinstance(about, list) else about
+    if abstract: out["abstract"] = abstract
+    if alternative_headline: out["alternativeHeadline"] = alternative_headline
+    if genre: out["genre"] = ", ".join(genre) if isinstance(genre, list) else genre
+    if license: out["license"] = license
+    if is_part_of:
+        obj = dict(is_part_of)
+        obj.setdefault("@type", "WebPage")
+        out["isPartOf"] = obj
+    if is_accessible_for_free is not None: out["isAccessibleForFree"] = is_accessible_for_free
+    if copyright_year is not None: out["copyrightYear"] = copyright_year
+    if copyright_holder:
+        if isinstance(copyright_holder, str):
+            out["copyrightHolder"] = {"@type": "Organization", "name": copyright_holder}
+        else:
+            obj = {"@type": "Person", **copyright_holder}
+            out["copyrightHolder"] = obj
+    if discussion_url: out["discussionUrl"] = discussion_url
     return out
 
 
