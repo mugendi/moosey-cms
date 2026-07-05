@@ -16,6 +16,8 @@ from fastapi.templating import Jinja2Templates
 from . import filters
 from . import helpers
 from . import site
+from . import schemas
+from . import images as images_module
 
 from .cache import clear_cache_on_file_change, clear_cache
 from .file_watcher import start_watching
@@ -27,6 +29,7 @@ from fastapi.responses import HTMLResponse
 
 from jinja2 import Environment, FileSystemLoader
 from jinja2.ext import Extension
+from markupsafe import Markup
 import re
 
 
@@ -120,8 +123,12 @@ def init_cms(
         reload_delay=reload_delay,
     )
 
-    # resolve paths
-    dirs = {k: p.resolve() for k, p in dirs.items()}
+    # resolve paths (static may be a dict with "dir"/"route" keys)
+    def _resolve(v):
+        if isinstance(v, dict):
+            return {**v, "dir": Path(v["dir"]).resolve()}
+        return Path(v).resolve()
+    dirs = {k: _resolve(v) for k, v in dirs.items()}
 
     # create templates
     # templates = Jinja2Templates(directory=str(dirs["templates"]))
@@ -143,8 +150,28 @@ def init_cms(
     # Register all custom filters once
     filters.register_filters(templates.env)
 
+    # Register JSON-LD / schema builders as globals + json_ld filter
+    schemas.register(templates.env)
+
     app.state.moosey_env = templates.env
     app.state.templates = templates
+
+    # Record the user's static dir (if provided) on app.state so the image
+    # pipeline route and image-related filters can look source files up.
+    # Accept either a Path/str or a dict {"dir": Path, "route": str}.
+    static_cfg = dirs.get("static")
+    if static_cfg is not None:
+        if isinstance(static_cfg, dict):
+            static_dir = static_cfg["dir"]
+            image_route = static_cfg.get("route", "/__moosey/img")
+        else:
+            static_dir = static_cfg
+            image_route = "/__moosey/img"
+        app.state.moosey_static_dir = Path(static_dir).resolve()
+        app.state.moosey_image_route_prefix = image_route.rstrip("/") + "/"
+        # Register the on-disk image pipeline route.
+        images_module.register_routes(app, app.state.moosey_static_dir,
+                                      route_prefix=image_route)
 
     # We need to capture the current event loop to schedule the broadcast
     loop = asyncio.get_event_loop()
@@ -154,6 +181,14 @@ def init_cms(
     def on_change_callback(file_path, event_type):
         # 1. Clear the cache (Sync)
         clear_cache_on_file_change(file_path, event_type)
+
+        # 1b. Invalidate image derivatives derived from this file (no-op on
+        # non-image files). Wrapped so a non-image path never crashes the
+        # watcher.
+        try:
+            images_module.invalidate(Path(file_path))
+        except Exception:
+            pass
 
         # 2. Trigger WebSocket Broadcast (Thread-safe Async call)
         # This tells FastAPI loop to run the broadcast coroutine
@@ -167,8 +202,12 @@ def init_cms(
             asyncio.run_coroutine_threadsafe(_delayed_broadcast(), loop)
 
     # start watching dirs with the NEW combined callback
+    # (static entry may be a dict with "dir" key — extract the path)
     for d in dirs:
-        start_watching(dirs[d], on_change_callback)
+        val = dirs[d]
+        if isinstance(val, dict):
+            val = val["dir"]
+        start_watching(val, on_change_callback)
 
     reloader = None
     # init manage hot reloading
@@ -302,6 +341,20 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
             html_content = await helpers.template_render_content(
                 templates, html_content, template_data, False
             )
+
+            # Always-on sanitize of the rendered body HTML. Honors
+            # site_data.sanitize (False = opt-out, dict = overrides). The
+            # result is markup so templates can render it raw without ``| safe``,
+            # though ``| safe`` remains harmless.
+            sanitize_cfg = filters.get_sanitize_config(app.state.site_data)
+            if sanitize_cfg and sanitize_cfg.get("auto", True):
+                styles = sanitize_cfg.get("styles")
+                html_content = filters.sanitize(
+                    html_content,
+                    **sanitize_cfg["bleach_kwargs"],
+                    styles=styles,
+                )
+            html_content = Markup(html_content)
 
         except Exception as e:
             print(f"Error rendering content: {e}")

@@ -8,10 +8,15 @@ from email.utils import format_datetime
 from html import unescape
 from typing import Any
 from urllib.parse import urljoin
-import re
+import hashlib
 import math
+import os
+import re
 
 from jinja2 import pass_context
+
+import bleach
+from bs4 import BeautifulSoup
 
 from .seo import seo_tags
 
@@ -533,7 +538,7 @@ def markdown(text, inline=False):
     (tables, TOC, magic links, better emphasis, emoji, task lists,
     fenced code, sane headers, math, admonitions, and custom emoticons).
 
-    Returns *raw HTML*. Jinja escapes it by default — pipe through ``safe``
+    Returns *raw HTML*. Jinja escapes it by default - pipe through ``safe``
     to inject it into the page. This is intentional, so you keep control
     over what gets injected.
 
@@ -610,6 +615,466 @@ def minify_html(text, enabled=True):
     return text.strip()
 
 # ============================================================================
+# SANITIZE - HTML allowlist (bleach, always on by default)
+# ============================================================================
+
+_DEFAULT_ALLOWED_TAGS = [
+    "a", "abbr", "address", "article", "aside", "audio", "b", "bdi", "bdo",
+    "blockquote", "br", "caption", "cite", "code", "col", "colgroup", "data",
+    "dd", "del", "details", "dfn", "div", "dl", "dt", "em", "figcaption",
+    "figure", "footer", "h1", "h2", "h3", "h4", "h5", "h6", "header", "hgroup",
+    "hr", "i", "img", "ins", "kbd", "li", "mark", "nav", "ol", "p", "pre",
+    "q", "rp", "rt", "ruby", "s", "samp", "section", "small", "source", "span",
+    "strong", "sub", "summary", "sup", "table", "tbody", "td", "tfoot", "th",
+    "thead", "time", "tr", "u", "ul", "var", "video", "wbr",
+]
+
+_DEFAULT_ALLOWED_ATTRS = {
+    "*":          ["class", "id", "title", "lang", "dir", "translate"],
+    "a":          ["href", "title", "rel", "target", "hreflang", "download"],
+    "abbr":       ["title"],
+    "blockquote": ["cite"],
+    "del":        ["datetime", "cite"],
+    "details":    ["open"],
+    "img":        ["src", "alt", "title", "width", "height", "loading",
+                  "decoding", "referrerpolicy", "srcset", "sizes", "fetchpriority"],
+    "ins":        ["datetime", "cite"],
+    "ol":         ["start", "reversed", "type"],
+    "li":         ["value"],
+    "q":          ["cite"],
+    "time":       ["datetime"],
+    "td":         ["colspan", "rowspan", "headers"],
+    "th":         ["colspan", "rowspan", "headers", "scope", "abbr"],
+    "video":      ["src", "controls", "width", "height", "poster", "preload",
+                   "autoplay", "loop", "muted", "playsinline"],
+    "audio":      ["src", "controls", "preload", "autoplay", "loop", "muted"],
+    "source":     ["src", "type", "srcset", "sizes", "media"],
+    "col":        ["span"],
+    "colgroup":   ["span"],
+    "data":       ["value"],
+}
+
+_DEFAULT_ALLOWED_PROTOCOLS = ["http", "https", "mailto", "tel"]
+_DEFAULT_ALLOWED_STYLES: list = []
+
+
+def sanitize(html, tags=None, attrs=None, protocols=None,
+             styles=None, strip=True, strip_comments=True):
+    """
+    Run ``bleach.clean`` with sane CMS defaults.
+
+    Always-on by pipeline (in ``template_render_content``); exposed as a manual
+    filter for untrusted HTML coming from other sources.
+
+    Inline CSS styles are disallowed by default. Pass ``styles`` as a list of
+    allowed property names *and* install ``bleach[css]`` to honor them.
+
+    Usage::
+
+        {{ untrusted_html | sanitize | safe }}
+    """
+    kwargs = dict(
+        tags=tags or _DEFAULT_ALLOWED_TAGS,
+        attributes=attrs or _DEFAULT_ALLOWED_ATTRS,
+        protocols=protocols or _DEFAULT_ALLOWED_PROTOCOLS,
+        strip=strip,
+        strip_comments=strip_comments,
+    )
+    # bleach 6 renamed `styles` to `css_sanitizer`. Inline styles are off by
+    # default (None) which requires no extra dep. If the caller supplies a
+    # styles allowlist, lazily build a CSSSanitizer behind bleach[css].
+    if styles:
+        try:
+            from bleach.css_sanitizer import CSSSanitizer
+            kwargs["css_sanitizer"] = CSSSanitizer(allowed_css_properties=styles)
+        except ImportError:
+            pass  # bleach[css] not installed; fall back to no styles
+    return bleach.clean(html or "", **kwargs)
+
+
+def get_sanitize_config(site_data: dict) -> dict | None:
+    """Read ``site_data.sanitize`` and merge with defaults.
+
+    Returns ``None`` for full opt-out (``sanitize: False``). Otherwise returns
+    a dict with keys: ``auto`` (bool), ``bleach_kwargs`` (dict).
+    """
+    cfg = (site_data or {}).get("sanitize")
+    if cfg is False:
+        return None
+    if cfg is None:
+        cfg = {}
+    if not isinstance(cfg, dict):
+        cfg = {}
+
+    bleach_kwargs = {
+        "tags": cfg.get("tags", _DEFAULT_ALLOWED_TAGS),
+        "attrs": cfg.get("attrs", _DEFAULT_ALLOWED_ATTRS),
+        "protocols": cfg.get("protocols", _DEFAULT_ALLOWED_PROTOCOLS),
+        "strip": cfg.get("strip", False),
+        "strip_comments": cfg.get("strip_comments", True),
+    }
+    styles = cfg.get("styles", _DEFAULT_ALLOWED_STYLES)
+    return {"auto": cfg.get("auto", True),
+            "styles": styles,
+            "bleach_kwargs": bleach_kwargs}
+
+
+# ============================================================================
+# SEO & DATA HELPERS
+# ============================================================================
+
+@pass_context
+def cache_bust(context, url, mode="mtime"):
+    """Append cache-busting query string to a static asset URL.
+
+    Resolves the file under the static dir on ``app.state`` and reads its
+    mtime (default) or sha8 of file bytes. Falls back to the plain URL when
+    the file can't be located (never raises).
+
+    Usage::
+
+        <link href="{{ '/static/site.css' | cache_bust }}" rel="stylesheet">
+    """
+    if not url:
+        return ""
+    request = context.get("request")
+    if not request:
+        return url
+    static_dir = getattr(request.app.state, "moosey_static_dir", None)
+    if not static_dir:
+        return url
+    path_part = url.split("?", 1)[0]
+    try:
+        rel = path_part.lstrip("/")
+        if rel.startswith("static/"):
+            rel = rel[len("static/"):]
+        candidate = (static_dir / rel).resolve()
+        candidate.relative_to(static_dir.resolve())
+        if not candidate.is_file():
+            return url
+        if mode == "sha8":
+            with open(candidate, "rb") as fh:
+                val = hashlib.sha256(fh.read(2 ** 20)).hexdigest()[:8]
+        else:
+            val = str(int(candidate.stat().st_mtime))
+        sep = "&" if "?" in url else "?"
+        return f"{url}{sep}v={val}"
+    except Exception:
+        return url
+
+
+def pluralize(singular, count, plural=None):
+    """Return ``singular`` if ``count == 1`` else ``plural`` (or singular+'s').
+
+    Idiomatic in templates: ``{{ 'review' | pluralize(reviews_count) }}``.
+    """
+    if count == 1:
+        return singular
+    return plural if plural is not None else singular + "s"
+
+
+def word_count(text):
+    """Number of whitespace-separated words. Strips HTML if any present."""
+    if not text:
+        return 0
+    if "<" in text and ">" in text:
+        text = re.sub(r"<[^>]+>", " ", text)
+    return len(text.split())
+
+
+@pass_context
+def inline(context, path, encode=None):
+    """Inline a static asset's contents directly into the page.
+
+    Looks the file up under ``app.state.moosey_static_dir``. Returns "" if not
+    found. ``encode="data-uri"`` returns a ``data:<mime>;base64,…`` string.
+    """
+    if not path:
+        return ""
+    request = context.get("request")
+    if not request:
+        return ""
+    static_dir = getattr(request.app.state, "moosey_static_dir", None)
+    if not static_dir:
+        return ""
+    try:
+        rel = path.lstrip("/")
+        if rel.startswith("static/"):
+            rel = rel[len("static/"):]
+        candidate = (static_dir / rel).resolve()
+        candidate.relative_to(static_dir.resolve())
+        if not candidate.is_file():
+            return ""
+        with open(candidate, "rb") as fh:
+            data = fh.read()
+    except Exception:
+        return ""
+
+    if encode == "data-uri":
+        import mimetypes
+        mime = mimetypes.guess_type(path)[0] or "application/octet-stream"
+        import base64
+        b64 = base64.b64encode(data).decode("ascii")
+        return f"data:{mime};base64,{b64}"
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        import base64
+        return f"data:application/octet-stream;base64,{base64.b64encode(data).decode('ascii')}"
+
+
+# ============================================================================
+# IMAGE FILTERS (forwarding wrappers around moosey_cms.images)
+# ============================================================================
+
+from .images import (
+    image_url_filter as _image_url_filter,
+    responsive_image_html as _responsive_image_html,
+    image_dimensions_impl as _image_dimensions_impl,
+    dominant_color_impl as _dominant_color_impl,
+    image_cdn_impl as _image_cdn_impl,
+)
+
+
+def img_attrs(src, width=None, height=None, loading="lazy",
+              decoding="async", referrerpolicy="no-referrer"):
+    """Build ``src loading decoding width=… height=…`` attr string for ``<img>``."""
+    if not src:
+        return ""
+    parts = [f'src="{src}"', f'loading="{loading}"',
+             f'decoding="{decoding}"',
+             f'referrerpolicy="{referrerpolicy}"']
+    if width:
+        parts.append(f'width="{width}"')
+    if height:
+        parts.append(f'height="{height}"')
+    return " ".join(parts)
+
+
+def lazy_image(html_or_src, attrs=False):
+    """Inject lazy/async/referrerpolicy attrs. Detects ``<img`` vs bare src.
+
+    With ``attrs=True`` (or given a bare src), returns an attr string rather
+    than a full ``<img>`` tag - useful when you want to compose your own tag.
+    """
+    if not html_or_src:
+        return ""
+    s = str(html_or_src)
+    if s.lstrip().lower().startswith("<img"):
+        # Inject before the closing > of the opening tag.
+        m = re.search(r"<img\b([^>]*)>", s, re.IGNORECASE)
+        if not m:
+            return s
+        attrs_block = m.group(1)
+        # Don't double-add if already present.
+        additions = []
+        if "loading=" not in attrs_block.lower():
+            additions.append('loading="lazy"')
+        if "decoding=" not in attrs_block.lower():
+            additions.append('decoding="async"')
+        if "referrerpolicy=" not in attrs_block.lower():
+            additions.append('referrerpolicy="no-referrer"')
+        if not additions:
+            return s
+        if attrs_block.endswith("/"):
+            new_attrs = " " + " ".join(additions) + attrs_block
+        else:
+            new_attrs = attrs_block + " " + " ".join(additions)
+        return s[:m.start(1)] + new_attrs + s[m.end(1):]
+    # Bare src
+    return img_attrs(s)
+
+
+def image_dimensions(src):
+    """Read width/height of a local image; returns ``width="…" height="…"``."""
+    return _image_dimensions_impl(src)
+
+
+@pass_context
+def dominant_color(context, src, default="#0b172a"):
+    """Most common hex color of a local image (for LQIP backgrounds)."""
+    static_dir = getattr(context.get("request", None) and context["request"].app.state,
+                         "moosey_static_dir", None)
+    return _dominant_color_impl(src, default=default, static_dir=static_dir)
+
+
+def image_cdn(src, **params):
+    """Rewrite a path into a CDN transform URL (provider from site_data)."""
+    # Provider/base_url are looked up lazily from site_data at call time.
+    # We don't have context here, so this filter falls through to a thin wrapper
+    # that uses the request-bound provider if available; otherwise "cloudflare".
+    return _image_cdn_impl(src, **params)
+
+
+@pass_context
+def image_cdn_ctx(context, src, **params):
+    """Context-aware CDN adapter honoring ``site_data.image_cdn``."""
+    site_data = context.get("site_data") or {}
+    cdn_cfg = site_data.get("image_cdn") or {}
+    provider = cdn_cfg.get("provider", "cloudflare")
+    base_url = cdn_cfg.get("base_url")
+    return _image_cdn_impl(src, provider=provider, base_url=base_url, **params)
+
+
+@pass_context
+def image(context, src, widths=None, sizes="100vw",
+          loading="lazy", decoding="async", **params):
+    """Unified image filter.
+
+    Without ``widths`` → returns a URL string (for ``img src=...``).
+    With ``widths``    → returns a full ``<img srcset sizes>`` HTML tag.
+    """
+    request = context.get("request")
+    route = (getattr(request.app.state, "moosey_image_route_prefix", None)
+             if request else None) or "/__moosey/img/"
+    if widths:
+        return _responsive_image_html(
+            src, _route_prefix=route, widths=widths, sizes=sizes,
+            loading=loading, decoding=decoding, **params
+        )
+    return _image_url_filter(src, _route_prefix=route, **params)
+
+
+@pass_context
+def image_url(context, src, **params):
+    """Deprecated — use ``image`` instead."""
+    import warnings as _w
+    _w.warn("image_url() is deprecated, use image() instead",
+            DeprecationWarning, stacklevel=2)
+    return image(context, src, **params)
+
+
+@pass_context
+def responsive_image(context, src, widths=(400, 800, 1200, 1600),
+                     sizes="100vw", loading="lazy", decoding="async",
+                     **shared):
+    """Deprecated — use ``image`` instead."""
+    import warnings as _w
+    _w.warn("responsive_image() is deprecated, use image() instead",
+            DeprecationWarning, stacklevel=2)
+    return image(context, src, widths=widths, sizes=sizes,
+                 loading=loading, decoding=decoding, **shared)
+
+
+# ============================================================================
+# CONTENT HELPERS (embed, headings, toc_from_html, gravatar)
+# ============================================================================
+
+import hashlib as _hashlib  # ensure available; was imported above
+from urllib.parse import quote as _quote
+
+_OEMBED_PROVIDERS = {
+    # provider key: regex; builder function name in dict below
+}
+
+
+def _yt_embed(url):
+    m = re.search(r"(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|v/))([\w-]{11})", url)
+    if not m:
+        return None
+    vid = m.group(1)
+    return (f'<iframe src="https://www.youtube.com/embed/{vid}" '
+            f'width="480" height="270" frameborder="0" allowfullscreen '
+            f'loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>')
+
+
+def _vimeo_embed(url):
+    m = re.search(r"vimeo\.com/(\d+)", url)
+    if not m:
+        return None
+    vid = m.group(1)
+    return (f'<iframe src="https://player.vimeo.com/video/{vid}" '
+            f'width="480" height="270" frameborder="0" allowfullscreen '
+            f'loading="lazy" referrerpolicy="no-referrer"></iframe>')
+
+
+def _twitter_embed(url):
+    if re.match(r"https?://(?:www\.)?(twitter|x)\.com/[^/]+/status/(\d+)", url):
+        return (f'<blockquote class="twitter-tweet" data-dnt="true">'
+                f'<a href="{url}">{url}</a></blockquote>'
+                f'<script async src="https://platform.twitter.com/widgets.js" '
+                f'charset="utf-8"></script>')
+    return None
+
+
+def _gist_embed(url):
+    m = re.match(r"https?://gist\.github\.com/([^/]+/[\w-]+)", url)
+    if not m:
+        return None
+    return (f'<script src="https://gist.github.com/{m.group(1)}.js"></script>')
+
+
+def _codepen_embed(url):
+    m = re.match(r"https?://codepen\.io/([^/]+)/pen/([\w-]+)", url)
+    if not m:
+        return None
+    return (f'<p class="codepen" data-default-tab="result">'
+            f'<a href="{url}">See the Pen</a></p>'
+            f'<script async src="https://static.codepen.io/assets/embed/ei.js"></script>')
+
+
+_EMBED_BUILDERS = (_yt_embed, _vimeo_embed, _twitter_embed, _gist_embed, _codepen_embed)
+
+
+def embed(url, maxwidth=480, maxheight=360):
+    """oEmbed-lite: convert a known video/social/gist URL into embed HTML.
+
+    Falls back to a plain ``<a href="url">url</a>`` if the provider is unknown
+    or no network call is made (we use static substring transforms; no external
+    oEmbed API calls - so the result is offline-cacheable for ≥24h).
+    """
+    if not url:
+        return ""
+    for builder in _EMBED_BUILDERS:
+        out = builder(url)
+        if out:
+            return out
+    return f'<a href="{url}">{url}</a>'
+
+
+def headings(html, min_level=2, max_level=4):
+    """Extract ``[(id, text, level), ...]`` from rendered HTML."""
+    if not html:
+        return []
+    try:
+        soup = BeautifulSoup(html, "html.parser")
+    except Exception:
+        return []
+    out = []
+    for h in soup.find_all(re.compile(r"^h[1-6]$")):
+        level = int(h.name[1])
+        if level < min_level or level > max_level:
+            continue
+        hid = h.get("id", "")
+        text = h.get_text(strip=True)
+        out.append((hid, text, level))
+    return out
+
+
+def toc_from_html(html, min_level=2, max_level=4, klass="prose-toc"):
+    """Render a ``<nav class="…"><ul>…</ul></nav>`` of headings in ``html``."""
+    items = headings(html, min_level=min_level, max_level=max_level)
+    if not items:
+        return ""
+    parts = [f'<nav class="{klass}"><ul>']
+    for hid, text, level in items:
+        indent = "  " * (level - min_level)
+        href = f"#{hid}" if hid else "#"
+        parts.append(f'{indent}<li class="toc-level-{level}"><a href="{href}">{text}</a></li>')
+    parts.append("</ul></nav>")
+    return "\n".join(parts)
+
+
+def gravatar(email, size=80, default="404", rating="g"):
+    """Return a Gravatar URL for ``email`` (md5-hashed, no network call)."""
+    if not email:
+        return ""
+    digest = _hashlib.md5(email.strip().lower().encode("utf-8")).hexdigest()
+    return (f"https://www.gravatar.com/avatar/{digest}"
+            f"?s={size}&d={_quote(str(default))}&r={rating}")
+
+
+# ============================================================================
 # REGISTRATION FUNCTION
 # ============================================================================
 
@@ -656,6 +1121,27 @@ def register_filters(jinja_env):
         'strip_comments': strip_comments,
         'minify_html': minify_html,
         'markdown': markdown,
+        # Sanitize
+        'sanitize': sanitize,
+        # SEO & data
+        'cache_bust': cache_bust,
+        'pluralize': pluralize,
+        'word_count': word_count,
+        'inline': inline,
+        # Images
+        'img_attrs': img_attrs,
+        'lazy_image': lazy_image,
+        'image_dimensions': image_dimensions,
+        'dominant_color': dominant_color,
+        'image_cdn': image_cdn_ctx,
+        'image': image,
+        'image_url': image_url,
+        'responsive_image': responsive_image,
+        # Content helpers
+        'embed': embed,
+        'headings': headings,
+        'toc_from_html': toc_from_html,
+        'gravatar': gravatar,
 
     }
     
