@@ -315,6 +315,14 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
             md_data = helpers.parse_markdown_file(target_file)
             front_matter = md_data.metadata
 
+            # lock_params access control
+            lock_params = front_matter.get("lock_params")
+            if isinstance(lock_params, dict):
+                if not helpers.check_lock_params(lock_params, dict(request.query_params)):
+                    return await async_template_response(
+                        templates, "404.html", {"request": request}, status_code=404
+                    )
+
             # never render drafts in production
             if front_matter.get("draft") is True and mode != "development":
                 return await async_template_response(

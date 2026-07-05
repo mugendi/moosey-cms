@@ -16,6 +16,7 @@ from slugify import slugify
 from inflection import singularize
 from pprint import pprint
 from markupsafe import Markup
+from urllib.parse import urlencode
 
 from .models import Dirs
 from .md import parse_markdown
@@ -249,6 +250,13 @@ def get_directory_navigation(
                 if not is_visible:
                     continue
 
+                # 1b. lock_params fileset check
+                lock_params = meta.get("lock_params")
+                if isinstance(lock_params, dict):
+                    active_params = {k for k in lock_params if k not in ("_sitemap_list_", "_fileset_list_")}
+                    if active_params and not lock_params.get("_fileset_list_"):
+                        continue
+
                 # 2. Ordering
                 if "order" in meta:
                     sort_order = int(meta["order"])
@@ -283,6 +291,10 @@ def get_directory_navigation(
                     is_active = entry_url == current_url
                 except ValueError:
                     continue
+
+            lock_params = meta.get("lock_params")
+            if isinstance(lock_params, dict) and lock_params.get("_fileset_list_"):
+                entry_url = build_lock_params_url(entry_url, lock_params)
 
             items.append(
                 {
@@ -337,3 +349,25 @@ def get_breadcrumbs(url_path: str) -> List[Dict[str, str]]:
         current += f"/{p}"
         crumbs.append({"name": p.replace("-", " ").title(), "url": current})
     return crumbs
+
+
+def build_lock_params_url(base_url: str, lock_params: dict) -> str:
+    """Append lock_params as query string to base_url (excludes special params)."""
+    params = {
+        k: str(v) for k, v in lock_params.items()
+        if k not in ("_sitemap_list_", "_fileset_list_")
+    }
+    if not params:
+        return base_url
+    return f"{base_url}?{urlencode(params)}"
+
+
+def check_lock_params(lock_params: dict, query_params: dict) -> bool:
+    """Return True if query_params satisfies lock_params requirements."""
+    required = {
+        k: str(v) for k, v in lock_params.items()
+        if k not in ("_sitemap_list_", "_fileset_list_")
+    }
+    if not required:
+        return True
+    return all(query_params.get(k) == v for k, v in required.items())

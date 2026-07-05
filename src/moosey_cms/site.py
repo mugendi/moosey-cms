@@ -23,6 +23,7 @@ from fastapi.responses import PlainTextResponse, Response
 from slugify import slugify
 
 from .cache import cache_fn
+from .helpers import build_lock_params_url
 from .md import parse_markdown
 
 
@@ -326,8 +327,21 @@ async def sitemap_response(request: Request, content_dir: Path, mode: str) -> Re
         if metadata.get("sitemap") is False:
             continue
 
+        lock_params = _as_dict(metadata.get("lock_params"))
+        if isinstance(lock_params, dict):
+            active_params = {k for k in lock_params if k not in ("_sitemap_list_", "_fileset_list_")}
+            if active_params:
+                if lock_params.get("_sitemap_list_"):
+                    page_url = build_lock_params_url(page["url"], lock_params)
+                else:
+                    continue
+            else:
+                page_url = page["url"]
+        else:
+            page_url = page["url"]
+
         url_el = ET.SubElement(root, "url")
-        ET.SubElement(url_el, "loc").text = absolute_url(page["url"], base_url)
+        ET.SubElement(url_el, "loc").text = absolute_url(page_url, base_url)
 
         lastmod = _format_sitemap_date(_page_datetime(page, "updated", "published", "created"))
         if lastmod:
