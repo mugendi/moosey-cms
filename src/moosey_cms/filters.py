@@ -524,6 +524,46 @@ def absolute_url(context, value, base_url=None):
 
 
 # ============================================================================
+# MARKDOWN RENDERING
+# ============================================================================
+
+def markdown(text, inline=False):
+    """
+    Render a Markdown string to HTML using Moosey's configured renderer
+    (tables, TOC, magic links, better emphasis, emoji, task lists,
+    fenced code, sane headers, math, admonitions, and custom emoticons).
+
+    Returns *raw HTML*. Jinja escapes it by default — pipe through ``safe``
+    to inject it into the page. This is intentional, so you keep control
+    over what gets injected.
+
+    Usage:
+        {{ bio | markdown | safe }}
+        {{ "**Hi**" | markdown | safe }}
+
+    Set ``inline=True`` to drop the wrapping ``<p>`` tags added by
+    Python-Markdown for single-block content. Useful for short snippets
+    inside titles, captions, or table cells:
+
+        <h1>{{ title | markdown(inline=True) | safe }}</h1>
+
+    Empty / None input returns an empty string so the filter is safe to
+    call on missing frontmatter fields.
+    """
+    if not text:
+        return ""
+
+    from .md import parse_markdown
+    html = parse_markdown(text)
+
+    if inline and html.startswith("<p>") and html.endswith("</p>") \
+            and html.count("<p>") == 1:
+        html = html[3:-4]
+
+    return html
+
+
+# ============================================================================
 # HTML UTILITIES
 # ============================================================================
 
@@ -615,7 +655,8 @@ def register_filters(jinja_env):
         'strip_html': strip_html,
         'strip_comments': strip_comments,
         'minify_html': minify_html,
-        
+        'markdown': markdown,
+
     }
     
     for name, func in filters_dict.items():
