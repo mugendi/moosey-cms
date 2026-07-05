@@ -682,7 +682,14 @@ def invalidate(source: Path) -> None:
 
 # ---------------------------------------------------------------------------
 # Route
-# ---------------------------------------------------------------------------
+
+_MIME_MAP = {
+    "webp": "image/webp",
+    "avif": "image/avif",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "png": "image/png",
+}
 
 def _accept_webp(request: Request) -> bool:
     accept = request.headers.get("accept", "")
@@ -755,9 +762,14 @@ def register_routes(app, static_dir: Path, route_prefix: str = "/__moosey/img",
                 return JSONResponse({"detail": "generation error"},
                                     status_code=500)
 
-        return FileResponse(str(target), headers={
-            "Cache-Control": "public, max-age=31536000, immutable",
-        })
+        fmt = params.get("fmt", "webp")
+        return FileResponse(
+            str(target),
+            media_type=_MIME_MAP.get(fmt, "application/octet-stream"),
+            headers={
+                "Cache-Control": "public, max-age=31536000, immutable",
+            },
+        )
 
 
 # ---------------------------------------------------------------------------
