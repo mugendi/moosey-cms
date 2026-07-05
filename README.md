@@ -9,6 +9,25 @@
 
 **A lightweight, drop-in Markdown CMS for FastAPI.**
 
+<p align="center">
+  <a href="https://pypi.org/project/moosey-cms/">
+    <img src="https://img.shields.io/pypi/v/moosey-cms" alt="PyPI version">
+  </a>
+  <a href="https://pypi.org/project/moosey-cms/">
+    <img src="https://img.shields.io/pypi/pyversions/moosey-cms" alt="Python versions">
+  </a>
+  <a href="https://opensource.org/licenses/MIT">
+    <img src="https://img.shields.io/pypi/l/moosey-cms" alt="MIT License">
+  </a>
+  <a href="https://pypi.org/project/moosey-cms/">
+    <img src="https://img.shields.io/pypi/dm/moosey-cms" alt="Downloads">
+  </a>
+  <a href="https://github.com/mugendi/moosey-cms">
+    <img src="https://img.shields.io/github/last-commit/mugendi/moosey-cms" alt="Last commit">
+  </a>
+  <img src="https://img.shields.io/github/repo-size/mugendi/moosey-cms" alt="Repo size">
+</p>
+
 Moosey CMS transforms your FastAPI application into a content-driven website without the need for a database. It bridges the gap between static site generators and dynamic web servers, offering hot-reloading, intelligent caching, SEO management, and a powerful templating hierarchy.
 
 ![Example Screenshot](/example/assets/example-1.jpeg)
@@ -30,6 +49,23 @@ Check out the [/example](/example/) for templating and content samples used to g
 *   **Site Management:** Built-in `sitemap.xml`, `robots.txt`, RSS feeds, and a reusable content index.
 *   **Rich Markdown:** Supports tables, emojis, task lists, and syntax highlighting out of the box.
 *   **Jinja2 Power:** Use Jinja2 logic directly inside your Markdown files (Securely Sandboxed).
+
+## 🛠️ Features That Replace Paid Services
+
+| Moosey CMS Feature | Replaces Paid Services |
+|---|---|
+| `image()` filter with responsive `srcset` and CDN transforms | Cloudinary, Imgix |
+| `schema_article()` + OpenGraph + Twitter Cards + meta tags | Yoast SEO, Rank Math |
+| `sanitize()` HTML sanitizer (Bleach-based) | DOMPurify, HTML sanitization APIs |
+| `embed()` (YouTube, Twitter/X, Vimeo, CodePen, Gist) | Embedly, oEmbed API services |
+| `sitemap.xml` + `robots.txt` + RSS/Atom feed | Google XML Sitemaps, Feedburner |
+| `country_flag`, `country_name`, `language_name`, `currency_name` (pycountry) | RestCountries API, currency data APIs |
+| `dominant_color()` from local images | ColorThief, LCP placeholder services |
+| `inline()` + `cache_bust()` | Critical CSS tools, Webpack/Gulp cache busting |
+| `headings()` + `toc_from_html()` | Table of Contents plugins |
+| `markdown` with pymdown-extensions | Contentful, Sanity (content authoring) |
+| Hot-reload browser refresh | BrowserSync, LiveReload |
+| No-database flat-file CMS | WordPress, Strapi, Ghost |
 
 ---
 
