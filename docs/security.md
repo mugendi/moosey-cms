@@ -44,7 +44,7 @@ img-src = ["'self'", "https://images.example.com"]
 
 Every HTML page served by the development server or exported to `_site/` includes CSP headers when configured. These tell the browser which sources are trusted for scripts, styles, images, and other resources.
 
-A restrictive policy (default-src: 'self') blocks all external resources by default — you must explicitly allow each external domain you use.
+A restrictive policy (default-src: 'self') blocks all external resources by default - you must explicitly allow each external domain you use.
 
 ### CSP Directives
 
@@ -74,7 +74,7 @@ frame-src = ["'none'"]
 object-src = ["'none'"]
 ```
 
-The `frame-src` and `object-src` restrictions above are strongly recommended — they prevent clickjacking and plugin-based attacks.
+The `frame-src` and `object-src` restrictions above are strongly recommended - they prevent clickjacking and plugin-based attacks.
 
 ## Sandboxing
 

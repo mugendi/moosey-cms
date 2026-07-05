@@ -59,7 +59,7 @@ Welcome to my site built with moosey-cms.
 <!DOCTYPE html>
 <html>
 <head>
-    <title>{{ config.title }} — {{ page.title }}</title>
+    <title>{{ config.title }} - {{ page.title }}</title>
 </head>
 <body>
     <main>

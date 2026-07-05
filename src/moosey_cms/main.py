@@ -202,7 +202,7 @@ def init_cms(
             asyncio.run_coroutine_threadsafe(_delayed_broadcast(), loop)
 
     # start watching dirs with the NEW combined callback
-    # (static entry may be a dict with "dir" key — extract the path)
+    # (static entry may be a dict with "dir" key - extract the path)
     for d in dirs:
         val = dirs[d]
         if isinstance(val, dict):

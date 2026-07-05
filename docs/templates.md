@@ -32,7 +32,7 @@ See the [Filters Reference](filters.md) for all built-in filters.
 
 ## Static File Helpers
 
-`{{ static("css/style.css") }}` — resolves to the static file URL with optional cache-busting hash.
+`{{ static("css/style.css") }}` - resolves to the static file URL with optional cache-busting hash.
 
 Configure in `pyproject.toml`:
 

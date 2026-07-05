@@ -10,7 +10,7 @@ Install the `images` extra:
 pip install moosey-cms[images]
 ```
 
-This installs Pillow (required) and OpenCV (optional — needed only for face detection).
+This installs Pillow (required) and OpenCV (optional - needed only for face detection).
 
 ### Face Detection
 
@@ -83,13 +83,13 @@ All parameters are optional.
 
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
-| `width` | int | — | Target width in pixels |
-| `height` | int | — | Target height in pixels |
+| `width` | int | - | Target width in pixels |
+| `height` | int | - | Target height in pixels |
 | `quality` | int | `85` | JPEG/WebP quality (1-100) |
-| `format` | str | — | Force output format (`webp`, `jpeg`, `png`) |
-| `focus` | str | — | Crop focus: `face`, `center`, `top`, `bottom`, `left`, `right` |
-| `widths` | list[int] | — | Enable responsive srcset with these widths |
-| `alt` | str | — | Alt text (used with `widths`) |
+| `format` | str | - | Force output format (`webp`, `jpeg`, `png`) |
+| `focus` | str | - | Crop focus: `face`, `center`, `top`, `bottom`, `left`, `right` |
+| `widths` | list[int] | - | Enable responsive srcset with these widths |
+| `alt` | str | - | Alt text (used with `widths`) |
 | `sizes` | str | `100vw` | Sizes attribute (used with `widths`) |
 | `lazy` | bool | `true` | Add `loading="lazy"` (used with `widths`) |
 
@@ -181,4 +181,4 @@ Processed images are cached to avoid re-processing on every build. The cache loc
 
 ### Path Debugging
 
-Images are served from `/__moosey/img/{path}`. Check the resolved URL in your page source — if you see `/static/photo.jpg` instead of `/__moosey/img/photo.jpg`, the image filter isn't being applied (likely missing the `images` extra).
+Images are served from `/__moosey/img/{path}`. Check the resolved URL in your page source - if you see `/static/photo.jpg` instead of `/__moosey/img/photo.jpg`, the image filter isn't being applied (likely missing the `images` extra).

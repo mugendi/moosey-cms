@@ -937,7 +937,7 @@ def image(context, src, widths=None, sizes="100vw",
 
 @pass_context
 def image_url(context, src, **params):
-    """Deprecated — use ``image`` instead."""
+    """Deprecated - use ``image`` instead."""
     import warnings as _w
     _w.warn("image_url() is deprecated, use image() instead",
             DeprecationWarning, stacklevel=2)
@@ -948,7 +948,7 @@ def image_url(context, src, **params):
 def responsive_image(context, src, widths=(400, 800, 1200, 1600),
                      sizes="100vw", loading="lazy", decoding="async",
                      **shared):
-    """Deprecated — use ``image`` instead."""
+    """Deprecated - use ``image`` instead."""
     import warnings as _w
     _w.warn("responsive_image() is deprecated, use image() instead",
             DeprecationWarning, stacklevel=2)

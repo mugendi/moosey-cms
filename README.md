@@ -312,7 +312,7 @@ Moosey CMS comes packed with a comprehensive library of Jinja2 filters to help y
 ### 🔧 SEO & Data
 | Filter | Usage | Output |
 | :--- | :--- | :--- |
-| `json_ld` | <code>{{ schema_article(...) &#124; json_ld &#124; safe }}</code> | Renders a Python dict as a `<script type="application/ld+json">` block. Schema builders (`schema_article`, `schema_breadcrumbs`, `schema_faqpage`, `schema_howto`, `schema_localbusiness`, `schema_product`, `schema_event`, `schema_organization`, `schema_website`, `schema_person`) are registered as Jinja globals — see [`docs/seo-advanced.md`](docs/seo-advanced.md). |
+| `json_ld` | <code>{{ schema_article(...) &#124; json_ld &#124; safe }}</code> | Renders a Python dict as a `<script type="application/ld+json">` block. Schema builders (`schema_article`, `schema_breadcrumbs`, `schema_faqpage`, `schema_howto`, `schema_localbusiness`, `schema_product`, `schema_event`, `schema_organization`, `schema_website`, `schema_person`) are registered as Jinja globals - see [`docs/seo-advanced.md`](docs/seo-advanced.md). |
 | `cache_bust` | <code>{{ '/static/site.css' &#124; cache_bust }}</code> | Appends `?v=<mtime>` so browsers re-fetch after every change. |
 | `pluralize` | <code>{{ 'review' &#124; pluralize(reviews_count) }}</code> | `1 review` / `2 reviews`. Custom: `pluralize(count, 'mice')`. |
 | `word_count` | <code>{{ body &#124; word_count }}</code> | Number of words (strips HTML if any). |
@@ -330,7 +330,7 @@ Moosey CMS comes packed with a comprehensive library of Jinja2 filters to help y
 
 **Enabling on-disk processing** requires passing `"static": <path>` in `dirs` to `init_cms`. Full reference: [`docs/images.md`](docs/images.md). Face detection via `focus=face` requires `moosey-cms[faces]` (~30MB).
 
-**Path convention:** image source paths passed to `image` should omit the `/static/` prefix. Since the static directory is already configured in `dirs`, use paths relative to it — e.g. `/images/team/martin.jpg` instead of `/static/images/team/martin.jpg`. The filter will resolve these against the configured `static_dir` automatically.
+**Path convention:** image source paths passed to `image` should omit the `/static/` prefix. Since the static directory is already configured in `dirs`, use paths relative to it - e.g. `/images/team/martin.jpg` instead of `/static/images/team/martin.jpg`. The filter will resolve these against the configured `static_dir` automatically.
 
 ### 🔗 Content Helpers
 | Filter | Usage | Output |
@@ -375,6 +375,19 @@ Moosey CMS takes security seriously. We have implemented several layers of prote
 Security is an ongoing process. If you discover a vulnerability, bug, or potential risk, please **open an issue** on our GitHub repository immediately. We appreciate community feedback to keep Moosey secure for everyone.
 
 ---
+
+## Documentation
+
+New to moosey-cms? Start here:
+
+1. **[Getting Started](docs/getting-started.md)** - Installation, configuration, and your first page.
+2. **[Filters Reference](docs/filters.md)** - All built-in Jinja2 filters for dates, text, numbers, HTML, and more.
+3. **[Markdown Rendering](docs/markdown.md)** - Using `markdown` and `markdown_inline` filters.
+4. **[Image Processing](docs/images.md)** - Automatic image resizing, responsive `srcset`, face detection, CDN support.
+5. **[Templates](docs/templates.md)** - Template syntax, static files, pagination, RSS, sitemaps, collections, and custom pages.
+6. **[Security](docs/security.md)** - HTML sanitization, Content Security Policy, sandboxing.
+7. **[Patterns](docs/patterns.md)** - Real-world project structures and conventions.
+8. **[SEO](docs/seo.md)** - Meta tags, Open Graph, structured data, robots.txt, canonical URLs.
 
 ## Gratitude
 This project is inspired by [fastapi-blog](https://github.com/pydanny/fastapi-blog) by [Daniel](https://github.com/pydanny). Initially, I wanted to use **fastapi-blog** and it worked really well till I needed features like hot-reloading. 

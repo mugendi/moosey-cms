@@ -366,7 +366,7 @@ def _focus_offset(src_w: int, src_h: int, crop_w: int, crop_h: int,
         box = face_box_path(img)  # uses underlying path via img.filename
         if box is not None:
             return _shift_to_box(box, src_w, src_h, crop_w, crop_h)
-        # No OpenCV available — for portraits keep the top (heads are at the
+        # No OpenCV available - for portraits keep the top (heads are at the
         # top of headshots); for landscapes fall back to center.
         focus = "top" if src_h > src_w else "center"
 

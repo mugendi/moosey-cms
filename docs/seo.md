@@ -30,7 +30,7 @@ Available frontmatter fields:
 
 ```jinja2
 <head>
-    <title>{{ page.seo_title or page.title }} — {{ config.title }}</title>
+    <title>{{ page.seo_title or page.title }} - {{ config.title }}</title>
     {% if page.description %}
     <meta name="description" content="{{ page.description }}">
     <meta property="og:description" content="{{ page.description }}">

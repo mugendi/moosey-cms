@@ -50,7 +50,7 @@ Content paths match their URLs automatically:
 
 Templates live in the `templates/` directory and use Jinja2 syntax.
 
-- `base.html` — shared layout with blocks for child templates to override
+- `base.html` - shared layout with blocks for child templates to override
 - Template names correspond to page types or explicit `template` frontmatter
 - Partials in `templates/partials/` included via `{% include "partials/header.html" %}`
 
@@ -82,7 +82,7 @@ members:
 
 ```jinja2
 {% for member in data.team.members %}
-  <li>{{ member.name }} — {{ member.role }}</li>
+  <li>{{ member.name }} - {{ member.role }}</li>
 {% endfor %}
 ```
 
