@@ -294,6 +294,7 @@ Moosey CMS comes packed with a comprehensive library of Jinja2 filters to help y
 | `title_case` | <code>{{ 'a tale of two cities' &#124; title_case }}</code> | A Tale of Two Cities |
 | `smart_quotes` | <code>{{ '"Hello"' &#124; smart_quotes }}</code> | “Hello” |
 | `strip_html` | <code>{{ content &#124; strip_html }}</code> | Plain text without HTML tags |
+| `markdown` | <code>{{ bio &#124; markdown &#124; safe }}</code> | Renders Markdown to HTML (inline mode: `markdown(inline=True)`) |
 
 ### Utilities
 | Filter | Usage | Output |
