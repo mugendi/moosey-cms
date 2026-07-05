@@ -12,9 +12,9 @@ moosey-cms has optional dependency groups for advanced features:
 
 | Extra | Dependencies | Features Enabled |
 |-------|-------------|-----------------|
-| `images` | Pillow, OpenCV | Image resize, responsive `srcset`, face detection |
-| `markdown` | markdown, pygments, bleach | `markdown` / `markdown_inline` filters |
-| `all` | Everything above | All optional features |
+| `images` | Pillow | Image resize, responsive `srcset` |
+| `faces` | Pillow, OpenCV | Face-detection crop |
+| `all` | Pillow, OpenCV | All optional features |
 
 Install with extras:
 
@@ -24,19 +24,36 @@ pip install moosey-cms[images]
 pip install moosey-cms[all]
 ```
 
-See [Images](images.md) and [Markdown](markdown.md) for usage details.
+See [Images](images.md) for usage details.
 
 ## Quick Start
 
-### 1. Configure `pyproject.toml`
+### 1. Create a FastAPI app
 
-```toml
-[tool.moosey-cms]
-title = "My Site"
-base_url = "https://example.com"
-dirs.source = "content"
-dirs.output = "_site"
-dirs.templates = "templates"
+```python
+# main.py
+from pathlib import Path
+from fastapi import FastAPI
+from moosey_cms import init_cms
+
+app = FastAPI()
+
+BASE_DIR = Path(__file__).parent
+
+init_cms(
+    app=app,
+    host="localhost",
+    port=8000,
+    dirs={
+        "content": BASE_DIR / "content",
+        "templates": BASE_DIR / "templates",
+    },
+    mode="development",
+    site_data={
+        "name": "My Site",
+        "description": "A site built with Moosey CMS",
+    },
+)
 ```
 
 ### 2. Create a page
@@ -57,36 +74,40 @@ Welcome to my site built with moosey-cms.
 
 ```html
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>{{ config.title }} - {{ page.title }}</title>
+    <title>{{ site_data.name }} - {{ title }}</title>
+    {{ seo() }}
 </head>
 <body>
     <main>
-        {{ page.content | safe }}
+        {{ content }}
     </main>
 </body>
 </html>
 ```
 
-### 4. Build
+`templates/index.html`:
 
-```bash
-moosey build
+```jinja2
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>{{ title }}</h1>
+    {{ content }}
+{% endblock %}
 ```
 
-Output goes to `_site/`.
-
-### 5. Development server
+### 4. Run
 
 ```bash
-moosey serve
+uvicorn main:app --reload
 ```
 
-Opens a hot-reloading server at `http://localhost:8080`.
+Opens a hot-reloading server at `http://localhost:8000`.
 
 ## Next Steps
 
 - Browse the [Filters Reference](filters.md) for all available Jinja2 filters.
 - Learn about [Image Processing](images.md) for responsive images.
-- See [Templates](templates.md) for pagination, RSS, collections, and more.
+- See [Templates](templates.md) for drafts, tags, and template waterfall.

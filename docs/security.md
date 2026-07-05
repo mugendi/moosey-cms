@@ -8,106 +8,66 @@ The `sanitize` filter removes unsafe HTML tags and attributes using [Bleach](htt
 {{ user_comment | sanitize }}
 ```
 
-Requires `pip install bleach`.
+Sanitization is applied automatically to all rendered Markdown body content in production. You can opt out or customize it via `site_data.sanitize`:
 
-### Allowed Tags
+```python
+site_data = {
+    # Disable auto-sanitization entirely
+    "sanitize": False,
 
-By default, only safe tags are permitted:
+    # Or customize allowed tags/attrs
+    "sanitize": {
+        "tags": ["p", "a", "img", "strong", "em"],
+        "attrs": {"a": ["href"], "img": ["src", "alt"]},
+        "strip": True,
+    },
+}
+```
 
-`a`, `abbr`, `acronym`, `b`, `blockquote`, `code`, `em`, `i`, `li`, `ol`, `strong`, `ul`
+### Default Allowlist
 
-All other tags and attributes are stripped. The `<a>` tag retains its `href` attribute.
+**Allowed tags**: `a`, `abbr`, `address`, `article`, `aside`, `audio`, `b`, `bdi`, `bdo`, `blockquote`, `br`, `caption`, `cite`, `code`, `col`, `colgroup`, `data`, `dd`, `del`, `details`, `dfn`, `div`, `dl`, `dt`, `em`, `figcaption`, `figure`, `footer`, `h1`–`h6`, `header`, `hgroup`, `hr`, `i`, `img`, `ins`, `kbd`, `li`, `mark`, `nav`, `ol`, `p`, `pre`, `q`, `rp`, `rt`, `ruby`, `s`, `samp`, `section`, `small`, `source`, `span`, `strong`, `sub`, `summary`, `sup`, `table`, `tbody`, `td`, `tfoot`, `th`, `thead`, `time`, `tr`, `u`, `ul`, `var`, `video`, `wbr`
 
-### Custom Allowed Tags
+**Allowed attributes**: `class`, `id`, `title`, `lang`, `dir` on all elements; `href`, `rel`, `target` on `<a>`; `src`, `alt`, `width`, `height`, `loading` on `<img>`; etc.
 
-Pass a list of additional tags to allow others:
+**Allowed protocols**: `http`, `https`, `mailto`, `tel`
+
+**Inline CSS**: Disabled by default. Enable by passing a `styles` list and installing `bleach[css]`.
+
+### Using as a Filter
 
 ```jinja2
-{{ content | sanitize(["img", "table", "tr", "td"]) }}
+{{ untrusted_html | sanitize | safe }}
 ```
 
-The `href` attribute is always allowed on `<a>` tags. All other attributes are stripped.
+Customize per-use:
 
-## Content Security Policy
-
-Configure CSP headers in `pyproject.toml`:
-
-```toml
-[tool.moosey-cms.csp]
-default-src = ["'self'"]
-script-src = ["'self'", "https://cdn.example.com"]
-style-src = ["'self'", "'unsafe-inline'"]
-img-src = ["'self'", "https://images.example.com"]
+```jinja2
+{{ content | sanitize(tags=["p", "img", "table"], attrs={"img": ["src", "alt"]}) | safe }}
 ```
-
-### How CSP Headers Work
-
-Every HTML page served by the development server or exported to `_site/` includes CSP headers when configured. These tell the browser which sources are trusted for scripts, styles, images, and other resources.
-
-A restrictive policy (default-src: 'self') blocks all external resources by default - you must explicitly allow each external domain you use.
-
-### CSP Directives
-
-| Directive | Purpose |
-|-----------|---------|
-| `default-src` | Fallback for all resource types |
-| `script-src` | Allowed script sources |
-| `style-src` | Allowed stylesheet sources |
-| `img-src` | Allowed image sources |
-| `font-src` | Allowed font sources |
-| `connect-src` | Allowed fetch/XMLHttpRequest targets |
-| `frame-src` | Allowed iframe sources |
-| `media-src` | Allowed video/audio sources |
-| `object-src` | Allowed plugin sources |
-
-### CSP Best Practices
-
-```toml
-[tool.moosey-cms.csp]
-default-src = ["'self'"]
-script-src = ["'self'"]
-style-src = ["'self'", "'unsafe-inline'"]
-img-src = ["'self'", "data:", "https://*.cloudfront.net"]
-font-src = ["'self'", "https://fonts.gstatic.com"]
-connect-src = ["'self'"]
-frame-src = ["'none'"]
-object-src = ["'none'"]
-```
-
-The `frame-src` and `object-src` restrictions above are strongly recommended - they prevent clickjacking and plugin-based attacks.
-
-## Sandboxing
-
-moosey-cms supports Jinja2 sandbox mode to restrict template expressions:
-
-```toml
-[tool.moosey-cms]
-sandbox = true
-```
-
-When enabled, templates cannot access:
-- Private attributes (prefix `_`)
-- Built-in functions (`eval`, `exec`, `open`, `import`, `__import__`)
-- Unsafe object methods
-- Modules and imports
-
-Useful when allowing untrusted users to provide templates.
 
 ## Security Headers
 
-moosey-cms adds these security headers to every page (development and production):
+Moosey CMS adds these headers to every HTTP response via middleware:
 
-| Header | Description |
-|--------|-------------|
-| `X-Content-Type-Options: nosniff` | Prevents MIME-type sniffing |
-| `X-Frame-Options: DENY` | Prevents clickjacking |
-| `Referrer-Policy: strict-origin-when-cross-origin` | Controls referrer info |
+| Header | Value | Purpose |
+|--------|-------|---------|
+| `X-Content-Type-Options` | `nosniff` | Prevents MIME-type sniffing |
+| `X-XSS-Protection` | `1; mode=block` | Enables XSS filter in older browsers |
+| `X-Frame-Options` | `DENY` | Prevents clickjacking |
 
-You can override them:
+These are hardcoded in the middleware and cannot currently be overridden via config.
 
-```toml
-[tool.moosey-cms.headers]
-X-Frame-Options = "SAMEORIGIN"
-```
+## Path Traversal Protection
 
-Remove a header by setting it to an empty value.
+Moosey validates all URL paths against the content directory:
+
+1. **Null byte check** — Rejects paths containing `\0`
+2. **Symlink resolution** — Resolves `..` and symlinks to absolute paths
+3. **Jail enforcement** — Ensures the resolved path stays inside the content directory
+
+See `get_secure_target()` in `helpers.py`.
+
+## Sandboxed Template Rendering
+
+Frontmatter strings and Markdown body content are rendered through a `SandboxedEnvironment` that blocks access to private attributes (`__class__`, `__subclasses__`), dangerous built-ins (`eval`, `exec`, `open`, `import`), and module imports. Only the `site_data`, `mode`, and registered filters are available.

@@ -2,157 +2,169 @@
 
 Search engine optimization helpers for meta tags, structured data, and more.
 
-## Meta Tags
+## Meta Tags with `seo()`
 
-Set per-page meta descriptions and Open Graph fields in frontmatter:
+The `{{ seo() }}` global renders a full suite of SEO, Open Graph, and Twitter Card meta tags. Call it in the `<head>` of your template:
+
+```jinja2
+<head>
+    {{ seo() }}
+</head>
+```
+
+### Arguments
+
+All arguments are optional. Values fall back to frontmatter fields, then `site_data`.
+
+| Argument | Type | Fallback | Purpose |
+|----------|------|----------|---------|
+| `title` | str | `page.title` → `site_data.name` | `<title>`, `og:title`, `twitter:title` |
+| `description` | str | `page.description` → `site_data.description` | `<meta name="description">`, `og:description` |
+| `image` | str | `site_data.open_graph.og_image` | `og:image`, `twitter:image` (auto-absolutized) |
+| `canonical_url` | str | `page.canonical` → current URL | `<link rel="canonical">` |
+| `keywords` | str/list | `page.keywords` → `site_data.keywords` → `page.tags` | `<meta name="keywords">` |
+| `author` | str | `page.author` → `site_data.name` | `<meta name="author">`, `article:author` |
+| `publish_date` | str (ISO 8601) | — | Sets `og:type=article`, `article:published_time`, JSON-LD `datePublished` |
+| `noindex` | bool | `page.noindex` → `False` | `<meta name="robots" content="noindex">` |
+
+### Example
+
+```jinja2
+{{ seo(
+    title=title,
+    description=description,
+    image="/static/cover.jpg",
+    publish_date="2026-01-13",
+) }}
+```
+
+This generates: `<title>`, meta description, keywords, author, canonical, robots, `og:site_name`, `og:type`, `og:title`, `og:description`, `og:url`, `og:image`, `twitter:card`, `twitter:site`, `twitter:title`, `twitter:description`, `twitter:image`, `article:published_time`, `article:author`, and JSON-LD structured data.
+
+## Structured Data (JSON-LD)
+
+Use the schema builders in combination with the `json_ld` filter:
+
+```jinja2
+{{ schema_article(title=title, description=description, author="Jane") | json_ld | safe }}
+```
+
+Available builders: `schema_article`, `schema_breadcrumbs`, `schema_faqpage`, `schema_howto`, `schema_localbusiness`, `schema_product`, `schema_event`, `schema_organization`, `schema_website`, `schema_person`.
+
+You can also pass raw dicts:
+
+```jinja2
+{{ {"@context": "https://schema.org", "@type": "Thing", "name": "Custom"} | json_ld | safe }}
+```
+
+### Per-Page Frontmatter
 
 ```yaml
 ---
 title: About Us
 description: Learn more about our team and mission.
+seo_title: About - My Site
+noindex: false
+canonical: https://example.com/about
 og_image: /images/about-hero.jpg
-og_type: website
+sitemap:
+    changefreq: monthly
+    priority: 0.8
 ---
-```
-
-Available frontmatter fields:
-
-| Field | Purpose |
-|-------|---------|
-| `description` | Meta description (also used for OG) |
-| `og_image` | Open Graph image URL |
-| `og_type` | OG type (website, article, etc.) |
-| `seo_title` | Override `<title>` separately from `h1` |
-| `noindex` | Set `true` to exclude from search engines |
-| `canonical` | Custom canonical URL |
-
-## Template Example
-
-```jinja2
-<head>
-    <title>{{ page.seo_title or page.title }} - {{ config.title }}</title>
-    {% if page.description %}
-    <meta name="description" content="{{ page.description }}">
-    <meta property="og:description" content="{{ page.description }}">
-    {% endif %}
-    {% if page.og_image %}
-    <meta property="og:image" content="{{ page.og_image }}">
-    {% endif %}
-    {% if page.noindex %}
-    <meta name="robots" content="noindex">
-    {% endif %}
-    {% if page.canonical %}
-    <link rel="canonical" href="{{ page.canonical }}">
-    {% endif %}
-</head>
-```
-
-## Structured Data (JSON-LD)
-
-Use the `to_json` filter to inject schema.org structured data:
-
-```jinja2
-<script type="application/ld+json">
-{
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": {{ page.title | to_json | safe }},
-    "description": {{ page.description | to_json | safe }},
-    "datePublished": {{ page.date | date_iso | to_json | safe }}
-}
-</script>
-```
-
-### Common Schema Types
-
-| Type | When to Use |
-|------|-------------|
-| `Article` | Blog posts and news |
-| `Organization` | Company homepage |
-| `WebPage` | Generic pages |
-| `BreadcrumbList` | Navigation paths |
-
-### BreadcrumbList Example
-
-```jinja2
-<script type="application/ld+json">
-{
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-        {"@type": "ListItem", "position": 1, "name": "Home", "item": "{{ config.base_url }}"},
-        {"@type": "ListItem", "position": 2, "name": "Blog", "item": "{{ config.base_url }}/blog"},
-        {"@type": "ListItem", "position": 3, "name": "{{ page.title }}"}
-    ]
-}
-</script>
 ```
 
 ## robots.txt
 
-moosey-cms generates `robots.txt` automatically from `pyproject.toml` settings:
+Moosey generates `/robots.txt` automatically. Configure it via `site_data.web.robots`:
 
-```toml
-[tool.moosey-cms.seo]
-sitemap = "sitemap.xml"
+```python
+site_data = {
+    "web": {
+        "robots": {
+            "production": {"disallow": []},
+            "staging": {"disallow": ["/"]},
+        },
+    },
+}
 ```
 
-Default disallows nothing. To block paths:
+Default: `Disallow:` (allow everything) in production; `Disallow: /` in staging/testing.
 
-```toml
-[tool.moosey-cms.seo]
-disallow = ["/admin", "/draft"]
-```
+## Sitemap
 
-## Canonical URLs
+Generate `/sitemap.xml` by enabling it in `site_data.web.sitemap`:
 
-Set a global canonical pattern, or override per page:
-
-```toml
-[tool.moosey-cms]
-canonical = "always"  # Always include canonical link
-```
-
-Per-page frontmatter:
-
-```yaml
----
-canonical: https://example.com/ultimate-guide/
----
-```
-
-## Sitemaps
-
-Enable XML sitemap generation:
-
-```toml
-[tool.moosey-cms]
-sitemap = true
-```
-
-Generates `sitemap.xml` at the site root. Configure:
-
-```toml
-[tool.moosey-cms.seo]
-sitemap = "sitemap.xml"
-changefreq = "weekly"
-priority = 0.8
+```python
+site_data = {
+    "web": {
+        "sitemap": {
+            "default_changefreq": "weekly",
+            "default_priority": "0.5",
+        },
+    },
+}
 ```
 
 Per-page overrides in frontmatter:
 
 ```yaml
----
 sitemap:
     changefreq: daily
     priority: 1.0
----
 ```
 
 Exclude from sitemap:
 
 ```yaml
----
 sitemap: false
+```
+
+## RSS Feed
+
+Generate `/feed.xml` (RSS 2.0) by enabling it in `site_data.web.feed`:
+
+```python
+site_data = {
+    "web": {
+        "feed": {
+            "collection": "/posts",
+            "title": "My Blog Feed",
+            "description": "Latest posts",
+            "limit": 20,
+        },
+    },
+}
+```
+
+Exclude individual pages from the feed:
+
+```yaml
 ---
+rss: false
+---
+```
+
+## site_data Reference
+
+The full `site_data` dict structure for SEO:
+
+```python
+site_data = {
+    "name": "Your Site Name",
+    "description": "Site description",
+    "author": "Author Name",
+    "keywords": ["keyword1", "keyword2"],
+    "open_graph": {
+        "og_image": "/static/og-image.jpg",
+    },
+    "social": {
+        "twitter": "https://x.com/handle",
+        "github": "https://github.com/handle",
+    },
+    "web": {
+        "site_url": "https://example.com",
+        "sitemap": {...},
+        "robots": {...},
+        "feed": {...},
+    },
+}
 ```

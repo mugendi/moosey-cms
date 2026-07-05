@@ -1,59 +1,61 @@
 # Markdown Rendering
 
-moosey-cms provides two Jinja2 filters for rendering Markdown content.
-
-These require the `markdown` extra:
-
-```bash
-pip install moosey-cms[markdown]
-```
+moosey-cms provides a `markdown` filter for rendering Markdown content via Python-Markdown with pymdown-extensions.
 
 ## `markdown`
 
-Converts Markdown text to full HTML. Wraps the output in a `<div class="content">`.
+Converts Markdown text to HTML:
 
 ```jinja2
-{{ page.content | markdown }}
+{{ "This is **bold** and *italic*" | markdown | safe }}
 ```
 
 ```html
-<div class="content">
-<h1>Hello</h1>
-<p>Welcome to my site.</p>
-</div>
+<p>This is <strong>bold</strong> and <em>italic</em></p>
 ```
 
-### Syntax Highlighting
+### Inline Mode
 
-Uses Pygments for code blocks. Apply a Pygments CSS theme in your template:
-
-```html
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pygments/2.19.1/pygments.min.css">
-```
-
-## `markdown_inline`
-
-Converts Markdown to inline HTML **without** block-level wrappers. Use for short strings inside paragraphs.
+Pass `inline=True` to drop wrapping `<p>` tags for short snippets:
 
 ```jinja2
-{{ "This is **bold** and *italic*" | markdown_inline }}
+{{ "This is **bold** and *italic*" | markdown(inline=True) | safe }}
 ```
 
 ```html
 This is <strong>bold</strong> and <em>italic</em>
 ```
 
-## Configuration
+## Enabled Extensions
 
-Markdown rendering supports these `pyproject.toml` settings:
+The following Markdown extensions are always enabled:
 
-```toml
-[tool.moosey-cms]
-markdown.extensions = ["extra", "codehilite", "toc", "sane_lists"]
-markdown.codehilite_css = true
+| Extension | Features |
+|-----------|----------|
+| `markdown.extensions.tables` | GFM-style tables |
+| `markdown.extensions.toc` | Table of Contents generation |
+| `pymdownx.magiclink` | Auto-link URLs, emails, GitHub references |
+| `pymdownx.betterem` | Improved emphasis handling |
+| `pymdownx.tilde` | Subscript (`~text~`) and strikethrough (`~~text~~`) |
+| `pymdownx.emoji` | Emoji shortcodes (`:smile:` → 😄) |
+| `pymdownx.tasklist` | GFM task lists (`- [x] done`) |
+| `pymdownx.superfences` | Fenced code blocks with syntax highlighting |
+| `pymdownx.saneheaders` | Prevent false header matches |
+| `pymdownx.arithmatex` | LaTeX math rendering |
+| `pymdownx.blocks.admonition` | Admonition/callout blocks |
+| EmoticonExtension | Text emoticons (`:)` → 🙂, `<3` → ❤️) |
+
+## Syntax Highlighting
+
+Code blocks use Pygments via `pymdownx.superfences`. Apply a Pygments CSS theme in your template:
+
+```html
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pygments/2.19.1/pygments.min.css">
 ```
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `markdown.extensions` | `["extra", "codehilite", "toc", "sane_lists", "nl2br"]` | Python-Markdown extensions to enable |
-| `markdown.codehilite_css` | `true` | Whether to include inline Pygments CSS |
+````markdown
+```python
+def hello():
+    print("Hello, World!")
+```
+````

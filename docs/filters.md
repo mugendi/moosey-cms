@@ -1,166 +1,134 @@
 # Filters Reference
 
-moosey-cms provides 38 built-in Jinja2 filters for dates, text, numbers, images, and more.
+moosey-cms provides 48 built-in Jinja2 filters for dates, text, numbers, images, and more.
+
+All filters are automatically registered when you call `init_cms()`.
 
 ## Quick Reference
 
 | Filter | Category | Description |
 |--------|----------|-------------|
-| `date` | Date | Format date string |
-| `date_iso` | Date | ISO 8601 format |
-| `date_rfc` | Date | RFC 2822 format |
-| `date_short` | Date | Short format |
-| `strftime` | Date | Custom strftime format |
-| `time_ago` | Date | Relative "3 days ago" |
-| `time_until` | Date | Relative "in 3 days" |
-| `country_name` | Currency | Country code to full name |
-| `currency_name` | Currency | Currency code to full name |
-| `currency_symbol` | Currency | Currency code to symbol ($, €) |
-| `currency` | Currency | Format amount with symbol |
-| `currency_short` | Currency | Compact currency format |
-| `currency_spaced` | Currency | Currency with non-breaking space |
-| `pluralize` | Text | Plural/singular suffix |
+| `fancy_date` | Date | '13th Jan, 2026 at 6:00 PM' |
+| `short_date` | Date | 'Jan 13, 2026' |
+| `iso_date` | Date | '2026-01-13' |
+| `relative_time` | Date | '2 hours ago' |
+| `time_only` | Date | '6:00 PM' |
+| `strptime` | Date | Parse string to datetime |
+| `rfc822_date` | Date | RFC 822 format (RSS) |
+| `currency` | Currency | Format with symbol ($1,234.56) |
+| `compact_currency` | Currency | Compact format ($1.2M) |
+| `currency_name` | Currency | Code to full name ('US Dollar') |
+| `country_name` | Currency | Code to full name ('United States') |
+| `country_flag` | Currency | Code to emoji flag (🇺🇸) |
+| `language_name` | Currency | Code to full name ('English') |
+| `truncate_words` | Text | Truncate by word count |
+| `reading_time` | Text | Estimated reading time |
+| `read_time` | Text | Estimated reading time (alias) |
 | `slugify` | Text | URL-friendly slug |
-| `truncate` | Text | Truncate with ellipsis |
-| `titlecase` | Text | Title case conversion |
-| `typogrify` | Text | Smart typography |
-| `smartypants` | Text | Smart quotes and dashes |
-| `number` | Number | Locale-formatted number |
-| `number_short` | Number | Compact format (1.2K) |
-| `number_bytes` | Number | Human-readable bytes |
-| `number_fixed` | Number | Fixed decimal places |
-| `sanitize` | HTML | Strip unsafe HTML tags |
-| `format_yaml` | Content | Dict to YAML string |
-| `format_toml` | Content | Dict to TOML string |
-| `format_json` | Content | Dict to JSON string |
-| `format_xml` | Content | Dict to XML string |
-| `markdown` | Content | Markdown to full HTML |
-| `markdown_inline` | Content | Markdown to inline HTML |
-| `to_json` | Utility | Object to JSON |
-| `to_yaml` | Utility | Object to YAML |
-| `to_toml` | Utility | Object to TOML |
-| `to_xml` | Utility | Object to XML |
-| `urlencode` | Utility | URL-encode a string |
-| `image` | Image | Responsive image tag or URL |
-| `image_url` | Image | *(deprecated)* Single image URL |
-| `responsive_image` | Image | *(deprecated)* Responsive srcset HTML |
-| `image_width` | Image | Get image width |
-| `image_height` | Image | Get image height |
-| `dominant_color` | Image | Extract dominant color |
-| `image_cdn` | Image | Transform URL via CDN |
-
----
+| `title_case` | Text | Title case conversion |
+| `excerpt` | Text | Smart excerpt at sentence break |
+| `smart_quotes` | Text | Straight to curly quotes |
+| `number_format` | Number | Thousand separators |
+| `percentage` | Number | Format as percentage |
+| `ordinal` | Number | 1st, 2nd, 3rd |
+| `filesize` | Number | Human-readable bytes |
+| `pluralize` | Text | Plural/singular suffix |
+| `word_count` | Text | Count words in text |
+| `default_if_none` | Utility | Fallback for None values |
+| `yesno` | Utility | Boolean to yes/no text |
+| `absolute_url` | Utility | Resolve relative URL |
+| `strip_html` | HTML | Remove HTML tags |
+| `strip_comments` | HTML | Remove HTML comments |
+| `minify_html` | HTML | Minify whitespace |
+| `sanitize` | HTML | Bleach safe tag allowlist |
+| `markdown` | Markdown | Markdown to HTML |
+| `cache_bust` | URL | Append version hash |
+| `inline` | URL | Inline file contents |
+| `embed` | Content | Video/social embed HTML |
+| `headings` | Content | Extract heading tree |
+| `toc_from_html` | Content | Render table of contents |
+| `gravatar` | Content | Gravatar URL |
+| `image` | Image | Image URL or responsive `<img>` |
+| `image_url` | Image | *(deprecated)* Image URL |
+| `responsive_image` | Image | *(deprecated)* Responsive `<img>` |
+| `image_dimensions` | Image | `width="…" height="…"` string |
+| `dominant_color` | Image | Most common hex color |
+| `image_cdn` | Image | CDN transform URL |
+| `img_attrs` | Image | `src loading decoding` string |
+| `lazy_image` | Image | Inject lazy attrs |
 
 ## Date & Time Filters
 
-### `date`
+### `fancy_date`
 
-Format a date string:
+Format date as '13th Jan, 2026 at 6:00 PM':
 
 ```jinja2
-{{ page.date | date("%B %d, %Y") }}
-{# "January 15, 2025" #}
+{{ page.date | fancy_date }}
+{# "13th Jan, 2026 at 6:00 PM" #}
 ```
 
-Uses Python's `strftime` under the hood.
+### `short_date`
 
-### `date_iso`
+Format date as 'Jan 13, 2026':
+
+```jinja2
+{{ page.date | short_date }}
+{# "Jan 13, 2026" #}
+```
+
+### `iso_date`
 
 ISO 8601 date format:
 
 ```jinja2
-{{ page.date | date_iso }}
-{# "2025-01-15" #}
+{{ page.date | iso_date }}
+{# "2026-01-13" #}
 ```
 
-### `date_rfc`
+### `relative_time`
 
-RFC 2822 date format (for RSS feeds):
-
-```jinja2
-{{ page.date | date_rfc }}
-{# "Wed, 15 Jan 2025 00:00:00 +0000" #}
-```
-
-### `date_short`
-
-Short date format:
+Relative time (e.g., '2 hours ago', 'yesterday'):
 
 ```jinja2
-{{ page.date | date_short }}
-{# "Jan 15, 2025" #}
-```
-
-### `strftime`
-
-Alias for Python's `strftime`:
-
-```jinja2
-{{ page.date | strftime("%Y-%m-%d") }}
-```
-
-### `time_ago`
-
-Relative time in the past:
-
-```jinja2
-{{ page.date | time_ago }}
+{{ page.date | relative_time }}
 {# "3 days ago" #}
+
+{{ page.date | relative_time(showAgo=False) }}
+{# "3 days" #}
 ```
 
-### `time_until`
+### `time_only`
 
-Relative time in the future:
+Format as time only '6:00 PM':
 
 ```jinja2
-{{ page.date | time_until }}
-{# "in 3 days" #}
+{{ page.date | time_only }}
+{# "6:00 PM" #}
+```
+
+### `strptime`
+
+Parse a string into a datetime using a format string:
+
+```jinja2
+{{ "2026-01-13" | strptime("%Y-%m-%d") | fancy_date }}
+```
+
+### `rfc822_date`
+
+Format for RSS feeds (RFC 822):
+
+```jinja2
+{{ page.date | rfc822_date }}
+{# "Tue, 13 Jan 2026 18:00:00 GMT" #}
 ```
 
 ---
 
-## Country & Currency Filters
+## Currency & Locale Filters
 
-These require the `pycountry` library (`pip install pycountry`). They gracefully degrade when pycountry is absent, returning the input value unchanged.
-
-### `country_name`
-
-Convert ISO country code to full name:
-
-```jinja2
-{{ "US" | country_name }}
-{# "United States" #}
-
-{{ "GB" | country_name }}
-{# "United Kingdom" #}
-```
-
-### `currency_name`
-
-Convert ISO currency code to full name:
-
-```jinja2
-{{ "USD" | currency_name }}
-{# "US Dollar" #}
-
-{{ "EUR" | currency_name }}
-{# "Euro" #}
-```
-
-### `currency_symbol`
-
-Get currency symbol from code:
-
-```jinja2
-{{ "USD" | currency_symbol }}
-{# "$" #}
-
-{{ "EUR" | currency_symbol }}
-{# "€" #}
-
-{{ "JPY" | currency_symbol }}
-{# "¥" #}
-```
+These require the `pycountry` library (`pip install pycountry`). They gracefully degrade with built-in fallbacks when pycountry is absent.
 
 ### `currency`
 
@@ -177,52 +145,71 @@ Format a number as currency with symbol:
 {# "$0.00" #}
 ```
 
-### `currency_short`
+### `compact_currency`
 
-Compact currency format:
+Compact format for large numbers:
 
 ```jinja2
-{{ 1500000 | currency_short }}
+{{ 1500000 | compact_currency }}
 {# "$1.5M" #}
 
-{{ 2500 | currency_short("EUR") }}
+{{ 2500 | compact_currency("EUR") }}
 {# "€2.5K" #}
 ```
 
-### `currency_spaced`
+### `currency_name`
 
-Currency with non-breaking space between symbol and amount:
+Convert ISO currency code to full name:
 
 ```jinja2
-{{ 1234.56 | currency_spaced("EUR") }}
-{# "€ 1,234.56"  (with non-breaking space) #}
+{{ "USD" | currency_name }}
+{# "US Dollar" #}
+
+{{ "KES" | currency_name }}
+{# "Kenyan Shilling" #}
+```
+
+### `country_name`
+
+Convert ISO country code to full name:
+
+```jinja2
+{{ "US" | country_name }}
+{# "United States" #}
+
+{{ "KE" | country_name }}
+{# "Kenya" #}
+```
+
+Supports both alpha-2 and alpha-3 codes.
+
+### `country_flag`
+
+Convert ISO country code to emoji flag:
+
+```jinja2
+{{ "US" | country_flag }}
+{# 🇺🇸 #}
+
+{{ "KE" | country_flag }}
+{# 🇰🇪 #}
+```
+
+### `language_name`
+
+Convert language code to full name:
+
+```jinja2
+{{ "en" | language_name }}
+{# "English" #}
+
+{{ "sw" | language_name }}
+{# "Swahili" #}
 ```
 
 ---
 
 ## Text Filters
-
-### `pluralize`
-
-Return plural suffix based on count:
-
-```jinja2
-{{ 1 }} item{{ 1 | pluralize }}
-{# "1 item" #}
-
-{{ 3 }} item{{ 3 | pluralize }}
-{# "3 items" #}
-
-Custom suffix:
-{{ 3 | pluralize("es") }}
-{# "es" #}
-
-{{ 1 | pluralize("ies", "y") }}
-{# "y" #}
-
-{{ 3 | pluralize("ies", "y") }}
-{# "ies" #}
-```
 
 ### `slugify`
 
@@ -234,109 +221,136 @@ Convert string to URL-friendly slug:
 
 {{ "Café & Bakery" | slugify }}
 {# "cafe-bakery" #}
-
-{{ "  Spaces!  " | slugify }}
-{# "spaces" #}
 ```
 
-### `truncate`
+### `title_case`
 
-Truncate text with ellipsis:
-
-```jinja2
-{{ long_text | truncate(100) }}
-{# "First 100 characters..." #}
-```
-
-### `titlecase`
-
-Convert to title case:
+Convert to title case, preserving acronyms:
 
 ```jinja2
-{{ "hello world" | titlecase }}
+{{ "hello world" | title_case }}
 {# "Hello World" #}
 
-{{ "the quick brown fox" | titlecase }}
+{{ "the quick brown fox" | title_case }}
 {# "The Quick Brown Fox" #}
 ```
 
-### `typogrify`
+### `truncate_words`
 
-Apply smart typography (requires `smartypants`):
+Truncate text to specified word count:
 
 ```jinja2
-{{ '"Hello" -- world' | typogrify }}
-{# "&ldquo;Hello&rdquo; &mdash; world" #}
+{{ long_text | truncate_words(50) }}
+{# "First 50 words..." #}
 ```
 
-### `smartypants`
+### `excerpt`
 
-Smart quotes, dashes, and ellipses:
+Create excerpt from text, breaking at sentence boundary:
 
 ```jinja2
-{{ '"Hello" -- world...' | smartypants }}
-{# "&ldquo;Hello&rdquo; &mdash; world&hellip;" #}
+{{ page.content | excerpt }}
+{# "First sentence." #}
+
+{{ page.content | excerpt(200) }}
+{# "First ~200 chars breaking at sentence." #}
+```
+
+### `reading_time`
+
+Calculate reading time in minutes:
+
+```jinja2
+{{ page.content | reading_time }}
+{# "3 min read" #}
+```
+
+### `read_time`
+
+Alias for `reading_time`.
+
+### `smart_quotes`
+
+Convert straight quotes to smart/curly quotes:
+
+```jinja2
+{{ '"Hello" -- world' | smart_quotes }}
+```
+
+### `pluralize`
+
+Return plural suffix based on count:
+
+```jinja2
+{{ 'review' | pluralize(reviews|length) }}
+{# "review" or "reviews" #}
+
+{{ 'box' | pluralize(3, 'boxes') }}
+{# "boxes" #}
+```
+
+### `word_count`
+
+Number of whitespace-separated words (strips HTML if present):
+
+```jinja2
+{{ page.content | word_count }}
+{# 342 #}
 ```
 
 ---
 
 ## Number Filters
 
-### `number`
+### `number_format`
 
 Format with thousand separators:
 
 ```jinja2
-{{ 1234567.89 | number }}
+{{ 1234567.89 | number_format }}
+{# "1,234,568" #}
+
+{{ 1234567.89 | number_format(2) }}
 {# "1,234,567.89" #}
 ```
 
-### `number_short`
+### `percentage`
 
-Compact notation:
+Format as percentage:
 
 ```jinja2
-{{ 1234 | number_short }}
-{# "1.2K" #}
+{{ 0.5 | percentage }}
+{# "50.0%" #}
 
-{{ 1500000 | number_short }}
-{# "1.5M" #}
-
-{{ 500 | number_short }}
-{# "500" #}
+{{ 0.5 | percentage(0) }}
+{# "50%" #}
 ```
 
-### `number_bytes`
+### `ordinal`
+
+Convert number to ordinal (1st, 2nd, 3rd):
+
+```jinja2
+{{ 1 | ordinal }}
+{# "1st" #}
+
+{{ 23 | ordinal }}
+{# "23rd" #}
+
+{{ 42 | ordinal }}
+{# "42nd" #}
+```
+
+### `filesize`
 
 Human-readable byte sizes:
 
 ```jinja2
-{{ 1024 | number_bytes }}
+{{ 1024 | filesize }}
 {# "1.0 KB" #}
 
-{{ 1048576 | number_bytes }}
+{{ 1048576 | filesize }}
 {# "1.0 MB" #}
-
-{{ 0 | number_bytes }}
-{# "0 B" #}
-
-{{ 1536 | number_bytes }}
-{# "1.5 KB" #}
-```
-
-### `number_fixed`
-
-Format with fixed decimal places:
-
-```jinja2
-{{ 3.14159 | number_fixed(2) }}
-{# "3.14" #}
-
-{{ 3.1 | number_fixed(2) }}
-{# "3.10" #}
-
-{{ 3 | number_fixed(2) }}
-{# "3.00" #}
 ```
 
 ---
@@ -351,95 +365,174 @@ Strip unsafe HTML tags and attributes using [Bleach](https://github.com/mozilla/
 {{ user_comment | sanitize }}
 ```
 
-By default allows: `a`, `abbr`, `acronym`, `b`, `blockquote`, `code`, `em`, `i`, `li`, `ol`, `strong`, `ul`. Pass additional tags as an argument:
+Allows a broad set of safe HTML5 tags by default. Pass overrides to customize:
 
 ```jinja2
-{{ content | sanitize(["img", "table"]) }}
+{{ content | sanitize(tags=["p", "img", "a"]) | safe }}
 ```
 
-See [Security](security.md) for full details and CSP configuration.
+See [Security](security.md) for full details and configuration.
 
----
+### `strip_html`
 
-## Content Helpers
-
-### `format_yaml`
-
-Serialize a dict to YAML:
+Remove HTML tags/comments and collapse whitespace:
 
 ```jinja2
-{{ data | format_yaml }}
+{{ "<p>Hello <b>World</b></p>" | strip_html }}
+{# "Hello World" #}
 ```
 
-### `format_toml`
+### `strip_comments`
 
-Serialize a dict to TOML:
+Remove HTML comments from the output:
 
 ```jinja2
-{{ data | format_toml }}
+{{ content | strip_comments }}
 ```
 
-### `format_json`
-
-Serialize a dict to formatted JSON:
+Can be used as a block filter:
 
 ```jinja2
-{{ data | format_json }}
+{% filter strip_comments %}
+<!-- this comment will be removed -->
+<p>visible content</p>
+{% endfilter %}
 ```
 
-### `format_xml`
+### `minify_html`
 
-Serialize a dict to XML:
+Minify HTML by removing unnecessary whitespace and newlines:
 
 ```jinja2
-{{ data | format_xml }}
+{{ content | minify_html }}
 ```
-<!-- TODO: document format_xml root tag behavior -->
+
+> Warning: Regex-based minifier, does not respect `<pre>` tags.
 
 ---
 
 ## Utility Filters
 
-### `to_json`
+### `default_if_none`
 
-Convert any object to a JSON string (safe for embedding in `<script>` tags):
+Return default value if None:
 
 ```jinja2
-<script>
-const data = {{ page | to_json | safe }};
-</script>
+{{ page.author | default_if_none("Unknown") }}
 ```
 
-### `to_yaml`
+### `yesno`
 
-Convert object to YAML string:
+Convert boolean to yes/no text:
 
 ```jinja2
-<pre>{{ data | to_yaml }}</pre>
+{{ page.published | yesno }}
+{# "Yes" or "No" #}
+
+{{ page.published | yesno("Published", "Draft") }}
 ```
 
-### `to_toml`
+### `absolute_url`
 
-Convert object to TOML string:
+Resolve a relative URL against the site URL:
 
 ```jinja2
-<pre>{{ data | to_toml }}</pre>
+{{ "/about" | absolute_url }}
+{# "https://example.com/about" #}
 ```
 
-### `to_xml`
+Resolves against `site_data.web.site_url` or the request base URL.
 
-Convert object to XML string:
+### `cache_bust`
+
+Append cache-busting query string (mtime or sha8) to a static asset URL:
 
 ```jinja2
-<pre>{{ data | to_xml }}</pre>
+<link href="{{ '/static/site.css' | cache_bust }}" rel="stylesheet">
+{# '/static/site.css?v=1736719200' #}
+
+{{ '/static/app.js' | cache_bust(mode="sha8") }}
+{# '/static/app.js?v=a1b2c3d4' #}
 ```
 
-### `urlencode`
+Resolves files under the configured static directory.
 
-URL-encode a string:
+### `inline`
+
+Inline a static asset's contents directly into the page:
 
 ```jinja2
-{{ page.title | urlencode }}
+<style>{{ '/static/critical.css' | inline }}</style>
+
+<img src="{{ '/static/icon.svg' | inline(encode="data-uri") }}">
+```
+
+Looks up files under the configured static directory.
+
+---
+
+## Content Helpers
+
+### `markdown`
+
+Render a Markdown string to HTML:
+
+```jinja2
+{{ "This is **bold** and *italic*" | markdown | safe }}
+```
+
+Inline mode (no wrapping `<p>` tags):
+
+```jinja2
+{{ "**bold**" | markdown(inline=True) | safe }}
+```
+
+See [Markdown Rendering](markdown.md) for full details.
+
+### `embed`
+
+Convert a video, social, or gist URL into embed HTML:
+
+```jinja2
+{{ "https://www.youtube.com/watch?v=dQw4w9WgXcQ" | embed }}
+
+{{ "https://twitter.com/user/status/123456789" | embed }}
+
+{{ "https://gist.github.com/user/abc123" | embed }}
+
+{{ "https://codepen.io/user/pen/abcde" | embed }}
+
+{{ "https://vimeo.com/12345678" | embed }}
+```
+
+Falls back to a plain `<a>` link for unknown providers.
+
+### `headings`
+
+Extract `[(id, text, level), ...]` from rendered HTML:
+
+```jinja2
+{% for id, text, level in content | headings %}
+    <a href="#{{ id }}">{{ text }}</a>
+{% endfor %}
+```
+
+### `toc_from_html`
+
+Render a `<nav><ul>` table of contents from HTML headings:
+
+```jinja2
+{{ content | toc_from_html }}
+
+{{ content | toc_from_html(min_level=2, max_level=3, klass="my-toc") }}
+```
+
+### `gravatar`
+
+Return a Gravatar URL for an email:
+
+```jinja2
+<img src="{{ user.email | gravatar(size=80) }}" alt="Avatar">
 ```
 
 ---
@@ -454,36 +547,31 @@ Generate an image URL or responsive `<img>` tag with `srcset`:
 
 ```jinja2
 {# Single URL #}
-<img src="{{ '/photos/photo.jpg' | image(width=800) }}" alt="Photo">
+<img src="{{ '/photos/photo.jpg' | image(w=800) }}" alt="Photo">
 
 {# Responsive srcset #}
 {{ '/photos/photo.jpg' | image(widths=[400, 800, 1200], alt="Photo") }}
 ```
 
-The `image` filter is the primary API. `image_url` and `responsive_image` are deprecated wrappers that emit `DeprecationWarning`.
+The `image` filter is the primary API. `image_url` and `responsive_image` are deprecated.
 
-### `image_url` *(deprecated)*
+### `image_cdn`
 
-Returns a single processed image URL. Prefer `image`.
-
-### `responsive_image` *(deprecated)*
-
-Returns a full `<img>` tag with `srcset`. Prefer `image(widths=...)`.
-
-### `image_width`
-
-Get the pixel width of an image:
+Transform an image URL through the configured CDN:
 
 ```jinja2
-{{ '/photos/photo.jpg' | image_width }}
+{{ '/photos/photo.jpg' | image_cdn(w=400, q=80) }}
 ```
 
-### `image_height`
+Provider is configured via `site_data.image_cdn`.
 
-Get the pixel height of an image:
+### `image_dimensions`
+
+Read width/height of a local image:
 
 ```jinja2
-{{ '/photos/photo.jpg' | image_height }}
+<img {{ '/photos/photo.jpg' | image_dimensions }} src="...">
+{# ' width="1920" height="1080"' #}
 ```
 
 ### `dominant_color`
@@ -494,34 +582,18 @@ Extract the dominant color as a hex string:
 <div style="background-color: {{ '/photos/photo.jpg' | dominant_color }}">
 ```
 
-### `image_cdn`
+### `img_attrs`
 
-Transform an image URL through the configured CDN:
+Build `src loading decoding width height` attr string:
 
 ```jinja2
-{{ '/photos/photo.jpg' | image_cdn(width=400) }}
+<img {{ '/photos/photo.jpg' | img_attrs(width=800, height=600) }}>
 ```
 
----
+### `lazy_image`
 
-## Markdown Filters
-
-See [Markdown Rendering](markdown.md) for complete documentation.
-
-### `markdown`
-
-Convert Markdown text to full HTML with syntax highlighting:
+Inject lazy/async/referrerpolicy attributes:
 
 ```jinja2
-{{ page.content | markdown }}
-```
-
-Requires `pip install moosey-cms[markdown]`.
-
-### `markdown_inline`
-
-Convert Markdown to inline HTML (no wrapper `<div>`):
-
-```jinja2
-{{ "This is **bold**" | markdown_inline }}
+{{ lazy_html | lazy_image }}
 ```
