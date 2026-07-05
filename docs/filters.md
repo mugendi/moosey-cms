@@ -143,7 +143,7 @@ Assuming `date_obj` is a Python datetime object (e.g., from `date: 2026-01-21` i
 **Returns:** Raw HTML string (Jinja escapes it unless you pipe through `safe`).
 
 Render an inline Markdown string to HTML using Moosey's full configured Markdown
-renderer — the same pipeline used to render your `content/*.md` files.
+renderer - the same pipeline used to render your `content/*.md` files.
 
 **Arguments:**
 * `inline` (bool): If `True`, the outer `<p>…</p>` wrapper added by Python-Markdown
@@ -159,7 +159,7 @@ Pipe any Markdown string through `markdown` and then `safe`:
 {{ "**Active** project" | markdown | safe }}
 ```
 
-Because Jinja escapes by default, **always** add `| safe` — otherwise the HTML
+Because Jinja escapes by default, **always** add `| safe` - otherwise the HTML
 tags show up verbatim in the browser.
 
 Rendering a frontmatter field that holds Markdown:
@@ -238,7 +238,7 @@ absolute URLs for email or RSS templates:
 
 Moosey's `markdown` filter uses the same configured renderer as your
 `content/*.md` files. The extensions below are pre-configured in
-`src/moosey_cms/md.py` — no setup required. Each example below shows the
+`src/moosey_cms/md.py` - no setup required. Each example below shows the
 Markdown input and the exact HTML returned by `{{ content | markdown | safe }}`.
 
 ##### 1. Tables (`markdown.extensions.tables`)
@@ -291,7 +291,7 @@ Markdown input and the exact HTML returned by `{{ content | markdown | safe }}`.
 **Note:** Use the `[TOC]` marker inline where you want the table to appear. The
 title "Table of Contents" is configured via `extension_configs` in `md.py`.
 
-##### 3. Magic Links — URLs, GitHub shorthand, mentions (`pymdownx.magiclink`)
+##### 3. Magic Links - URLs, GitHub shorthand, mentions (`pymdownx.magiclink`)
 
 **Input:**
 ```markdown
@@ -324,7 +324,7 @@ Also visit www.example.com or email user@example.com.
 `facelessuser/pymdown-extensions`). Update that config to your own repo so your
 issue/PR numbers link correctly. Email addresses are auto-linked and
 HTML-escaped character-by-character (`mailto:` becomes
-`&#109;&#97;&#105;&#108;&#116;&#111;&#58;…`) for anti-spam obfuscation — they
+`&#109;&#97;&#105;&#108;&#116;&#111;&#58;…`) for anti-spam obfuscation - they
 render as clickable links in browsers but appear as raw entities in HTML
 source.
 
@@ -402,7 +402,7 @@ shortcode list: https://github.com/iamcal/emoji-data.
 ```
 
 **Note:** Checkboxes are `disabled` (display-only). To make them interactive,
-style with CSS and add a small JS handler — the rendered HTML has no `<form>`.
+style with CSS and add a small JS handler - the rendered HTML has no `<form>`.
 
 ##### 8. Fenced Code & Nested Fences (`pymdownx.superfences`)
 
@@ -443,7 +443,7 @@ of varying lengths or `~~~` markers.
 <h6 id="h6">H6</h6>
 ```
 
-**Note:** "Sane" means a single `#` no longer requires a space — `#H1` works.
+**Note:** "Sane" means a single `#` no longer requires a space - `#H1` works.
 IDs are auto-generated from the heading text (lowercased, spaces→`-`), useful
 for the TOC extension's anchor links.
 
@@ -462,7 +462,7 @@ Inline $E = mc^2$ and block $$\sum_{i=1}^n i$$.
 
 **Note:** Arithmatex runs in **generic mode** (`"generic": True` in `md.py`). It
 emits `\(...\)` and `\[...\]` LaTeX delimiters wrapped in
-`<span class="arithmatex">` — it does **not** render the math itself. Add
+`<span class="arithmatex">` - it does **not** render the math itself. Add
 MathJax or KaTeX client-side:
 
 ```html
@@ -473,7 +473,7 @@ MathJax or KaTeX client-side:
 <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 ```
 
-##### 11. Admonitions (`pymdownx.blocks.admonition`) — ⚠️ use `///`, not `!!!`
+##### 11. Admonitions (`pymdownx.blocks.admonition`) - ⚠️ use `///`, not `!!!`
 
 **Input:**
 ````markdown
@@ -498,20 +498,20 @@ Body text with **bold**.
 ```
 
 **⚠️ Critical:** Moosey uses the **blocks-family**
-`pymdownx.blocks.admonition`, which uses `///` fences — **not** the `!!!`
+`pymdownx.blocks.admonition`, which uses `///` fences - **not** the `!!!`
 syntax used by the legacy `pymdownx.admonition` (which is not installed). The
 `!!! note` syntax you see in most online tutorials produces literal text.
 
 **Supported types** (built into the extension's `types` config):
 - `note`, `attention`, `caution`, `danger`, `error`
 - `tip`, `hint`, `warning`, `important`
-- `admonition` (generic — no title bar, no class suffix)
+- `admonition` (generic - no title bar, no class suffix)
 
 **Variants:**
 
 ````markdown
 /// warning
-No title — uses the type name.
+No title - uses the type name.
 ///
 
 /// danger | Critical Alert
@@ -522,7 +522,7 @@ Bold body **here**.
 ```html
 <div class="admonition warning">
   <p class="admonition-title">Warning</p>
-  <p>No title — uses the type name.</p>
+  <p>No title - uses the type name.</p>
 </div>
 
 <div class="admonition danger">
@@ -635,3 +635,211 @@ Active: {{ is_active | yesno("Online", "Offline") }}
 <!-- File Size -->
 Download size: {{ 2500000 | filesize }}
 ```
+
+---
+
+## 🛡 Sanitize
+
+Moosey CMS runs an HTML allowlist sanitizer (via `bleach`) on every page's
+rendered content body by default. This protects against XSS via pasted
+Markdown HTML without losing your ability to embed safe inline HTML.
+
+### `sanitize`
+
+**Type:** Filter
+**Returns:** Clean HTML string. Use `| safe` to inject it into the page.
+
+Strip dangerous tags (e.g. `<script>`, `<iframe>`), event-handler attributes
+(`on*`), and unsafe URL protocols (`javascript:`, `vbscript:`). Sane defaults
+cover common CMS content.
+
+**Arguments:**
+* `tags` (list): Override the tag allowlist. Default: see `_DEFAULT_ALLOWED_TAGS` in `filters.py`.
+* `attrs` (dict): Override per-tag attribute allowlist. Default: see `_DEFAULT_ALLOWED_ATTRS`.
+* `protocols` (list): Override safe URL protocols. Default: `http, https, mailto, tel`.
+* `styles` (list): If supplied (and `bleach[css]` installed), allowlist inline CSS properties. Default: `[]` (no inline styles).
+* `strip` (bool): Strip disallowed tags out entirely (default `True`). If `False`, the tag is escaped to text but kept.
+* `strip_comments` (bool): Drop HTML comments. Default `True`.
+
+**Simple usage:**
+
+```jinja
+{{ untrusted_html | sanitize | safe }}
+```
+
+Manual use after `markdown`:
+
+```jinja
+{{ body | markdown | sanitize | safe }}
+```
+
+**Customizing via `site_data.sanitize`:**
+
+```python
+site_data = {
+    ...,
+    "sanitize": {
+        "tags": ["p", "b", "i", "a", "ul", "ol", "li", "img", "code", "pre"],
+        "attrs": {"a": ["href"], "img": ["src", "alt"]},
+        "protocols": ["https"],
+        "strip": True,
+        "auto": True,            # Set False to opt out of the auto-sanitize step
+    },
+    "sanitize": False,            # Nuclear opt-out: no auto-sanitize at all
+}
+```
+
+### Notes
+- **Always-on by default.** Auto-sanitize runs in `template_render_content` on every markdown body.
+- **`site_data.sanitize = False`** opts out entirely.
+- **Inline CSS** (`style=`) is off by default. Pass `styles=["color", "font-size"]` to allowlist properties.
+- `bleach>=6.0,<7` is required (already a Moosey dep).
+- `strip=True` removes disallowed tags but keeps inner text. For stricter behavior (drop whole subtrees), users can implement their own filter and rebind the global.
+
+---
+
+## 🔧 SEO & Data
+
+### `json_ld`
+
+**Type:** Filter
+**Renders** a Python dict as a `<script type="application/ld+json">` block. Escapes `</script>` breakout attacks and the U+2028/9 separators some HTML parsers misread as line ends.
+
+```jinja
+{{ schema_article(title=post.name, image=post.metadata.lead_image,
+                  date_published=post.metadata.date.published) | json_ld | safe }}
+```
+
+Built-in `schema_*` builders are registered as globals (see `docs/seo-advanced.md`):
+- `schema_article`, `schema_breadcrumbs`, `schema_faqpage`, `schema_howto`
+- `schema_localbusiness`, `schema_product`, `schema_event`
+- `schema_organization`, `schema_website`, `schema_person`
+
+Each returns a plain dict - pass your own dict to `json_ld` to bypass all of them.
+
+### `cache_bust`
+
+**Type:** Filter (`@pass_context`)
+
+Appends `?v=<mtime>` (default) or `?v=<sha8>` to a static asset URL so browsers re-fetch after every change.
+
+```jinja
+<link href="{{ '/static/site.css' | cache_bust }}" rel="stylesheet">
+```
+
+Returns the unmodified URL if the file can't be located (never raises).
+
+### `pluralize`
+
+**Type:** Filter
+
+```jinja
+{# Singular-first to look natural with | pipe #}
+{{ 'review' | pluralize(reviews_count) }}
+```
+
+Custom plural: `{{ 'mouse' | pluralize(count, 'mice') }}`.
+
+### `word_count`
+
+```jinja
+{{ body | word_count }}
+```
+
+Strips HTML first if any tags are present.
+
+### `inline`
+
+**Type:** Filter (`@pass_context`)
+
+Inline a static asset's contents directly into the page. By default returns the raw text. Pass `encode="data-uri"` for a `data:<mime>;base64,…` URL.
+
+```jinja
+{{ '/static/images/logo.svg' | inline | safe }}           → raw SVG content
+<span style="background:url({{ '/static/x.webp' | inline(encode='data-uri') }})"></span>
+```
+
+Returns `""` when the file isn't found.
+
+---
+
+## 🖼 Images
+
+Moosey ships four tiers of image handling. See `docs/images.md` for the full reference.
+
+#### 1. Pure-string filters (no dep)
+| Filter | Description | Usage |
+| :--- | :--- | :--- |
+| `img_attrs` | Build `src … loading=… decoding=… width=…` attribute string. | `<img {{ src \| img_attrs(width=800, height=600) \| safe }}>` |
+| `lazy_image` | Inject `loading="lazy"` etc. into an existing `<img>` tag, or build an attr string from a raw src. | `{{ '<img src="/x.jpg">' \| lazy_image \| safe }}` |
+
+#### 2. Metadata-only (Pillow optional, `moosey-cms[images]`)
+| Filter | Description | Usage |
+| :--- | :--- | :--- |
+| `image_dimensions` | Returns `width="…" height="…" ` by reading the local file. Empty if Pillow absent. | `<img src="{{ src }}" {{ src \| image_dimensions \| safe }}>` |
+| `dominant_color` | Most common hex color, for LQIP backgrounds. | `<div style="background:{{ src \| dominant_color }}">` |
+
+#### 3. CDN adapter (no server processing, `moosey-cms[cdn]`)
+| Filter | Description | Usage |
+| :--- | :--- | :--- |
+| `image_cdn` | Rewrites src into a transform URL for Cloudflare/Cloudinary/imgix/ImageKit. Configured via `site_data.image_cdn`. | `{{ src \| image_cdn(w=800, fmt='webp') }}` |
+
+#### 4. On-disk processing (Pillow, `moosey-cms[images]`)
+| Filter | Description | Usage |
+| :--- | :--- | :--- |
+| `image_url` | Build a URL into the `/__moosey/img/{path}?{params}` route. Produces a derivative once, serves as static forever after. | `{{ src \| image_url(w=800, fmt='webp', focus='face') }}` |
+| `responsive_image` | Render a full `<img src=… srcset=… sizes=… loading=…>` with srcset URLs at several widths. | `{{ src \| responsive_image(widths=(400,800,1200), sizes='100vw', ar='1:1') \| safe }}` |
+
+**Enabling on-disk processing** requires passing `"static": <path>` in `dirs` to `init_cms`. Without that, `image_url`/`responsive_image` still produce URLs that the route 404s on, and `image_dimensions`/`dominant_color` degrade to empty/default.
+
+**`focus=face`** uses `opencv-python-headless` (`moosey-cms[faces]`, ~30MB). Without it, `focus=face` falls back to `focus=auto` with a one-time logged warning. `focus=auto` uses entropy/edge-density saliency - pure Pillow, always available.
+
+See `docs/images.md` for the full URL parameter reference, cache layout, invalidation rules, and security notes.
+
+---
+
+## 🔗 Content Helpers
+
+### `embed`
+
+**Type:** Filter
+
+oEmbed-lite. Recognizes known patterns for YouTube, Vimeo, Twitter/X, GitHub Gist, CodePen, and returns the embed HTML. No network calls, so the output is offline-cacheable.
+
+```jinja
+{{ post.metadata.video | embed | safe }}
+```
+
+Unknown URLs fall back to a plain `<a href="url">url</a>`.
+
+### `headings`
+
+Extract `[(id, text, level), ...]` from rendered HTML. Useful for in-page TOCs or sidebar navigation.
+
+```jinja
+{% for h in content | headings %}
+  <a href="#{{ h.id }}" class="toc-link toc-level-{{ h.level }}">{{ h.text }}</a>
+{% endfor %}
+```
+
+### `toc_from_html`
+
+Render a `<nav class="prose-toc"><ul>…</ul></nav>` of the headings in the given HTML.
+
+```jinja
+{{ content | toc_from_html | safe }}
+```
+
+Requires headings to have IDs - `markdown.extensions.toc` (which Moosey enables) adds them automatically when using `[TOC]` markers, or any heading with an explicit `id` attribute is included.
+
+### `gravatar`
+
+```jinja
+<img src="{{ user.email | gravatar(size=200, default='mp') }}">
+```
+
+| Arg | Values |
+| :--- | :--- |
+| `size` | int px 1–2048 |
+| `default` | `404`, `mp`, `identicon`, `monsterid`, `retro`, `wavatar`, or a URL |
+| `rating` | `g`, `pg`, `r`, `x` |

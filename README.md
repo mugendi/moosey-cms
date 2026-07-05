@@ -304,6 +304,42 @@ Moosey CMS comes packed with a comprehensive library of Jinja2 filters to help y
 | `default_if_none` | <code>{{ val &#124; default_if_none('N/A') }}</code> | Returns default if None |
 | `absolute_url` | <code>{{ '/about' &#124; absolute_url }}</code> | Absolute URL using `site_data.web.site_url` or the request base URL |
 
+### 🛡 Sanitize
+| Filter | Usage | Notes |
+| :--- | :--- | :--- |
+| `sanitize` | <code>{{ html &#124; sanitize &#124; safe }}</code> | Run `bleach.clean` with sane CMS defaults. **Always on** for rendered Markdown bodies. Override via `site_data.sanitize`; opt out with `site_data.sanitize = False`. |
+
+### 🔧 SEO & Data
+| Filter | Usage | Output |
+| :--- | :--- | :--- |
+| `json_ld` | <code>{{ schema_article(...) &#124; json_ld &#124; safe }}</code> | Renders a Python dict as a `<script type="application/ld+json">` block. Schema builders (`schema_article`, `schema_breadcrumbs`, `schema_faqpage`, `schema_howto`, `schema_localbusiness`, `schema_product`, `schema_event`, `schema_organization`, `schema_website`, `schema_person`) are registered as Jinja globals — see [`docs/seo-advanced.md`](docs/seo-advanced.md). |
+| `cache_bust` | <code>{{ '/static/site.css' &#124; cache_bust }}</code> | Appends `?v=<mtime>` so browsers re-fetch after every change. |
+| `pluralize` | <code>{{ 'review' &#124; pluralize(reviews_count) }}</code> | `1 review` / `2 reviews`. Custom: `pluralize(count, 'mice')`. |
+| `word_count` | <code>{{ body &#124; word_count }}</code> | Number of words (strips HTML if any). |
+| `inline` | <code>{{ '/static/logo.svg' &#124; inline &#124; safe }}</code> | Inline the contents of a static asset into the page. Pass `encode='data-uri'` for base64. |
+
+### 🖼 Images
+| Filter | Description | Install |
+| :--- | :--- | :--- |
+| `img_attrs` | Build `src … loading=… decoding=…` attribute string. | core |
+| `lazy_image` | Inject lazy/async attrs into existing `<img>`. | core |
+| `image` | Build an image URL (simple) or a full `<img srcset sizes>` tag (with `widths`). | `moosey-cms[images]` |
+| `image_dimensions` | Read `width="…" height="…"` from local image. | `moosey-cms[images]` |
+| `dominant_color` | Most-common hex color (for LQIP backgrounds). | `moosey-cms[images]` |
+| `image_cdn` | URL-rewriting adapter for Cloudflare / Cloudinary / imgix / ImageKit. | core |
+
+**Enabling on-disk processing** requires passing `"static": <path>` in `dirs` to `init_cms`. Full reference: [`docs/images.md`](docs/images.md). Face detection via `focus=face` requires `moosey-cms[faces]` (~30MB).
+
+**Path convention:** image source paths passed to `image` should omit the `/static/` prefix. Since the static directory is already configured in `dirs`, use paths relative to it — e.g. `/images/team/martin.jpg` instead of `/static/images/team/martin.jpg`. The filter will resolve these against the configured `static_dir` automatically.
+
+### 🔗 Content Helpers
+| Filter | Usage | Output |
+| :--- | :--- | :--- |
+| `embed` | <code>{{ 'https://youtu.be/...' &#124; embed &#124; safe }}</code> | oEmbed-lite for YouTube/Vimeo/Twitter/Gist/CodePen. Unknown URLs fall back to a plain `<a>`. |
+| `headings` | <code>{{ content &#124; headings }}</code> | `[(id, text, level), ...]` for in-page TOC. |
+| `toc_from_html` | <code>{{ content &#124; toc_from_html &#124; safe }}</code> | Renders a `<nav class="prose-toc"><ul>…</ul></nav>`. |
+| `gravatar` | <code>{{ user.email &#124; gravatar(size=200, default='mp') }}</code> | Gravatar URL. |
+
 ---
 
 [More On Filters](docs/filters.md) and how to use some interesting ones such as stripping comments.

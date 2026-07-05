@@ -1209,5 +1209,134 @@ Add a feed discovery link to `base.html`:
 
 ---
 
+## 25. 🛡️ Security: HTML Sanitization
+
+Moosey CMS runs **always-on HTML sanitization** on every rendered Markdown body via `bleach`. This guards against XSS shipped in pasted Markdown.
+
+### Threat model
+| Vector | How Moosey defends |
+| :--- | :--- |
+| `<script>`, `<iframe>`, `<embed>`, `<object>` in Markdown | Stripped (tag not in allowlist, `strip=True` default). |
+| `on*` event handler attributes (`onclick=…`, `onload=…`) | Stripped (no `on*` attribute is allowlisted). |
+| `javascript:`, `vbscript:`, `data:` URL protocols in `href`/`src` | Stripped; only `http`, `https`, `mailto`, `tel` allowed by default. |
+| Jinja SSTI (RCE) | Sandboxed Jinja blocks dangerous attrs (`__class__`, etc.) — see §17. |
+| Path traversal in the image route | Resolves source paths against the static mount root (see `docs/images.md` §12). |
+
+The `markdown.extensions` family allows inline HTML; without sanitization, an
+author could write `<script>…</script>` inside a Markdown body and ship
+Javscript to every reader. Auto-sanitize closes this gap.
+
+### Three layers of defense
+1. **Sandboxed Jinja** blocks template-level RCE.
+2. **Always-on sanitize** strips dangerous HTML in the rendered body.
+3. **Path-traversal guard** in the image route (`get_secure_target` plus `relative_to(static)`).
+
+### Adding a custom tag
+
+If you need a tag Moosey's default allowlist doesn't allow (e.g., `<iframe>` for trusted YouTube embeds), override via `site_data.sanitize`:
+
+```python
+site_data = {
+    ...,
+    "sanitize": {
+        # Spread the defaults, then add iframe + explicit attrs
+        "tags": [*moosey_cms.filters._DEFAULT_ALLOWED_TAGS, "iframe"],
+        "attrs": {
+            *moosey_cms.filters._DEFAULT_ALLOWED_ATTRS,
+            "iframe": ["src", "width", "height", "title",
+                       "frameborder", "allow", "allowfullscreen", "loading"],
+        },
+        # Restrict iframe src to https so javascript: can't sneak in
+        "protocols": ["https", "http", "mailto", "tel"],
+    },
+}
+```
+
+### Disabling auto-sanitize
+
+```python
+site_data = {
+    ...,
+    "sanitize": False,   # nuclear opt-out
+    # or:
+    "sanitize": {"auto": False},   # disable auto step; manual | sanitize still works
+}
+```
+
+You'd want to do this when you trust every author of your content (single-tenant docs site, internal wiki, etc.).
+
+### bleach maintenance status
+`bleach>=6.0,<7` is pinned. Mozilla archived active feature development in 2023;
+security fixes continue. A future Moosey release may switch to `nh3`
+(Rust-backed, actively maintained, similar API). The `sanitize` filter's
+signature will stay stable across the switch.
+
+### Audit checklist for site operators
+- [ ] Confirm `bleach>=6.0` is installed (`uv pip show bleach`).
+- [ ] Verify your `site_data.sanitize` overrides don't allow `script`, `iframe` (unless intentional), `on*` attributes, or `javascript:` protocols.
+- [ ] Review every new tag you add to the allowlist — ask why every trusted author needs it.
+- [ ] For user-generated content (forums, comments): keep auto-sanitize on; never disable `auto:`.
+- [ ] Test by pasting `<script>alert(1)</script>` into a Markdown body and confirming the rendered page doesn't run it.
+- [ ] Audit `<img>` and `<a>` URL protocols — these are the XSS surface.
+
+Read more: `docs/filters.md` §Sanitize.
+
+---
+
+## 26. 🖼 Working with Images
+
+Moosey ships a four-tier image pipeline:
+- **Tier 1**: pure-string filters (`img_attrs`, `lazy_image`) — zero deps, always available.
+- **Tier 2**: metadata-only filters (`image_dimensions`, `dominant_color`) — Pillow optional.
+- **Tier 3**: CDN adapter (`image_cdn`) — pure URL rewriting, no server processing.
+- **Tier 4**: on-disk processing via the image pipeline route (default `/__moosey/img/{path}`, but fully configurable — see `docs/images.md` §3) — Pillow.
+
+Full reference: `docs/images.md`.
+
+### Where derivatives live
+A hidden `.moosey/` subfolder alongside each source image:
+
+```
+/static/images/process/
+├── intro.jpg                      ← source
+└── .moosey/                       ← auto-created; .gitignore-able
+    ├── intro__moosey_ar-1x1_focus-face_h-200.webp
+    └── intro__moosey_fit-cover_fmt-webp_w-800.webp
+```
+
+### `.gitignore` snippet
+
+```
+**/.moosey/
+```
+
+### Invalidation rules
+- **Auto**: when a source image changes, the file watcher deletes every derivative whose name starts with `<source-stem>__moosey`.
+- **Manual**: `from moosey_cms import invalidate; invalidate(Path("/static/x.jpg"))`.
+- **Persistent across restarts** (derivatives aren't rebuilt every boot).
+- **Template/content edits do NOT trigger regen** — only source-image changes do.
+
+### Self-hosting notes
+- Add `"static": STATIC_DIR` to `dirs` in `init_cms` to enable the route.
+- Source files MUST live under that static mount (path traversal is blocked).
+- Send `Accept: image/webp,*/*` to negotiate `fmt=auto` to `webp`.
+- After CI builds, you may ship `.moosey/` dirs along with the repo for zero first-request-latency.
+
+### Migrating off a CDN (or to one)
+
+Same template syntax — just swap the filter:
+
+```jinja
+<!-- on-disk processing (Tier 4) -->
+<img src="{{ src | image_url(w=800, fmt='webp') }}">
+
+<!-- Cloudflare (Tier 3) -->
+<img src="{{ src | image_cdn(w=800, fmt='webp') }}">
+```
+
+Provider config goes in `site_data.image_cdn = {"provider": "cloudflare", "base_url": "…"}`.
+
+---
+
 *For filter documentation, see [filters.md](filters.md).*
 *For the main setup guide, see the [README](../README.md).*
