@@ -590,15 +590,15 @@ See [Markdown Rendering](markdown.md) for full details.
 Convert a video, social, or gist URL into embed HTML:
 
 ```jinja2
-{{ "https://www.youtube.com/watch?v=dQw4w9WgXcQ" | embed }}
+{{ "https://www.youtube.com/watch?v=dQw4w9WgXcQ" | embed  | safe}}
 
-{{ "https://twitter.com/user/status/123456789" | embed }}
+{{ "https://twitter.com/user/status/123456789" | embed  | safe}}
 
-{{ "https://gist.github.com/user/abc123" | embed }}
+{{ "https://gist.github.com/user/abc123" | embed | safe }}
 
-{{ "https://codepen.io/user/pen/abcde" | embed }}
+{{ "https://codepen.io/user/pen/abcde" | embed | safe }}
 
-{{ "https://vimeo.com/12345678" | embed }}
+{{ "https://vimeo.com/12345678" | embed  | safe}}
 ```
 
 Falls back to a plain `<a>` link for unknown providers.
