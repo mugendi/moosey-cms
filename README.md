@@ -50,8 +50,12 @@ pip install moosey-cms
 ## 🧪 Running Tests
 
 ```bash
-# Install dev dependencies
+# Install dev dependencies (pip)
 pip install -e ".[dev]"
+
+# Install dev dependencies (uv)
+uv add moosey-cms --dev
+uv sync
 
 # Run all tests
 pytest

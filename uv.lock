@@ -322,6 +322,7 @@ dependencies = [
     { name = "inflection" },
     { name = "jinja2" },
     { name = "markdown" },
+    { name = "pycountry" },
     { name = "pymdown-extensions" },
     { name = "pytest" },
     { name = "python-frontmatter" },
@@ -364,6 +365,7 @@ requires-dist = [
     { name = "pillow", marker = "extra == 'all'", specifier = ">=10.0" },
     { name = "pillow", marker = "extra == 'faces'", specifier = ">=10.0" },
     { name = "pillow", marker = "extra == 'images'", specifier = ">=10.0" },
+    { name = "pycountry", specifier = ">=26.2.16" },
     { name = "pymdown-extensions", specifier = ">=10.20" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
@@ -706,6 +708,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f9/e2/3e91f31a7d2b083fe6ef3fa267035b518369d9511ffab804f839851d2779/pluggy-1.6.0.tar.gz", hash = "sha256:7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3", size = 69412, upload-time = "2025-05-15T12:30:07.975Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl", hash = "sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746", size = 20538, upload-time = "2025-05-15T12:30:06.134Z" },
+]
+
+[[package]]
+name = "pycountry"
+version = "26.2.16"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/de/1d/061b9e7a48b85cfd69f33c33d2ef784a531c359399ad764243399673c8f5/pycountry-26.2.16.tar.gz", hash = "sha256:5b6027d453fcd6060112b951dd010f01f168b51b4bf8a1f1fc8c95c8d94a0801", size = 7711342, upload-time = "2026-02-17T03:42:52.367Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9c/42/7703bd45b62fecd44cd7d3495423097e2f7d28bc2e99e7c1af68892ab157/pycountry-26.2.16-py3-none-any.whl", hash = "sha256:115c4baf7cceaa30f59a4694d79483c9167dbce7a9de4d3d571c5f3ea77c305a", size = 8044600, upload-time = "2026-02-17T03:42:49.777Z" },
 ]
 
 [[package]]

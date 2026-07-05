@@ -35,7 +35,7 @@ def fancy_date(dt):
     else:
         suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
     
-    formatted = dt.strftime(f'%d{suffix} %b, %Y at %I:%M %p')
+    formatted = dt.strftime(f'%-d{suffix} %b, %Y at %I:%M %p')
     # Remove leading zero from hour if present
     parts = formatted.split('at ')
     if len(parts) == 2 and parts[1][0] == '0':
@@ -207,26 +207,30 @@ def country_flag(country_code):
     
     try:
         import pycountry
-        
-        country_code = country_code.strip().upper()
-        
+    except ImportError:
         if len(country_code) == 2:
-            alpha_2 = country_code
+            country_code = country_code.upper()
+            return ''.join(chr(ord(c) + 127397) for c in country_code)
+        return ""
+    
+    country_code = country_code.strip().upper()
+    
+    try:
+        if len(country_code) == 2:
+            country = pycountry.countries.get(alpha_2=country_code)
+            alpha_2 = country.alpha_2 if country else None
         elif len(country_code) == 3:
             country = pycountry.countries.get(alpha_3=country_code)
             alpha_2 = country.alpha_2 if country else None
         else:
             return ""
-        
-        if alpha_2 and len(alpha_2) == 2:
-            return ''.join(chr(ord(c) + 127397) for c in alpha_2)
-        
+    except (LookupError, AttributeError):
         return ""
-    except (ImportError, LookupError, AttributeError):
-        if len(country_code) == 2:
-            country_code = country_code.upper()
-            return ''.join(chr(ord(c) + 127397) for c in country_code)
-        return ""
+    
+    if alpha_2 and len(alpha_2) == 2:
+        return ''.join(chr(ord(c) + 127397) for c in alpha_2)
+    
+    return ""
 
 
 def country_name(country_code):
@@ -234,11 +238,21 @@ def country_name(country_code):
     if not country_code:
         return ""
     
+    country_code = country_code.strip().upper()
+    
     try:
         import pycountry
-        
-        country_code = country_code.strip().upper()
-        
+    except ImportError:
+        fallback = {
+            'US': 'United States', 'GB': 'United Kingdom', 'CA': 'Canada',
+            'AU': 'Australia', 'DE': 'Germany', 'FR': 'France', 'IT': 'Italy',
+            'ES': 'Spain', 'JP': 'Japan', 'CN': 'China', 'IN': 'India',
+            'BR': 'Brazil', 'MX': 'Mexico', 'KE': 'Kenya', 'NG': 'Nigeria',
+            'ZA': 'South Africa', 'EG': 'Egypt', 'GH': 'Ghana', 'TZ': 'Tanzania',
+        }
+        return fallback.get(country_code, country_code)
+    
+    try:
         if len(country_code) == 2:
             country = pycountry.countries.get(alpha_2=country_code)
         elif len(country_code) == 3:
@@ -248,15 +262,6 @@ def country_name(country_code):
             country = results[0] if results else None
         
         return country.name if country else country_code
-    except ImportError:
-        fallback = {
-            'US': 'United States', 'GB': 'United Kingdom', 'CA': 'Canada',
-            'AU': 'Australia', 'DE': 'Germany', 'FR': 'France', 'IT': 'Italy',
-            'ES': 'Spain', 'JP': 'Japan', 'CN': 'China', 'IN': 'India',
-            'BR': 'Brazil', 'MX': 'Mexico', 'KE': 'Kenya', 'NG': 'Nigeria',
-            'ZA': 'South Africa', 'EG': 'Egypt', 'GH': 'Ghana', 'TZ': 'Tanzania',
-        }
-        return fallback.get(country_code.upper(), country_code)
     except (LookupError, AttributeError):
         return country_code
 
@@ -266,11 +271,19 @@ def language_name(language_code):
     if not language_code:
         return ""
     
+    language_code = language_code.strip().lower()
+    
     try:
         import pycountry
-        
-        language_code = language_code.strip().lower()
-        
+    except ImportError:
+        fallback = {
+            'en': 'English', 'es': 'Spanish', 'fr': 'French', 'de': 'German',
+            'it': 'Italian', 'pt': 'Portuguese', 'ru': 'Russian', 'ja': 'Japanese',
+            'zh': 'Chinese', 'ar': 'Arabic', 'hi': 'Hindi', 'sw': 'Swahili',
+        }
+        return fallback.get(language_code, language_code)
+    
+    try:
         if len(language_code) == 2:
             language = pycountry.languages.get(alpha_2=language_code)
         elif len(language_code) == 3:
@@ -282,13 +295,6 @@ def language_name(language_code):
             language = results[0] if results else None
         
         return language.name if language else language_code
-    except ImportError:
-        fallback = {
-            'en': 'English', 'es': 'Spanish', 'fr': 'French', 'de': 'German',
-            'it': 'Italian', 'pt': 'Portuguese', 'ru': 'Russian', 'ja': 'Japanese',
-            'zh': 'Chinese', 'ar': 'Arabic', 'hi': 'Hindi', 'sw': 'Swahili',
-        }
-        return fallback.get(language_code.lower(), language_code)
     except (LookupError, AttributeError):
         return language_code
 
@@ -358,16 +364,16 @@ def title_case(text):
         return ""
     
     small_words = {'a', 'an', 'and', 'as', 'at', 'but', 'by', 'for', 
-                   'in', 'of', 'on', 'or', 'the', 'to', 'up', 'via'}
+                   'in', 'of', 'on', 'or', 'the', 'to', 'up', 'via', 'with'}
     
     words = text.split()
     result = []
     
     for i, word in enumerate(words):
-        if i == 0 or i == len(words) - 1:
-            result.append(word.capitalize())
-        elif word.isupper() and len(word) > 1:
+        if word.isupper() and len(word) > 1:
             result.append(word)
+        elif i == 0 or i == len(words) - 1:
+            result.append(word.capitalize())
         elif word.lower() in small_words:
             result.append(word.lower())
         else:
@@ -376,9 +382,61 @@ def title_case(text):
     return ' '.join(result)
 
 
+def _split_words(text):
+    """Split on any delimiter or camelCase boundary"""
+    s = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', text)
+    s = re.sub(r'([A-Z]+)([A-Z][a-z])', r'\1_\2', s)
+    return re.split(r'[\s_\-]+', s)
+
+
+def snake_case(text):
+    """Convert to snake_case"""
+    if not text:
+        return ""
+    return '_'.join(w.lower() for w in _split_words(text))
+
+
+def kebab_case(text):
+    """Convert to kebab-case"""
+    if not text:
+        return ""
+    return '-'.join(w.lower() for w in _split_words(text))
+
+
+def camel_case(text):
+    """Convert to camelCase"""
+    if not text:
+        return ""
+    words = _split_words(text)
+    return words[0].lower() + ''.join(w.capitalize() for w in words[1:])
+
+
+def pascal_case(text):
+    """Convert to PascalCase"""
+    if not text:
+        return ""
+    return ''.join(w.capitalize() for w in _split_words(text))
+
+
+def upper_case(text):
+    """Convert to UPPER CASE"""
+    if not text:
+        return ""
+    return text.upper()
+
+
+def lower_case(text):
+    """Convert to lower case"""
+    if not text:
+        return ""
+    return text.lower()
+
+
 def excerpt(text, length=150, suffix='...'):
     """Create excerpt from text, breaking at sentence"""
-    if not text or len(text) <= length:
+    if not text:
+        return ""
+    if len(text) <= length:
         return text
     
     truncated = text[:length]
@@ -388,7 +446,7 @@ def excerpt(text, length=150, suffix='...'):
     
     break_point = max(last_period, last_question, last_exclamation)
     
-    if break_point > length * 0.6:
+    if break_point >= length * 0.4:
         return text[:break_point + 1]
     else:
         last_space = truncated.rfind(' ')
@@ -938,6 +996,8 @@ def image(context, src, widths=None, sizes="100vw",
 @pass_context
 def image_url(context, src, **params):
     """Deprecated - use ``image`` instead."""
+    if not src:
+        return ""
     import warnings as _w
     _w.warn("image_url() is deprecated, use image() instead",
             DeprecationWarning, stacklevel=2)
@@ -1107,6 +1167,12 @@ def register_filters(jinja_env):
         'reading_time': reading_time,
         'slugify': slugify,
         'title_case': title_case,
+        'snake_case': snake_case,
+        'kebab_case': kebab_case,
+        'camel_case': camel_case,
+        'pascal_case': pascal_case,
+        'upper_case': upper_case,
+        'lower_case': lower_case,
         'excerpt': excerpt,
         'smart_quotes': smart_quotes,
         'number_format': number_format,
