@@ -80,11 +80,243 @@ Use the schema builders in combination with the `json_ld` filter:
 | `copyright_holder` | `str` / `dict` | `copyrightHolder` | Name string or `{"name", "url"}` dict |
 | `discussion_url` | `str` | `discussionUrl` | Link to comment page |
 
-### Other Schema Builders
+### `schema_breadcrumbs()` Reference
 
-`schema_breadcrumbs`, `schema_faqpage`, `schema_howto`, `schema_localbusiness`, `schema_product`, `schema_event`, `schema_organization`, `schema_website`, `schema_person`.
+Builds a `BreadcrumbList` for navigation paths.
 
-You can also pass raw dicts:
+```jinja2
+{{ schema_breadcrumbs([
+    {"name": "Home", "url": "/"},
+    {"name": "Blog", "url": "/blog"},
+    {"name": "My Post", "url": "/blog/my-post"}
+]) | json_ld | safe }}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `items` *(required)* | `list[dict]` | List of `{"name": str, "url": str}` objects |
+
+Each item gets an auto-incremented `position` starting at 1.
+
+---
+
+### `schema_faqpage()` Reference
+
+Builds an `FAQPage` with question/answer pairs.
+
+```jinja2
+{{ schema_faqpage([
+    {"question": "What is Moosey CMS?", "answer": "A lightweight Markdown CMS for FastAPI."},
+    {"question": "Does it need a database?", "answer": "No, content lives in Markdown files."}
+]) | json_ld | safe }}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `faqs` *(required)* | `list[dict]` | List of `{"question": str, "answer": str}` objects |
+
+---
+
+### `schema_howto()` Reference
+
+Builds a `HowTo` guide with named steps.
+
+```jinja2
+{{ schema_howto(
+    name="How to Install Moosey CMS",
+    steps=[
+        {"name": "Install the package", "text": "pip install moosey-cms"},
+        {"name": "Create your app", "text": "Set up a FastAPI app and call init_cms()."},
+        {"name": "Run the server", "text": "uvicorn main:app --reload"}
+    ],
+    description="A quick guide to getting started with Moosey CMS."
+) | json_ld | safe }}
+```
+
+| Parameter | Type | Schema.org Prop | Description |
+|-----------|------|-----------------|-------------|
+| `name` *(required)* | `str` | `name` | HowTo title |
+| `steps` *(required)* | `list[dict]` | `step` | List of `{"name": str, "text": str}` objects (auto-numbered) |
+| `description` | `str` | `description` | Short description of the guide |
+| `image` | `str` | `image` | Image URL for the guide |
+
+---
+
+### `schema_localbusiness()` Reference
+
+Builds a `LocalBusiness` with contact info, address, and hours.
+
+```jinja2
+{{ schema_localbusiness(
+    name="Acme Coffee Shop",
+    url="https://example.com",
+    telephone="+1-555-123-4567",
+    email="hello@example.com",
+    address={
+        "streetAddress": "123 Main St",
+        "addressLocality": "Portland",
+        "addressRegion": "OR",
+        "postalCode": "97201",
+        "addressCountry": "US"
+    },
+    hours=[
+        {"dayOfWeek": ["Monday", "Friday"], "opens": "08:00", "closes": "18:00"},
+        {"dayOfWeek": ["Saturday", "Sunday"], "opens": "09:00", "closes": "14:00"}
+    ],
+    image="https://example.com/photo.jpg",
+    same_as=["https://facebook.com/acmecoffee", "https://instagram.com/acmecoffee"]
+) | json_ld | safe }}
+```
+
+| Parameter | Type | Schema.org Prop | Description |
+|-----------|------|-----------------|-------------|
+| `name` *(required)* | `str` | `name` | Business name |
+| `url` *(required)* | `str` | `url` | Business URL |
+| `telephone` | `str` | `telephone` | Phone number |
+| `email` | `str` | `email` | Contact email |
+| `address` | `dict` | `address` | `PostalAddress` dict with `streetAddress`, `addressLocality`, `addressRegion`, `postalCode`, `addressCountry` |
+| `hours` | `list[dict]` | `openingHoursSpecification` | List of `OpeningHoursSpecification` dicts with `dayOfWeek`, `opens`, `closes` |
+| `image` | `str` | `image` | Photo URL |
+| `same_as` | `list[str]` | `sameAs` | Social media profile URLs |
+
+---
+
+### `schema_product()` Reference
+
+Builds a `Product` with optional pricing and ratings.
+
+```jinja2
+{{ schema_product(
+    name="Moosey Pro License",
+    image="https://example.com/pro.jpg",
+    description="Lifetime license for Moosey CMS Pro features.",
+    sku="MOOSEY-PRO-001",
+    price=49.00,
+    currency="USD",
+    availability="https://schema.org/InStock",
+    rating={
+        "ratingValue": "4.8",
+        "reviewCount": "120"
+    }
+) | json_ld | safe }}
+```
+
+| Parameter | Type | Schema.org Prop | Description |
+|-----------|------|-----------------|-------------|
+| `name` *(required)* | `str` | `name` | Product name |
+| `image` | `str` | `image` | Product image URL |
+| `description` | `str` | `description` | Product description |
+| `sku` | `str` | `sku` | Stock keeping unit |
+| `price` | `float` | `offers.price` | Price (requires `currency`) |
+| `currency` | `str` | `offers.priceCurrency` | ISO 4217 currency code (e.g. `"USD"`) |
+| `availability` | `str` | `offers.availability` | Schema.org availability URL (e.g. `"https://schema.org/InStock"`) |
+| `rating` | `dict` | `aggregateRating` | `AggregateRating` dict with `ratingValue`, `reviewCount`, etc. |
+
+---
+
+### `schema_event()` Reference
+
+Builds an `Event` with date, location, and organizer.
+
+```jinja2
+{{ schema_event(
+    name="Moosey CMS Meetup",
+    start_date="2026-09-15T18:00",
+    end_date="2026-09-15T21:00",
+    location={"name": "Portland Convention Center", "address": "1000 NE Grand Ave"},
+    url="https://example.com/events/meetup",
+    image="https://example.com/event.jpg",
+    organizer="Moosey Community"
+) | json_ld | safe }}
+```
+
+| Parameter | Type | Schema.org Prop | Description |
+|-----------|------|-----------------|-------------|
+| `name` *(required)* | `str` | `name` | Event name |
+| `start_date` *(required)* | `str` | `startDate` | ISO 8601 start date/time |
+| `end_date` | `str` | `endDate` | ISO 8601 end date/time |
+| `location` | `dict` | `location` | `Place` dict with `name`, `address`, etc. |
+| `url` | `str` | `url` | Event page URL |
+| `image` | `str` | `image` | Event image URL |
+| `organizer` | `str` | `organizer` | Organizer name (wraps in `Organization`) |
+
+---
+
+### `schema_organization()` Reference
+
+Builds an `Organization` with logo and social profiles.
+
+```jinja2
+{{ schema_organization(
+    name="Moosey Inc",
+    url="https://example.com",
+    logo="https://example.com/logo.png",
+    same_as=["https://twitter.com/moosey", "https://github.com/moosey"]
+) | json_ld | safe }}
+```
+
+| Parameter | Type | Schema.org Prop | Description |
+|-----------|------|-----------------|-------------|
+| `name` *(required)* | `str` | `name` | Organization name |
+| `url` *(required)* | `str` | `url` | Organization URL |
+| `logo` | `str` | `logo` | Logo URL (wraps in `ImageObject`) |
+| `same_as` | `list[str]` | `sameAs` | Social media profile URLs |
+
+---
+
+### `schema_website()` Reference
+
+Builds a `WebSite` with optional search action.
+
+```jinja2
+{{ schema_website(
+    name="My Site",
+    url="https://example.com",
+    publisher="My Company",
+    potential_action={
+        "@type": "SearchAction",
+        "target": "https://example.com/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+    }
+) | json_ld | safe }}
+```
+
+| Parameter | Type | Schema.org Prop | Description |
+|-----------|------|-----------------|-------------|
+| `name` *(required)* | `str` | `name` | Site name |
+| `url` *(required)* | `str` | `url` | Site URL |
+| `publisher` | `str` | `publisher` | Publisher name (wraps in `Organization`) |
+| `potential_action` | `dict` | `potentialAction` | Action dict (e.g. `SearchAction` for sitelinks search box) |
+
+---
+
+### `schema_person()` Reference
+
+Builds a `Person` with profile info.
+
+```jinja2
+{{ schema_person(
+    name="Jane Doe",
+    url="https://example.com/jane",
+    job_title="Lead Developer",
+    image="https://example.com/jane.jpg",
+    same_as=["https://twitter.com/janedoe", "https://github.com/janedoe"]
+) | json_ld | safe }}
+```
+
+| Parameter | Type | Schema.org Prop | Description |
+|-----------|------|-----------------|-------------|
+| `name` *(required)* | `str` | `name` | Person's name |
+| `url` | `str` | `url` | Profile page URL |
+| `job_title` | `str` | `jobTitle` | Job title |
+| `image` | `str` | `image` | Photo URL |
+| `same_as` | `list[str]` | `sameAs` | Social media profile URLs |
+
+---
+
+### Raw Dicts
+
+You can bypass the builders and pass any dict directly:
 
 ```jinja2
 {{ {"@context": "https://schema.org", "@type": "Thing", "name": "Custom"} | json_ld | safe }}

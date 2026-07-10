@@ -106,6 +106,56 @@ uvicorn main:app --reload
 
 Opens a hot-reloading server at `http://localhost:8000`.
 
+## Running Tests
+
+Install dev dependencies and run the test suite:
+
+### Using UV (Recommended)
+
+```bash
+uv add moosey-cms --dev
+uv sync
+```
+
+### Using Pip
+
+```bash
+pip install -e ".[dev]"
+```
+
+### Running
+
+```bash
+# Run all tests
+pytest
+
+# Run a specific test file
+pytest tests/test_schemas.py
+
+# Run with verbose output
+pytest -v tests/test_schemas.py
+```
+
+## Example App
+
+A fully-commented reference app lives in `example/`. It demonstrates:
+
+- Basic Moosey CMS initialization
+- Custom Jinja2 globals via `app.state.moosey_env`
+- Custom FastAPI routes using the Moosey template environment
+- Lifespan-safe init guard (runs `init_cms` once per process)
+- Static file mounting
+- Content index for custom archives/search
+
+Run it:
+
+```bash
+# From the project root
+uv run uvicorn example.main:app --reload
+```
+
+Visit `http://localhost:8000` to see the demo site.
+
 ## Configuration Reference
 
 The `init_cms()` function accepts these parameters:

@@ -35,7 +35,7 @@ dependencies = [
     "pytest>=9.1.1",
     "python-frontmatter>=1.1.0",
     "python-slugify>=8.0.4",
-    "uvicorn>=0.40.0",
+    "uvicorn[standard]>=0.40.0",
     "watchdog>=6.0.0",
 ]
 
