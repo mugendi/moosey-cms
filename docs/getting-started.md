@@ -169,7 +169,7 @@ The `init_cms()` function accepts these parameters:
 | `mode` | `str` | `"development"`, `"production"`, `"staging"`, or `"testing"` |
 | `site_data` | `dict` | Global data (name, author, social links, `web` config for sitemap/robots/RSS) |
 | `reload_delay` | `float` | Seconds to delay hot-reload after file change. Default: `0` |
-| `admin_prefix` | `str` | URL prefix for the admin content API (e.g. `"admin"`). No admin API if omitted |
+| `admin` | `dict` | Admin content-editing config with keys `prefix` (route prefix) and `templates` (admin templates subdirectory). No admin routes if omitted |
 
 ## Documentation
 

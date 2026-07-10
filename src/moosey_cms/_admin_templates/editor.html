@@ -5,14 +5,21 @@
 {% set active_page = 'editor' %}
 
 {% block head %}
-{# ── CodeMirror 6 — loaded from CDN for markdown editing. #}
-{# Falls back to a plain textarea if the CDN is unreachable. #}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@6/dist/index.min.css">
-<script src="https://cdn.jsdelivr.net/npm/codemirror@6/dist/index.min.js" defer></script>
+{# ── TUI Editor (toast-ui) — WYSIWYG/Markdown editor for content. #}
+<link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css">
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js" defer></script>
+
+{# ── Guifier — Visual JSON/YAML editor for frontmatter metadata. #}
+{# Note: Guifier ships as an ES module only — must use type="module" to import. #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/guifier@1.0.33/dist/Guifier.min.css">
+<script type="module">
+import Guifier from 'https://cdn.jsdelivr.net/npm/guifier@1.0.33/dist/Guifier.min.js';
+window.Guifier = Guifier;
+</script>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto space-y-4">
+<div class=" mx-auto space-y-4">
 
     {# ── Page header ── #}
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -22,11 +29,6 @@
             </h1>
         </div>
         <div class="flex items-center gap-2">
-            <button id="btn-preview" onclick="togglePreview()"
-                    class="inline-flex items-center gap-1.5 bg-white hover:bg-moose-100 text-moose-700 border border-moose-300 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                Preview
-            </button>
             <button id="btn-save" onclick="saveFile()"
                     class="inline-flex items-center gap-1.5 bg-moose-700 hover:bg-moose-800 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -44,29 +46,28 @@
     </div>
     {% endif %}
 
-    {# ── Frontmatter editor (collapsible) ── #}
+    {# ── Tabbed editor interface ── #}
     <div class="bg-white rounded-xl border border-moose-200 overflow-hidden">
-        <button onclick="toggleFrontmatter()" class="w-full flex items-center justify-between px-5 py-3 text-sm font-medium text-moose-700 hover:bg-moose-50 transition-colors">
-            <span>Frontmatter</span>
-            <svg id="fm-chevron" class="w-4 h-4 text-moose-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-        </button>
-        <div id="frontmatter-body" class="hidden px-5 pb-4 space-y-2">
-            <div id="frontmatter-fields"></div>
-            <button onclick="addFrontmatterField()" class="text-xs text-moose-500 hover:text-moose-700 transition-colors">+ Add field</button>
+        {# ── Tab navigation ── #}
+        <div class="flex border-b border-moose-200">
+            <button id="tab-content" onclick="switchTab('content')"
+                    class="tab-button active px-5 py-3 text-sm font-medium border-b-2 border-moose-700 text-moose-900 bg-moose-50">
+                Content
+            </button>
+            <button id="tab-metadata" onclick="switchTab('metadata')"
+                    class="tab-button px-5 py-3 text-sm font-medium border-b-2 border-transparent text-moose-500 hover:text-moose-700 hover:bg-moose-50 transition-colors">
+                Metadata
+            </button>
         </div>
-    </div>
 
-    {# ── Split-pane: editor + preview ── #}
-    <div class="flex gap-0 bg-white rounded-xl border border-moose-200 overflow-hidden" style="min-height: 500px;">
-        {# Editor pane #}
-        <div id="editor-pane" class="flex-1">
-            <div id="cm-container" class="h-full"></div>
+        {# ── Tab content panels ── #}
+        <div id="panel-content" class="tab-panel">
+            <div id="tui-editor" style="min-height: 500px;"></div>
             <textarea id="fallback-editor" class="hidden w-full h-full p-4 text-sm font-mono text-moose-800 border-0 focus:outline-none resize-none" placeholder="Write your markdown here…"></textarea>
         </div>
 
-        {# Preview pane (toggleable) #}
-        <div id="preview-pane" class="hidden w-1/2 border-l border-moose-200 overflow-y-auto p-6 prose prose-sm max-w-none">
-            <p class="text-moose-400 text-sm italic">Preview will appear here…</p>
+        <div id="panel-metadata" class="tab-panel hidden">
+            <div id="guifier-container" class="p-4" style="min-height: 400px;"></div>
         </div>
     </div>
 </div>
@@ -79,142 +80,71 @@
     var filePath = '{{ file_path | default("") }}';
     var isNew    = !filePath;
 
-    var cmEditor = null;   /* CodeMirror editor instance */
-    var frontmatterData = {};
-    var isPreviewOpen = false;
+    var tuiEditor = null;      /* TUI Editor instance */
+    var guifierInstance = null; /* Guifier instance */
+    var frontmatterData = {};   /* Current frontmatter data */
+    var activeTab = 'content';  /* Current active tab */
 
     /* ================================================================
-       Frontmatter toggle
+       Tab switching
        ================================================================ */
-    window.toggleFrontmatter = function () {
-        var body = document.getElementById('frontmatter-body');
-        var chevron = document.getElementById('fm-chevron');
-        body.classList.toggle('hidden');
-        chevron.style.transform = body.classList.contains('hidden') ? '' : 'rotate(180deg)';
-    };
+    window.switchTab = function (tabName) {
+        activeTab = tabName;
 
-    /* ================================================================
-       Frontmatter fields rendering
-       ================================================================ */
-    function renderFrontmatterFields(data) {
-        frontmatterData = data || {};
-        var container = document.getElementById('frontmatter-fields');
-        var html = '';
-        for (var key in frontmatterData) {
-            if (!frontmatterData.hasOwnProperty(key)) continue;
-            var val = frontmatterData[key];
-            if (typeof val === 'object') val = JSON.stringify(val);
-            html += '<div class="flex gap-2 items-center">'
-                + '<input type="text" value="' + escHtml(key) + '" placeholder="Key" '
-                + 'class="fm-key w-1/3 border border-moose-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-moose-500">'
-                + '<input type="text" value="' + escHtml(String(val)) + '" placeholder="Value" '
-                + 'class="fm-val flex-1 border border-moose-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-moose-500">'
-                + '<button onclick="this.parentElement.remove()" class="text-moose-400 hover:text-red-500 transition-colors" title="Remove">'
-                + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
-                + '</button></div>';
-        }
-        container.innerHTML = html || '<p class="text-xs text-moose-400">No frontmatter fields.</p>';
-    }
-
-    window.addFrontmatterField = function () {
-        var container = document.getElementById('frontmatter-fields');
-        /* Remove placeholder text if present */
-        var placeholder = container.querySelector('p');
-        if (placeholder) placeholder.remove();
-
-        var div = document.createElement('div');
-        div.className = 'flex gap-2 items-center';
-        div.innerHTML = '<input type="text" value="" placeholder="Key" '
-            + 'class="fm-key w-1/3 border border-moose-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-moose-500">'
-            + '<input type="text" value="" placeholder="Value" '
-            + 'class="fm-val flex-1 border border-moose-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-moose-500">'
-            + '<button onclick="this.parentElement.remove()" class="text-moose-400 hover:text-red-500 transition-colors" title="Remove">'
-            + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
-            + '</button>';
-        container.appendChild(div);
-    };
-
-    function collectFrontmatter() {
-        var keys = document.querySelectorAll('.fm-key');
-        var vals = document.querySelectorAll('.fm-val');
-        var result = {};
-        keys.forEach(function (k, i) {
-            var key = k.value.trim();
-            var val = vals[i] ? vals[i].value.trim() : '';
-            if (key) result[key] = val;
+        /* Update tab buttons */
+        document.querySelectorAll('.tab-button').forEach(function(btn) {
+            btn.classList.remove('active', 'border-moose-700', 'text-moose-900', 'bg-moose-50');
+            btn.classList.add('border-transparent', 'text-moose-500');
         });
-        return result;
-    }
 
-    /* ================================================================
-       Preview toggle
-       ================================================================ */
-    window.togglePreview = function () {
-        var pane = document.getElementById('preview-pane');
-        isPreviewOpen = !isPreviewOpen;
-        pane.classList.toggle('hidden', !isPreviewOpen);
-        if (isPreviewOpen) updatePreview();
-    };
+        var activeBtn = document.getElementById('tab-' + tabName);
+        activeBtn.classList.add('active', 'border-moose-700', 'text-moose-900', 'bg-moose-50');
+        activeBtn.classList.remove('border-transparent', 'text-moose-500');
 
-    window.updatePreview = function () {
-        var pane = document.getElementById('preview-pane');
-        var body = getEditorValue();
-        if (!body.trim()) {
-            pane.innerHTML = '<p class="text-moose-400 text-sm italic">Nothing to preview…</p>';
-            return;
+        /* Update tab panels */
+        document.querySelectorAll('.tab-panel').forEach(function(panel) {
+            panel.classList.add('hidden');
+        });
+
+        var activePanel = document.getElementById('panel-' + tabName);
+        activePanel.classList.remove('hidden');
+
+        /* Refresh TUI Editor when switching to content tab */
+        if (tabName === 'content' && tuiEditor) {
+            tuiEditor.setHeight('auto');
+            tuiEditor.setHeight('500px');
         }
-        /* Basic markdown → HTML (no dependency, just headings/lists/bold/italic/code/links) */
-        var html = body
-            .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-            .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-            .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.+?)\*/g, '<em>$1</em>')
-            .replace(/`([^`]+)`/g, '<code>$1</code>')
-            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
-            .replace(/^- (.+)$/gm, '<li>$1</li>')
-            .replace(/\n\n/g, '</p><p>')
-            .replace(/\n/g, '<br>');
-        pane.innerHTML = '<p>' + html + '</p>';
     };
 
     /* ================================================================
-       Editor helpers
+       TUI Editor initialization
        ================================================================ */
-    function getEditorValue() {
-        if (cmEditor) return cmEditor.state.doc.toString();
-        return document.getElementById('fallback-editor').value;
-    }
-
-    function setEditorValue(text) {
-        if (cmEditor) {
-            cmEditor.dispatch({ changes: { from: 0, to: cmEditor.state.doc.length, insert: text } });
-        } else {
-            document.getElementById('fallback-editor').value = text;
-        }
-    }
-
-    /* ================================================================
-       CodeMirror initialization
-       ================================================================ */
-    function initEditor() {
-        var container = document.getElementById('cm-container');
+    function initTuiEditor() {
+        var container = document.getElementById('tui-editor');
         var fallback  = document.getElementById('fallback-editor');
 
-        if (typeof CodeMirror !== 'undefined' && CodeMirror.createEditor) {
+        if (typeof toastui !== 'undefined' && toastui.Editor) {
             try {
-                cmEditor = CodeMirror.createEditor({
-                    parent: container,
-                    doc: '',
-                    extensions: [
-                        CodeMirror.basicSetup,
-                        CodeMirror.markdown(),
+                tuiEditor = new toastui.Editor({
+                    el: container,
+                    height: '500px',
+                    initialEditType: 'markdown',
+                    previewStyle: 'vertical',
+                    usageStatistics: false,
+                    toolbarItems: [
+                        ['heading', 'bold', 'italic', 'strike'],
+                        ['hr', 'quote'],
+                        ['ul', 'ol', 'task'],
+                        ['table', 'link'],
+                        ['code', 'codeblock']
                     ]
                 });
                 fallback.classList.add('hidden');
                 container.classList.remove('hidden');
                 return;
-            } catch (e) { /* fall through to textarea */ }
+            } catch (e) {
+                console.warn('TUI Editor init failed, falling back to textarea:', e);
+            }
         }
 
         /* Fallback: plain textarea */
@@ -223,10 +153,93 @@
     }
 
     /* ================================================================
+       Guifier — date detection & data pre-processing
+       Guifier uses lodash.isDate() which only recognises Date instances.
+       ISO date strings like "2024-01-15" must be converted to Date
+       objects before Guifier sees them, otherwise they render as text.
+       ================================================================ */
+    function looksLikeDate(v) {
+        return typeof v === 'string' && /^\d{4}-\d{2}-\d{2}(T|\s)/.test(v);
+    }
+
+    function prepareForGuifier(obj) {
+        if (obj === null || typeof obj !== 'object') {
+            return looksLikeDate(obj) ? new Date(obj) : obj;
+        }
+        if (Array.isArray(obj)) return obj.map(prepareForGuifier);
+        var out = {};
+        for (var k in obj) { out[k] = prepareForGuifier(obj[k]); }
+        return out;
+    }
+
+    /* ================================================================
+       Guifier initialization
+       ================================================================ */
+    function initGuifier(data) {
+        var container = document.getElementById('guifier-container');
+
+        if (typeof Guifier !== 'undefined') {
+            try {
+                guifierInstance = new Guifier({
+                    elementSelector: '#guifier-container',
+                    data: prepareForGuifier(data || {}),
+                    dataType: 'js'
+                });
+                return;
+            } catch (e) {
+                console.warn('Guifier init failed:', e);
+            }
+        }
+
+        /* Fallback: simple key-value editor */
+        container.innerHTML = '<p class="text-moose-400 text-sm italic">Guifier not loaded. Using basic editor.</p>';
+    }
+
+    /* ================================================================
+       Editor helpers
+       ================================================================ */
+    function getEditorValue() {
+        if (tuiEditor) return tuiEditor.getMarkdown();
+        return document.getElementById('fallback-editor').value;
+    }
+
+    function setEditorValue(text) {
+        if (tuiEditor) {
+            tuiEditor.setMarkdown(text || '');
+        } else {
+            document.getElementById('fallback-editor').value = text || '';
+        }
+    }
+
+    function getFrontmatter() {
+        if (guifierInstance) {
+            try {
+                var jsonString = guifierInstance.getData('json');
+                return JSON.parse(jsonString);
+            } catch (e) {
+                console.warn('Guifier getData failed:', e);
+            }
+        }
+        return frontmatterData;
+    }
+
+    function setFrontmatter(data) {
+        frontmatterData = data || {};
+        if (guifierInstance) {
+            try {
+                guifierInstance.setData(prepareForGuifier(frontmatterData), 'js');
+            } catch (e) {
+                console.warn('Guifier setData failed:', e);
+            }
+        }
+    }
+
+    /* ================================================================
        Load file content
        ================================================================ */
     function loadFile(path) {
         if (!path) return;
+
         fetch('/' + prefix + '/file/' + path)
             .then(function (r) {
                 if (!r.ok) throw new Error('File not found');
@@ -234,7 +247,7 @@
             })
             .then(function (data) {
                 setEditorValue(data.body || '');
-                renderFrontmatterFields(data.frontmatter);
+                setFrontmatter(data.frontmatter || {});
             })
             .catch(function (err) {
                 showFlash('Could not load file: ' + err.message, 'error');
@@ -253,7 +266,7 @@
         }
 
         var body = getEditorValue();
-        var meta = collectFrontmatter();
+        var meta = getFrontmatter();
 
         var method = isNew ? 'POST' : 'PUT';
 
@@ -288,10 +301,17 @@
     }
 
     /* ================================================================
-       Init
+       Init — deferred CDN scripts (TUI Editor, Guifier) execute
+       before DOMContentLoaded, so globals are available here.
        ================================================================ */
-    initEditor();
-    if (filePath) loadFile(filePath);
+    document.addEventListener('DOMContentLoaded', function () {
+        initTuiEditor();
+        initGuifier({});
+
+        if (filePath) {
+            loadFile(filePath);
+        }
+    });
 })();
 </script>
 {% endblock %}

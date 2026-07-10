@@ -95,7 +95,6 @@ def init_cms(
     site_data: SiteData = {},
     reload_delay: float = 0,
     admin=None,
-    admin_prefix: str = None,
 ):
     """
     Initialize the Moosey CMS.
@@ -114,17 +113,10 @@ def init_cms(
                       build has finished before refreshing.  Defaults to ``0``
                       (immediate reload).  Only has an effect in
                       ``"development"`` mode.
-        admin:        Admin content-editing configuration. Can be a string prefix
-                      (e.g. ``"admin/content"``) for backward compatibility, or
-                      a dict with keys ``'prefix'`` and ``'templates'``.
-        admin_prefix: Deprecated. Use ``admin`` instead. Route prefix for the
-                      admin content-editing API.
+        admin:        Admin content-editing configuration. A dict with keys
+                      ``'prefix'`` (route prefix) and ``'templates'``
+                      (subdirectory within templates/ for admin templates).
     """
-
-    # Backward compat: merge deprecated admin_prefix into admin
-    if admin_prefix and not admin:
-        admin = admin_prefix
-    admin_prefix = None
 
     # validate dirs inputs
     config = CMSConfig(

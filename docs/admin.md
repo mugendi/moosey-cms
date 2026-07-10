@@ -38,17 +38,6 @@ Moosey CMS ships with a full-featured admin dashboard — a Tailwind-rendered HT
 admin={"prefix": "admin/content", "templates": "admin"}
 ```
 
-### Backward-compatible `admin_prefix` string
-
-The old `admin_prefix="admin/content"` form still works — it auto-converts to `{"prefix": "admin/content", "templates": "admin"}`.
-
-```python
-init_cms(app, ..., admin_prefix="admin/content")
-# Equivalent to: admin={"prefix": "admin/content"}
-```
-
-Both `admin` and `admin_prefix` can be passed simultaneously; `admin` takes precedence.
-
 ---
 
 ## Admin Routes
@@ -95,7 +84,7 @@ The admin templates live in `templates/admin/`:
 | `base.html` | Layout with Tailwind sidebar, nav, flash messages, responsive hamburger menu |
 | `dashboard.html` | Dashboard overview extending `base.html` |
 | `list.html` | File browser with breadcrumbs and CRUD actions |
-| `editor.html` | Markdown editor with CodeMirror 6 split-pane |
+| `editor.html` | Markdown editor with TUI Editor (content) and Guifier (metadata) |
 | `admin.js` | Shared JS utilities (`toggleSidebar`, `showFlash`, escape-key modals) |
 
 ### Template Variables
@@ -115,6 +104,15 @@ Access `admin_config.prefix` in templates for URL building:
 {% set prefix = admin_config.prefix %}
 <a href="/{{ prefix }}/browse/">Content</a>
 ```
+
+### Editor Tabbed Interface
+
+The editor uses a two-tab interface:
+
+- **Content Tab** (default): TUI Editor for WYSIWYG/Markdown editing
+- **Metadata Tab**: Guifier for visual YAML frontmatter editing
+
+Both editors load via CDN and fall back to basic editors if unavailable.
 
 ### Adding Custom Routes
 
@@ -171,7 +169,7 @@ async def admin_dashboard():
 
 ## Tailwind in Production
 
-The admin templates load Tailwind CSS via CDN for development convenience:
+The admin templates load Tailwind CSS via CDN for development convenience. Additionally, the editor loads TUI Editor and Guifier via CDN for development.
 
 ```html
 <!-- WARNING: The CDN script is NOT recommended for production. -->

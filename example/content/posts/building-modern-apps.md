@@ -1,8 +1,14 @@
 ---
 title: Building Modern Apps with FastAPI and {{site_data.name}}
-date: 2026-01-15
-image: https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80
-tags: [fastapi, python, architecture]
+date: {'updated': '2026-01-18T22:50:04.138310', 'created': '2026-01-18T23:57:58.910579'}
+image: |
+  https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80
+tags:
+  - fastapi
+  - python
+  - architecture
+  - hello
+slug: building-modern-apps
 ---
 
 FastAPI has taken the Python world by storm. In this post, we explore why it is the superior choice for modern web development.
@@ -24,14 +30,14 @@ With **ASGI**, we can handle thousands of concurrent connections.
 
 ### Key Features
 
-1.  **Type Hints:** Validate data automatically.
-2.  **Performance:** Rivals NodeJS and Go.
-3.  **Standards:** Based on OpenAPI and JSON Schema.
+1. **Type Hints:** Validate data automatically.
+2. **Performance:** Rivals NodeJS and Go.
+3. **Standards:** Based on OpenAPI and JSON Schema.
 
 Let's look at a table of comparison:
 
 | Feature | Flask | FastAPI |
-| :--- | :--- | :--- |
+| :------ | :---- | :------ |
 | Async | Add-on | Native |
 | Validation | Extension | Native |
 | Doc Gen | Extension | Native |
@@ -39,6 +45,7 @@ Let's look at a table of comparison:
 ### Conclusion
 
 Switching to FastAPI is a no-brainer for data-intensive applications.
+
 ```
 
 #### `content/pages/about.md`
@@ -65,10 +72,10 @@ We are a distributed team working from 4 different continents.
 *   **Mike:** Devops
 ```
 
-### 3. Usage
+### 3\. Usage
 
-1.  Ensure your `main.py` points `CONTENT_DIR` to `public/content` and `TEMPLATES_DIR` to `public/templates`.
-2.  Run `uv run uvicorn main:app --reload`.
-3.  Visit `http://localhost:8000`.
+1. Ensure your `main.py` points `CONTENT_DIR` to `public/content` and `TEMPLATES_DIR` to `public/templates`.
+2. Run `uv run uvicorn main:app --reload`.
+3. Visit `http://localhost:8000`.
 
 You will see a fully responsive, styled website with a Hero homepage, a Blog index with featured layouts, and beautiful typography for articles.

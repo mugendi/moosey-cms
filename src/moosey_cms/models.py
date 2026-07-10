@@ -6,7 +6,7 @@
 """
 
 from pydantic import BaseModel, Field, field_validator
-from typing import Dict, Literal, Optional, Union
+from typing import Dict, Literal, Optional
 from pathlib import Path
 
 
@@ -80,12 +80,11 @@ class CMSConfig(BaseModel):
             "refreshing. Only has an effect in development mode."
         ),
     )
-    admin: Optional[Union[str, dict]] = Field(
+    admin: Optional[dict] = Field(
         default=None,
         description=(
-            "Admin content-editing configuration. Can be a string prefix "
-            "(e.g. 'admin/content') for backward compatibility, or a dict "
-            "with keys: 'prefix' (route prefix) and 'templates' (subdirectory "
+            "Admin content-editing configuration. A dict with keys: "
+            "'prefix' (route prefix) and 'templates' (subdirectory "
             "within templates/ for admin templates, default 'admin')."
         ),
     )
@@ -95,14 +94,8 @@ class CMSConfig(BaseModel):
     def validate_admin(cls, v):
         if v is None:
             return None
-        # Backward compat: string -> dict
-        if isinstance(v, str):
-            v = v.strip().strip("/")
-            if not v:
-                return None
-            return {"prefix": v, "templates": "admin"}
         if not isinstance(v, dict):
-            raise ValueError("admin must be a string or dict")
+            raise ValueError("admin must be a dict")
         if "prefix" not in v:
             raise ValueError("admin dict must contain a 'prefix' key")
         v["prefix"] = v["prefix"].strip().strip("/")
