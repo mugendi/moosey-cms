@@ -579,6 +579,12 @@ Use it as a block filter around complete rendered output:
 </html>
 {% endfilter %}
 ```
+#### API
+
+- **`keep_comments`:** Set to `False` to also strip all html comments. Default is `True`.
+- **`minify_css`:** set to `True` to minify css. Dfault is `False`
+- **`minify_js`:** set to `True` to minify javascript. Default is `False`.
+
 
 ### Production HTML Optimization
 

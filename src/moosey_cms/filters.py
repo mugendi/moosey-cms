@@ -660,7 +660,7 @@ def strip_comments(text, enabled=True):
     # The *? ensures it is non-greedy (stops at the first closing tag)
     return re.sub(r'<!--[\s\S]*?-->', '', str(text))
 
-def minify_html(text, enabled=True):
+def minify_html(text, enabled=True, keep_comments=True, minify_css=False,           minify_js=False,):
     """
     Minify rendered HTML while preserving whitespace-sensitive elements.
     """
@@ -676,12 +676,13 @@ def minify_html(text, enabled=True):
     try:
         return _html_minifier.minify(
             text,
-            keep_comments=True,
+            
             keep_closing_tags=True,
             keep_html_and_head_opening_tags=True,
             keep_input_type_text_attr=True,
-            minify_css=False,
-            minify_js=False,
+            keep_comments=keep_comments,
+            minify_css=minify_css,
+            minify_js=minify_js,
         ).strip()
     except Exception as exc:
         log.debug("HTML minification failed; returning original HTML: %s", exc)
