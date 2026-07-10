@@ -8,60 +8,60 @@ All filters are automatically registered when you call `init_cms()`.
 
 | Filter | Category | Description |
 |--------|----------|-------------|
-| `slugify` | String | URL-friendly slug |
-| `title_case` | String | Title case conversion |
-| `truncate_words` | String | Truncate by word count |
-| `excerpt` | String | Smart excerpt at sentence break |
-| `reading_time` | String | Estimated reading time |
-| `read_time` | String | Estimated reading time (alias) |
-| `smart_quotes` | String | Straight to curly quotes |
-| `pluralize` | String | Plural/singular suffix |
-| `snake_case` | String | Convert to snake_case |
-| `kebab_case` | String | Convert to kebab-case |
-| `camel_case` | String | Convert to camelCase |
-| `pascal_case` | String | Convert to PascalCase |
-| `upper_case` | String | Convert to UPPER CASE |
-| `lower_case` | String | Convert to lower case |
-| `word_count` | String | Count words in text |
-| `fancy_date` | Date | '13th Jan, 2026 at 6:00 PM' |
-| `short_date` | Date | 'Jan 13, 2026' |
-| `iso_date` | Date | '2026-01-13' |
-| `relative_time` | Date | '2 hours ago' |
-| `time_only` | Date | '6:00 PM' |
-| `strptime` | Date | Parse string to datetime |
-| `rfc822_date` | Date | RFC 822 format (RSS) |
-| `number_format` | Number | Thousand separators |
-| `percentage` | Number | Format as percentage |
-| `ordinal` | Number | 1st, 2nd, 3rd |
-| `filesize` | Number | Human-readable bytes |
-| `currency` | Currency | Format with symbol ($1,234.56) |
-| `compact_currency` | Currency | Compact format ($1.2M) |
-| `currency_name` | Currency | Code to full name ('US Dollar') |
-| `country_name` | Currency | Code to full name ('United States') |
-| `country_flag` | Currency | Code to emoji flag (🇺🇸) |
-| `language_name` | Currency | Code to full name ('English') |
-| `image` | Image | Image URL or responsive `<img>` |
-| `image_url` | Image | *(deprecated)* Image URL |
-| `responsive_image` | Image | *(deprecated)* Responsive `<img>` |
-| `image_dimensions` | Image | `width="…" height="…"` string |
-| `dominant_color` | Image | Most common hex color |
-| `image_cdn` | Image | CDN transform URL |
-| `img_attrs` | Image | `src loading decoding` string |
-| `lazy_image` | Image | Inject lazy attrs |
-| `strip_html` | HTML | Remove HTML tags |
-| `strip_comments` | HTML | Remove HTML comments |
-| `minify_html` | HTML | Minify whitespace |
-| `sanitize` | HTML | Bleach safe tag allowlist |
-| `markdown` | Content | Markdown to HTML |
-| `embed` | Content | Video/social embed HTML |
-| `headings` | Content | Extract heading tree |
-| `toc_from_html` | Content | Render table of contents |
-| `gravatar` | Content | Gravatar URL |
-| `default_if_none` | Utility | Fallback for None values |
-| `yesno` | Utility | Boolean to yes/no text |
-| `absolute_url` | Utility | Resolve relative URL |
-| `cache_bust` | Utility | Append version hash |
-| `inline` | Utility | Inline file contents |
+| [`slugify`](#slugify) | [String](#string-filters) | URL-friendly slug |
+| [`title_case`](#title_case) | [String](#string-filters) | Title case conversion |
+| [`truncate_words`](#truncate_words) | [String](#string-filters) | Truncate by word count |
+| [`excerpt`](#excerpt) | [String](#string-filters) | Smart excerpt at sentence break |
+| [`reading_time`](#reading_time) | [String](#string-filters) | Estimated reading time |
+| [`read_time`](#read_time) | [String](#string-filters) | Estimated reading time (alias) |
+| [`smart_quotes`](#smart_quotes) | [String](#string-filters) | Straight to curly quotes |
+| [`pluralize`](#pluralize) | [String](#string-filters) | Plural/singular suffix |
+| [`snake_case`](#snake_case) | [String](#string-filters) | Convert to snake_case |
+| [`kebab_case`](#kebab_case) | [String](#string-filters) | Convert to kebab-case |
+| [`camel_case`](#camel_case) | [String](#string-filters) | Convert to camelCase |
+| [`pascal_case`](#pascal_case) | [String](#string-filters) | Convert to PascalCase |
+| [`upper_case`](#upper_case) | [String](#string-filters) | Convert to UPPER CASE |
+| [`lower_case`](#lower_case) | [String](#string-filters) | Convert to lower case |
+| [`word_count`](#word_count) | [String](#string-filters) | Count words in text |
+| [`fancy_date`](#fancy_date) | [Date](#date--time-filters) | '13th Jan, 2026 at 6:00 PM' |
+| [`short_date`](#short_date) | [Date](#date--time-filters) | 'Jan 13, 2026' |
+| [`iso_date`](#iso_date) | [Date](#date--time-filters) | '2026-01-13' |
+| [`relative_time`](#relative_time) | [Date](#date--time-filters) | '2 hours ago' |
+| [`time_only`](#time_only) | [Date](#date--time-filters) | '6:00 PM' |
+| [`strptime`](#strptime) | [Date](#date--time-filters) | Parse string to datetime |
+| [`rfc822_date`](#rfc822_date) | [Date](#date--time-filters) | RFC 822 format (RSS) |
+| [`number_format`](#number_format) | [Number](#number-filters) | Thousand separators |
+| [`percentage`](#percentage) | [Number](#number-filters) | Format as percentage |
+| [`ordinal`](#ordinal) | [Number](#number-filters) | 1st, 2nd, 3rd |
+| [`filesize`](#filesize) | [Number](#number-filters) | Human-readable bytes |
+| [`currency`](#currency) | [Currency](#currency--locale-filters) | Format with symbol ($1,234.56) |
+| [`compact_currency`](#compact_currency) | [Currency](#currency--locale-filters) | Compact format ($1.2M) |
+| [`currency_name`](#currency_name) | [Currency](#currency--locale-filters) | Code to full name ('US Dollar') |
+| [`country_name`](#country_name) | [Currency](#currency--locale-filters) | Code to full name ('United States') |
+| [`country_flag`](#country_flag) | [Currency](#currency--locale-filters) | Code to emoji flag (🇺🇸) |
+| [`language_name`](#language_name) | [Currency](#currency--locale-filters) | Code to full name ('English') |
+| [`image`](#image) | [Image](#image-filters) | Image URL or responsive `<img>` |
+| [`image_url`](#image_url-deprecated) | [Image](#image-filters) | *(deprecated)* Image URL |
+| [`responsive_image`](#responsive_image-deprecated) | [Image](#image-filters) | *(deprecated)* Responsive `<img>` |
+| [`image_dimensions`](#image_dimensions) | [Image](#image-filters) | `width="…" height="…"` string |
+| [`dominant_color`](#dominant_color) | [Image](#image-filters) | Most common hex color |
+| [`image_cdn`](#image_cdn) | [Image](#image-filters) | CDN transform URL |
+| [`img_attrs`](#img_attrs) | [Image](#image-filters) | `src loading decoding` string |
+| [`lazy_image`](#lazy_image) | [Image](#image-filters) | Inject lazy attrs |
+| [`strip_html`](#strip_html) | [HTML](#html-filters) | Remove HTML tags |
+| [`strip_comments`](#strip_comments) | [HTML](#html-filters) | Remove HTML comments |
+| [`minify_html`](#minify_html) | [HTML](#html-filters) | Minify whitespace |
+| [`sanitize`](#sanitize) | [HTML](#html-filters) | Bleach safe tag allowlist |
+| [`markdown`](#markdown) | [Content](#content-filters) | Markdown to HTML |
+| [`embed`](#embed) | [Content](#content-filters) | Video/social embed HTML |
+| [`headings`](#headings) | [Content](#content-filters) | Extract heading tree |
+| [`toc_from_html`](#toc_from_html) | [Content](#content-filters) | Render table of contents |
+| [`gravatar`](#gravatar) | [Content](#content-filters) | Gravatar URL |
+| [`default_if_none`](#default_if_none) | [Utility](#utility-filters) | Fallback for None values |
+| [`yesno`](#yesno) | [Utility](#utility-filters) | Boolean to yes/no text |
+| [`absolute_url`](#absolute_url) | [Utility](#utility-filters) | Resolve relative URL |
+| [`cache_bust`](#cache_bust) | [Utility](#utility-filters) | Append version hash |
+| [`inline`](#inline) | [Utility](#utility-filters) | Inline file contents |
 
 ## String Filters
 
@@ -562,6 +562,23 @@ Minify HTML by removing unnecessary whitespace and newlines:
 ```
 
 > Warning: Regex-based minifier, does not respect `<pre>` tags.
+
+### Production HTML Optimization
+
+In production, strip HTML comments and minify output to reduce page size.
+Use the `enabled` parameter to conditionally apply these filters:
+
+```jinja2
+{% filter strip_comments(enabled=(mode == 'production')) %}
+{% filter minify_html(enabled=(mode == 'production')) %}
+    {{ content }}
+{% endfilter %}
+{% endfilter %}
+```
+
+Both `strip_comments` and `minify_html` accept `enabled` (default: `true`).
+Pass `enabled=(mode == 'production')` so they are no-ops in development,
+keeping your HTML readable during debugging.
 
 ---
 
