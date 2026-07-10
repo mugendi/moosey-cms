@@ -464,6 +464,84 @@ Files are written atomically via a temp-file + `os.replace()` pattern. If a writ
 
 ---
 
+### Static file browsing
+
+Browse, upload, and manage files in the configured static directory.
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/{prefix}/static[/subpath]` | List files and directories |
+| `POST` | `/{prefix}/static/upload/{path}` | Upload a file (multipart form) |
+| `POST` | `/{prefix}/static/mkdir/{path}` | Create a directory |
+
+**Requires** `dirs["static"]` to be configured in `init_cms()`. If not configured, these endpoints are not registered.
+
+#### List static files
+
+```
+GET /{prefix}/static
+GET /{prefix}/static/{subpath}
+```
+
+Returns files and directories with MIME types and URLs.
+
+**Response:**
+
+```json
+{
+  "path": "images",
+  "entries": [
+    {
+      "name": "photo.jpg",
+      "path": "images/photo.jpg",
+      "type": "file",
+      "size": 204800,
+      "modified": "2026-07-10T12:00:00",
+      "mime_type": "image/jpeg",
+      "url": "/static/images/photo.jpg"
+    }
+  ]
+}
+```
+
+**Example:**
+
+```bash
+curl http://localhost:8000/admin/content/static
+curl http://localhost:8000/admin/content/static/images
+```
+
+#### Upload file
+
+```
+POST /{prefix}/static/upload/{path}
+```
+
+Upload a file via `multipart/form-data`. Parent directories are created automatically. Max 10MB.
+
+**Example:**
+
+```bash
+curl -X POST http://localhost:8000/admin/content/static/upload/images/photo.jpg \
+  -F "file=@photo.jpg"
+```
+
+#### Create directory
+
+```
+POST /{prefix}/static/mkdir/{path}
+```
+
+Returns `409` if the directory already exists.
+
+**Example:**
+
+```bash
+curl -X POST http://localhost:8000/admin/content/static/mkdir/images/blog
+```
+
+---
+
 ## Example: Full CRUD Session
 
 ```bash
