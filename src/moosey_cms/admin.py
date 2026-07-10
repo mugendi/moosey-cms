@@ -61,6 +61,37 @@ class FileResponse(BaseModel):
     modified: Optional[str] = None
 
 
+class StaticEntry(BaseModel):
+    """One item returned by the static directory list endpoint."""
+    name: str
+    path: str
+    type: str  # "file" | "directory"
+    size: int = 0
+    modified: Optional[str] = None
+    mime_type: Optional[str] = None
+    url: Optional[str] = None
+
+
+class StaticListResponse(BaseModel):
+    """Response for the static directory list endpoint."""
+    path: str
+    entries: List[StaticEntry]
+
+
+class StaticUploadResponse(BaseModel):
+    """Response for the static file upload endpoint."""
+    path: str
+    url: str
+    mime_type: Optional[str] = None
+    status: str
+
+
+class StaticMkdirResponse(BaseModel):
+    """Response for the static directory creation endpoint."""
+    path: str
+    status: str
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -105,6 +136,41 @@ def _file_entry(file_path: Path, content_dir: Path) -> Entry:
         modified=modified,
         title=title,
         is_index=is_index,
+    )
+
+
+IMAGE_EXTS = frozenset({
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg",
+    ".avif", ".bmp", ".ico", ".tiff", ".tif",
+})
+VIDEO_EXTS = frozenset({".mp4", ".webm", ".ogg", ".mov", ".avi"})
+AUDIO_EXTS = frozenset({".mp3", ".wav", ".ogg", ".flac", ".aac"})
+PREVIEWABLE_EXTS = IMAGE_EXTS | VIDEO_EXTS | AUDIO_EXTS | {".pdf"}
+
+
+def _static_entry(file_path: Path, static_dir: Path, static_route: str) -> StaticEntry:
+    """Build a StaticEntry for a file or directory inside the static dir."""
+    stat = file_path.stat()
+    modified = datetime.fromtimestamp(stat.st_mtime).isoformat()
+    rel = file_path.relative_to(static_dir)
+    url_path = str(rel).replace("\\", "/")
+    is_dir = file_path.is_dir()
+
+    mime_type = None
+    url = None
+    if not is_dir:
+        import mimetypes
+        mime_type, _ = mimetypes.guess_type(file_path.name)
+        url = f"{static_route.rstrip('/')}/{url_path}"
+
+    return StaticEntry(
+        name=file_path.name,
+        path=url_path,
+        type="directory" if is_dir else "file",
+        size=0 if is_dir else stat.st_size,
+        modified=modified,
+        mime_type=mime_type,
+        url=url,
     )
 
 
@@ -333,6 +399,82 @@ def register_admin_routes(
         return await _render_admin_template(request, f"{templates_subdir}/editor.html", {
             "admin_config": admin_config, "mode": mode, "file_path": file_path,
         })
+
+    # ------------------------------------------------------------------
+    # STATIC — file browsing, upload, and directory creation
+    # ------------------------------------------------------------------
+
+    static_dir = admin_config.get("_static_dir")
+    static_route = admin_config.get("_static_route", "/static")
+
+    if static_dir is not None:
+
+        def _safe_static_path(user_path: str) -> Path:
+            return get_secure_target(user_path, relative_to_path=static_dir)
+
+        @router.get(f"/{prefix}/static", response_model=StaticListResponse)
+        @router.get(f"/{prefix}/static/{{subpath:path}}", response_model=StaticListResponse)
+        async def admin_static_list(subpath: str = "") -> StaticListResponse:
+            if subpath:
+                target = _safe_static_path(subpath)
+            else:
+                target = static_dir
+
+            if not target.exists():
+                raise HTTPException(status_code=404, detail="Directory not found")
+            if not target.is_dir():
+                raise HTTPException(status_code=400, detail="Path is not a directory")
+
+            entries: List[StaticEntry] = []
+            for item in sorted(target.iterdir(), key=lambda p: (p.is_file(), p.name.lower())):
+                if item.name.startswith("."):
+                    continue
+                entries.append(_static_entry(item, static_dir, static_route))
+
+            return StaticListResponse(path=subpath or "", entries=entries)
+
+        @router.post(f"/{prefix}/static/upload/{{file_path:path}}", status_code=201)
+        async def admin_static_upload(file_path: str, request: Request) -> StaticUploadResponse:
+            target = _safe_static_path(file_path)
+            target.parent.mkdir(parents=True, exist_ok=True)
+
+            form = await request.form()
+            upload = form.get("file")
+            if upload is None:
+                raise HTTPException(status_code=400, detail="No file provided")
+
+            contents = await upload.read()
+            if len(contents) > 10 * 1024 * 1024:
+                raise HTTPException(status_code=400, detail="File too large (max 10MB)")
+
+            import tempfile, os
+            fd, tmp = tempfile.mkstemp(dir=target.parent, suffix=".tmp", prefix=".moosey-")
+            try:
+                with os.fdopen(fd, "wb") as f:
+                    f.write(contents)
+                os.replace(tmp, target)
+            except BaseException:
+                try:
+                    os.unlink(tmp)
+                except OSError:
+                    pass
+                raise
+
+            import mimetypes
+            mime_type, _ = mimetypes.guess_type(target.name)
+            rel = str(target.relative_to(static_dir)).replace("\\", "/")
+            url = f"{static_route.rstrip('/')}/{rel}"
+
+            return StaticUploadResponse(path=rel, url=url, mime_type=mime_type, status="created")
+
+        @router.post(f"/{prefix}/static/mkdir/{{dir_path:path}}", status_code=201)
+        async def admin_static_mkdir(dir_path: str) -> StaticMkdirResponse:
+            target = _safe_static_path(dir_path)
+            if target.exists():
+                raise HTTPException(status_code=409, detail="Directory already exists")
+            target.mkdir(parents=True, exist_ok=False)
+            rel = str(target.relative_to(static_dir)).replace("\\", "/")
+            return StaticMkdirResponse(path=rel, status="created")
 
 
 # ---------------------------------------------------------------------------

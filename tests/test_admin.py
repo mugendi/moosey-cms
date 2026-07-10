@@ -422,3 +422,148 @@ class TestPathTraversal:
     def test_absolute_path_rejected(self, client):
         resp = client.get(f"/{PREFIX}/file//etc/passwd")
         assert resp.status_code in (400, 404, 422)
+
+
+# ---------------------------------------------------------------------------
+# STATIC FILE API
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def static_dir(tmp_path):
+    """Create a static directory with sample files."""
+    d = tmp_path / "static"
+    d.mkdir()
+    (d / "logo.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 100)
+    (d / "cover.jpg").write_bytes(b"\xff\xd8\xff" + b"\x00" * 100)
+    (d / "doc.pdf").write_bytes(b"%PDF-1.4" + b"\x00" * 100)
+
+    sub = d / "images"
+    sub.mkdir()
+    (sub / "hero.webp").write_bytes(b"RIFF" + b"\x00" * 100)
+
+    return d
+
+
+@pytest.fixture
+def static_client(content_dir, static_dir):
+    """Create a TestClient with admin + static routes."""
+    app = FastAPI()
+    router = APIRouter()
+    register_admin_routes(
+        router,
+        dirs={"content": content_dir},
+        mode="development",
+        admin_config={
+            "prefix": "admin",
+            "templates": "admin",
+            "_static_dir": static_dir,
+            "_static_route": "/static",
+        },
+    )
+    app.include_router(router)
+    return TestClient(app)
+
+
+class TestStaticList:
+    def test_list_root(self, static_client):
+        resp = static_client.get(f"/{PREFIX}/static")
+        assert resp.status_code == 200
+        data = resp.json()
+        names = [e["name"] for e in data["entries"]]
+        assert "logo.png" in names
+        assert "cover.jpg" in names
+        assert "doc.pdf" in names
+        assert "images" in names
+
+    def test_list_subdirectory(self, static_client):
+        resp = static_client.get(f"/{PREFIX}/static/images")
+        assert resp.status_code == 200
+        data = resp.json()
+        names = [e["name"] for e in data["entries"]]
+        assert "hero.webp" in names
+
+    def test_list_mime_types(self, static_client):
+        resp = static_client.get(f"/{PREFIX}/static")
+        entries = resp.json()["entries"]
+        by_name = {e["name"]: e for e in entries}
+        assert by_name["logo.png"]["mime_type"] == "image/png"
+        assert by_name["cover.jpg"]["mime_type"] == "image/jpeg"
+        assert by_name["doc.pdf"]["mime_type"] == "application/pdf"
+
+    def test_list_urls(self, static_client):
+        resp = static_client.get(f"/{PREFIX}/static")
+        entries = resp.json()["entries"]
+        by_name = {e["name"]: e for e in entries}
+        assert by_name["logo.png"]["url"] == "/static/logo.png"
+        assert by_name["images"]["url"] is None  # directories have no url
+
+    def test_list_dirs_first(self, static_client):
+        resp = static_client.get(f"/{PREFIX}/static")
+        types = [e["type"] for e in resp.json()["entries"]]
+        dir_end = types.index("file")
+        assert all(t == "directory" for t in types[:dir_end])
+
+    def test_list_not_found(self, static_client):
+        resp = static_client.get(f"/{PREFIX}/static/nonexistent")
+        assert resp.status_code == 404
+
+    def test_list_skips_dotfiles(self, static_client, static_dir):
+        (static_dir / ".DS_Store").write_bytes(b"\x00")
+        resp = static_client.get(f"/{PREFIX}/static")
+        names = [e["name"] for e in resp.json()["entries"]]
+        assert ".DS_Store" not in names
+
+    def test_list_path_traversal_rejected(self, static_client):
+        resp = static_client.get(f"/{PREFIX}/static/../../etc/passwd")
+        assert resp.status_code in (400, 404)
+
+
+class TestStaticUpload:
+    def test_upload_file(self, static_client):
+        resp = static_client.post(
+            f"/{PREFIX}/static/upload/new-file.txt",
+            files={"file": ("new-file.txt", b"hello world", "text/plain")},
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["path"] == "new-file.txt"
+        assert data["url"] == "/static/new-file.txt"
+        assert data["status"] == "created"
+        assert data["mime_type"] == "text/plain"
+
+    def test_upload_creates_parent_dirs(self, static_client):
+        resp = static_client.post(
+            f"/{PREFIX}/static/upload/sub/dir/file.txt",
+            files={"file": ("file.txt", b"content", "text/plain")},
+        )
+        assert resp.status_code == 201
+        assert resp.json()["path"] == "sub/dir/file.txt"
+
+    def test_upload_overwrites_existing(self, static_client):
+        resp = static_client.post(
+            f"/{PREFIX}/static/upload/logo.png",
+            files={"file": ("logo.png", b"new", "image/png")},
+        )
+        assert resp.status_code == 201
+
+    def test_upload_no_file_returns_400(self, static_client):
+        resp = static_client.post(f"/{PREFIX}/static/upload/empty.txt")
+        assert resp.status_code == 400
+
+
+class TestStaticMkdir:
+    def test_create_directory(self, static_client):
+        resp = static_client.post(f"/{PREFIX}/static/mkdir/new-folder")
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["path"] == "new-folder"
+        assert data["status"] == "created"
+
+    def test_create_existing_returns_409(self, static_client):
+        resp = static_client.post(f"/{PREFIX}/static/mkdir/images")
+        assert resp.status_code == 409
+
+    def test_create_nested(self, static_client):
+        resp = static_client.post(f"/{PREFIX}/static/mkdir/a/b/c")
+        assert resp.status_code == 201
+        assert resp.json()["path"] == "a/b/c"
