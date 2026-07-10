@@ -170,6 +170,11 @@ class TestAdminEditorTemplate:
         assert resp.status_code == 200
         assert "btn-save" in resp.text
         assert "Save" in resp.text
+        assert 'id="save-spinner"' in resp.text
+        assert "if (isSaving) return" in resp.text
+        assert "setSaveState(true)" in resp.text
+        assert "setSaveState(false)" in resp.text
+        assert "button.disabled = saving" in resp.text
 
 
 class TestAdminDashboardTemplate:

@@ -12,6 +12,7 @@
     var frontmatterData = {};   /* Current frontmatter data */
     var activeTab = 'content';  /* Current active tab */
     var previewStyle = 'vertical'; /* Split-screen by default */
+    var isSaving = false;
 
     /* ================================================================
        Dynamic editor height — fill viewport after header
@@ -363,7 +364,23 @@
     /* ================================================================
        Save file
        ================================================================ */
+    function setSaveState(saving) {
+        isSaving = saving;
+        var button = document.getElementById('btn-save');
+        var label = document.getElementById('save-label');
+        var icon = document.getElementById('save-icon');
+        var spinner = document.getElementById('save-spinner');
+        if (button) {
+            button.disabled = saving;
+            button.setAttribute('aria-busy', String(saving));
+        }
+        if (label) label.textContent = saving ? 'Saving…' : 'Save';
+        if (icon) icon.classList.toggle('hidden', saving);
+        if (spinner) spinner.classList.toggle('hidden', !saving);
+    }
+
     window.saveFile = function () {
+        if (isSaving) return;
         var savePath = filePath;
         if (isNew) {
             var input = document.getElementById('file-path-input');
@@ -381,6 +398,7 @@
         }
 
         var method = isNew ? 'POST' : 'PUT';
+        setSaveState(true);
 
         fetch('/' + prefix + '/file/' + savePath, {
             method: method,
@@ -404,6 +422,9 @@
         })
         .catch(function (err) {
             showFlash('Save failed: ' + err.message, 'error');
+        })
+        .finally(function () {
+            setSaveState(false);
         });
     };
 
