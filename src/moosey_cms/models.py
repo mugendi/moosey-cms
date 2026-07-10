@@ -6,7 +6,7 @@
 """
 
 from pydantic import BaseModel, Field, field_validator
-from typing import Dict, Literal, Optional
+from typing import Dict, Literal, Optional, Union
 from pathlib import Path
 
 
@@ -80,21 +80,36 @@ class CMSConfig(BaseModel):
             "refreshing. Only has an effect in development mode."
         ),
     )
-    admin_prefix: Optional[str] = Field(
+    admin: Optional[Union[str, dict]] = Field(
         default=None,
         description=(
-            "Route prefix for the admin content-editing API "
-            "(e.g. 'admin/content').  When set, CRUD endpoints are "
-            "registered at /<prefix>/list, /<prefix>/file/…, /<prefix>/dir/…."
+            "Admin content-editing configuration. Can be a string prefix "
+            "(e.g. 'admin/content') for backward compatibility, or a dict "
+            "with keys: 'prefix' (route prefix) and 'templates' (subdirectory "
+            "within templates/ for admin templates, default 'admin')."
         ),
     )
 
-    @field_validator("admin_prefix")
+    @field_validator("admin")
     @classmethod
-    def validate_admin_prefix(cls, v: Optional[str]) -> Optional[str]:
+    def validate_admin(cls, v):
         if v is None:
             return None
-        v = v.strip().strip("/")
-        if not v:
-            return None
+        # Backward compat: string -> dict
+        if isinstance(v, str):
+            v = v.strip().strip("/")
+            if not v:
+                return None
+            return {"prefix": v, "templates": "admin"}
+        if not isinstance(v, dict):
+            raise ValueError("admin must be a string or dict")
+        if "prefix" not in v:
+            raise ValueError("admin dict must contain a 'prefix' key")
+        v["prefix"] = v["prefix"].strip().strip("/")
+        if not v["prefix"]:
+            raise ValueError("admin prefix cannot be empty")
+        v.setdefault("templates", "admin")
+        v["templates"] = v["templates"].strip("/").strip()
+        if not v["templates"]:
+            v["templates"] = "admin"
         return v

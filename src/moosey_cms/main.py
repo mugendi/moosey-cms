@@ -94,6 +94,7 @@ def init_cms(
     mode: str,
     site_data: SiteData = {},
     reload_delay: float = 0,
+    admin=None,
     admin_prefix: str = None,
 ):
     """
@@ -113,12 +114,17 @@ def init_cms(
                       build has finished before refreshing.  Defaults to ``0``
                       (immediate reload).  Only has an effect in
                       ``"development"`` mode.
-        admin_prefix: Route prefix for the admin content-editing API
-                      (e.g. ``"admin/content"``).  When set, CRUD endpoints
-                      are registered at ``/<prefix>/list``,
-                      ``/<prefix>/file/…``, ``/<prefix>/dir/…``.
-                      Disabled by default (``None``).
+        admin:        Admin content-editing configuration. Can be a string prefix
+                      (e.g. ``"admin/content"``) for backward compatibility, or
+                      a dict with keys ``'prefix'`` and ``'templates'``.
+        admin_prefix: Deprecated. Use ``admin`` instead. Route prefix for the
+                      admin content-editing API.
     """
+
+    # Backward compat: merge deprecated admin_prefix into admin
+    if admin_prefix and not admin:
+        admin = admin_prefix
+    admin_prefix = None
 
     # validate dirs inputs
     CMSConfig(
@@ -128,12 +134,11 @@ def init_cms(
         mode=mode,
         site_data=site_data,
         reload_delay=reload_delay,
-        admin_prefix=admin_prefix,
+        admin=admin,
     )
 
-    # Normalise admin_prefix: strip slashes, treat empty string as None
-    if admin_prefix:
-        admin_prefix = admin_prefix.strip().strip("/") or None
+    # Admin is now a validated dict (or None). Extract prefix for internal use.
+    admin_prefix = admin["prefix"] if admin else None
 
     # resolve paths (static may be a dict with "dir"/"route" keys)
     def _resolve(v):
@@ -234,13 +239,13 @@ def init_cms(
         templates=templates,
         reloader=reloader,
         mode=mode,
-        admin_prefix=admin_prefix,
+        admin=admin,
     )
 
     return app
 
 
-def init_routes(app, dirs: Dirs, templates, mode, reloader, admin_prefix=None):
+def init_routes(app, dirs: Dirs, templates, mode, reloader, admin=None):
 
     # init router
     router = APIRouter()
@@ -277,25 +282,25 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader, admin_prefix=None):
     # Admin content-editing API (registered BEFORE the catch-all so
     # its more-specific patterns take priority).
     # ------------------------------------------------------------------
-    if admin_prefix:
+    if admin:
         admin_router = APIRouter()
         admin.register_admin_routes(
             router=admin_router,
             dirs=dirs,
             mode=mode,
-            prefix=admin_prefix,
+            prefix=admin["prefix"],
         )
         app.include_router(admin_router, prefix="")
 
-        # Store the prefix on app.state so downstream code can query it.
-        app.state.admin_prefix = admin_prefix
+        # Store the admin config on app.state so downstream code can query it.
+        app.state.admin = admin
 
     @router.get("/{full_path:path}", include_in_schema=False)
     async def catch_all(request: Request, full_path: str):
 
         # If admin routes are enabled, let the admin router handle its
         # own paths — never fall through to the catch-all.
-        if admin_prefix and full_path.startswith(admin_prefix):
+        if admin and full_path.startswith(admin["prefix"]):
             return await async_template_response(
                 templates, "404.html", {"request": request}, status_code=404
             )
