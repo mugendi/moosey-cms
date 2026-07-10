@@ -375,7 +375,7 @@ window.FileIcons = FileIcons;
        Utility
        ================================================================ */
     function escHtml(s) {
-        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
     /* ================================================================
@@ -385,14 +385,14 @@ window.FileIcons = FileIcons;
     var fpSelectedFile = null;  // { name, path, url, mime_type }
     var fpStaticRoute = '{{ admin_config._static_route | default("/static") }}';
 
-    function openFilePickerModal() {
+    window.openFilePickerModal = function() {
         if (!document.getElementById('file-picker-modal')) return;
         fpCurrentPath = '';
         fpSelectedFile = null;
         document.getElementById('file-picker-modal').classList.remove('hidden');
         document.getElementById('fp-preview').classList.add('hidden');
         fpLoadDirectory('');
-    }
+    };
 
     window.closeFilePicker = function() {
         document.getElementById('file-picker-modal').classList.add('hidden');
@@ -407,7 +407,7 @@ window.FileIcons = FileIcons;
     }
 
     function fpLoadDirectory(subpath) {
-        var url = '/' + prefix + '/static' + (subpath ? '/' + subpath : '');
+        var url = '/' + prefix + fpStaticRoute + (subpath ? '/' + subpath : '');
         fetch(url)
             .then(function(r) { return r.json(); })
             .then(function(data) {
@@ -448,12 +448,6 @@ window.FileIcons = FileIcons;
         var html = '';
         for (var i = 0; i < entries.length; i++) {
             var e = entries[i];
-            var isPreviewable = e.mime_type && (
-                e.mime_type.indexOf('image/') === 0 ||
-                e.mime_type.indexOf('video/') === 0 ||
-                e.mime_type.indexOf('audio/') === 0 ||
-                e.mime_type === 'application/pdf'
-            );
 
             html += '<div class="fp-card border border-moose-200 rounded-lg p-3 cursor-pointer hover:border-moose-500 hover:shadow transition-all" ';
             html += 'data-path="' + escHtml(e.path) + '" ';
@@ -578,7 +572,7 @@ window.FileIcons = FileIcons;
             formData.append('file', file);
 
             try {
-                var resp = await fetch('/' + prefix + '/static/upload/' + uploadPath, {
+                var resp = await fetch('/' + prefix + fpStaticRoute + '/upload/' + uploadPath, {
                     method: 'POST',
                     body: formData,
                 });
@@ -599,7 +593,7 @@ window.FileIcons = FileIcons;
         if (!name) return;
         var createPath = fpCurrentPath ? fpCurrentPath + '/' + name : name;
 
-        fetch('/' + prefix + '/static/mkdir/' + createPath, { method: 'POST' })
+        fetch('/' + prefix + fpStaticRoute + '/mkdir/' + createPath, { method: 'POST' })
             .then(function(r) {
                 if (!r.ok) return r.json().then(function(d) { throw new Error(d.detail || 'Failed'); });
                 return r.json();
