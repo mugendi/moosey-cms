@@ -2,6 +2,7 @@
     var prefix   = '{{ admin_config.prefix }}';
     var filePath = '{{ file_path | default("") }}';
     var isNew    = !filePath;
+    var frontmatterRegistry = {{ frontmatter_fields | tojson }};
 
     var tuiEditor = null;      /* TUI Editor instance */
     var guifierInstance = null; /* Guifier instance */
@@ -213,8 +214,156 @@
         return out;
     }
 
+    function metadataFieldPath(id, field) {
+        return String(field.path || id).split('.');
+    }
+
+    function hasMetadataPath(data, path) {
+        var current = data;
+        for (var i = 0; i < path.length; i++) {
+            if (!current || typeof current !== 'object' || !(path[i] in current)) return false;
+            current = current[path[i]];
+        }
+        return true;
+    }
+
+    function metadataDefault(field) {
+        if (field.default_factory === 'today') {
+            var now = new Date();
+            var local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+            return local.toISOString().slice(0, 10);
+        }
+        return cloneData(field.default === undefined ? '' : field.default);
+    }
+
+    function setMetadataPath(data, path, value, replaceScalarParent) {
+        var current = data;
+        for (var i = 0; i < path.length - 1; i++) {
+            if (current[path[i]] === undefined) current[path[i]] = {};
+            if (replaceScalarParent && (current[path[i]] === null || typeof current[path[i]] !== 'object' || Array.isArray(current[path[i]]))) {
+                current[path[i]] = {};
+            }
+            if (!current[path[i]] || typeof current[path[i]] !== 'object' || Array.isArray(current[path[i]])) return false;
+            current = current[path[i]];
+        }
+        current[path[path.length - 1]] = value;
+        return true;
+    }
+
+    function highlightAddedMetadataField(path, attempt) {
+        attempt = attempt || 0;
+        var container = document.getElementById('guifier-container');
+        var key = path[path.length - 1];
+        var walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+        var textNode;
+        var target = null;
+        while ((textNode = walker.nextNode())) {
+            if (textNode.nodeValue.trim() !== key) continue;
+            var candidate = textNode.parentElement;
+            for (var i = 0; candidate && candidate !== container && i < 5; i++, candidate = candidate.parentElement) {
+                var rect = candidate.getBoundingClientRect();
+                if (candidate.querySelector('input, textarea, select, button') && rect.height >= 28 && rect.height <= 320) {
+                    target = candidate;
+                    break;
+                }
+            }
+            if (target) break;
+        }
+        if (!target && attempt < 12) {
+            setTimeout(function() { highlightAddedMetadataField(path, attempt + 1); }, 50);
+            return;
+        }
+        if (!target) return;
+        target.classList.remove('moose-field-added');
+        void target.offsetWidth;
+        target.classList.add('moose-field-added');
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(function() { target.classList.remove('moose-field-added'); }, 1500);
+    }
+
+    window.addMetadataField = function (id) {
+        var field = (frontmatterRegistry.fields || {})[id];
+        if (!field || field.hidden) return;
+        var data = readGuifierData() || cloneData(frontmatterData);
+        var path = metadataFieldPath(id, field);
+        if (hasMetadataPath(data, path)) {
+            showFlash((field.label || id) + ' already exists', 'info');
+            return;
+        }
+        if (!setMetadataPath(data, path, metadataDefault(field), field.replace_scalar_parent === true)) {
+            showFlash('Cannot add ' + (field.label || id) + ': its parent is not an object', 'error');
+            return;
+        }
+        setFrontmatter(data);
+        closeMetadataFieldMenu(false);
+        highlightAddedMetadataField(path);
+        renderMetadataFieldMenu(document.getElementById('metadata-field-search').value);
+        showFlash((field.label || id) + ' added', 'success');
+    };
+
+    window.renderMetadataFieldMenu = function (query) {
+        var list = document.getElementById('metadata-field-list');
+        if (!list) return;
+        var data = readGuifierData() || frontmatterData || {};
+        var needle = String(query || '').trim().toLowerCase();
+        var grouped = {};
+        Object.keys(frontmatterRegistry.fields || {}).forEach(function(id) {
+            var field = frontmatterRegistry.fields[id];
+            if (field.hidden) return;
+            var haystack = [id, field.label, field.description, field.group].join(' ').toLowerCase();
+            if (needle && haystack.indexOf(needle) === -1) return;
+            var group = field.group || 'Other';
+            (grouped[group] = grouped[group] || []).push({ id: id, field: field });
+        });
+        list.innerHTML = '';
+        Object.keys(grouped).forEach(function(group) {
+            var heading = document.createElement('p');
+            heading.className = 'px-2 pb-1 pt-2 text-xs font-bold uppercase tracking-wide text-moose-500';
+            heading.textContent = group;
+            list.appendChild(heading);
+            grouped[group].forEach(function(item) {
+                var exists = hasMetadataPath(data, metadataFieldPath(item.id, item.field));
+                var button = document.createElement('button');
+                button.type = 'button';
+                button.disabled = exists;
+                button.className = 'mb-1 block w-full rounded-lg px-3 py-2 text-left hover:bg-moose-100 disabled:cursor-not-allowed disabled:opacity-45';
+                var label = document.createElement('span');
+                label.className = 'block text-sm font-semibold text-moose-900';
+                label.textContent = item.field.label || item.id;
+                var detail = document.createElement('span');
+                detail.className = 'block text-xs text-moose-500';
+                detail.textContent = (item.field.path || item.id) + ' · ' + (exists ? 'Already added' : item.field.description || item.field.type);
+                button.append(label, detail);
+                button.addEventListener('click', function() { window.addMetadataField(item.id); });
+                list.appendChild(button);
+            });
+        });
+        if (!list.children.length) list.innerHTML = '<p class="p-4 text-center text-sm text-moose-500">No supported fields found.</p>';
+    };
+
+    function closeMetadataFieldMenu(returnFocus) {
+        var menu = document.getElementById('metadata-field-menu');
+        var toggle = document.getElementById('metadata-field-toggle');
+        if (!menu || !toggle || menu.classList.contains('hidden')) return;
+        menu.classList.add('hidden');
+        toggle.setAttribute('aria-expanded', 'false');
+        if (returnFocus) toggle.focus();
+    }
+
+    window.toggleMetadataFieldMenu = function () {
+        var menu = document.getElementById('metadata-field-menu');
+        var toggle = document.getElementById('metadata-field-toggle');
+        var opening = menu.classList.contains('hidden');
+        menu.classList.toggle('hidden', !opening);
+        toggle.setAttribute('aria-expanded', String(opening));
+        if (opening) {
+            renderMetadataFieldMenu('');
+            setTimeout(function() { document.getElementById('metadata-field-search').focus(); }, 0);
+        }
+    };
+
     function cloneData(value) {
-        return JSON.parse(JSON.stringify(value || {}));
+        return JSON.parse(JSON.stringify(value === undefined ? {} : value));
     }
 
     function readGuifierData() {
@@ -332,6 +481,7 @@
                 suppressGuifierObserver = true;
                 guifierInstance.setData(prepareForGuifier(frontmatterData), 'js');
                 setTimeout(function () { suppressGuifierObserver = false; }, 0);
+                renderMetadataFieldMenu(document.getElementById('metadata-field-search').value);
             } catch (e) {
                 console.warn('Guifier setData failed:', e);
             }
@@ -700,8 +850,27 @@
             applyEditorHeight();
         });
 
+        document.addEventListener('pointerdown', function(e) {
+            var menu = document.getElementById('metadata-field-menu');
+            var toggle = document.getElementById('metadata-field-toggle');
+            if (menu && toggle && !menu.contains(e.target) && !toggle.contains(e.target)) {
+                closeMetadataFieldMenu(false);
+            }
+        });
+
+        document.getElementById('panel-metadata').addEventListener('focusout', function() {
+            setTimeout(function() {
+                var menu = document.getElementById('metadata-field-menu');
+                var toggle = document.getElementById('metadata-field-toggle');
+                if (menu && toggle && !menu.contains(document.activeElement) && !toggle.contains(document.activeElement)) {
+                    closeMetadataFieldMenu(false);
+                }
+            }, 0);
+        });
+
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
+                closeMetadataFieldMenu(true);
                 var modal = document.getElementById('file-picker-modal');
                 if (modal && !modal.classList.contains('hidden')) {
                     closeFilePicker();

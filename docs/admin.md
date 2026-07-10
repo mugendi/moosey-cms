@@ -2,6 +2,8 @@
 
 Moosey CMS ships with a full-featured admin dashboard — a Tailwind-rendered HTML UI for content CRUD operations, plus a JSON API for programmatic access.
 
+The editor includes a searchable picker for runtime-supported metadata. See [Frontmatter fields](frontmatter.md) for the complete reference and automatic `.moosey/frontmatter_fields.yaml` project overrides.
+
 ---
 
 ## Quick Start

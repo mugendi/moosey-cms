@@ -140,6 +140,23 @@ class TestAdminEditorTemplate:
         assert "restoreGuifierSnapshot(previous)" in resp.text
         assert "moose-growl__action" in resp.text
 
+    def test_editor_has_supported_frontmatter_picker(self, client):
+        resp = client.get(f"/{PREFIX}/edit/")
+        assert resp.status_code == 200
+        assert 'id="metadata-field-toggle"' in resp.text
+        assert 'id="metadata-field-search"' in resp.text
+        assert "frontmatterRegistry" in resp.text
+        assert "window.addMetadataField" in resp.text
+        assert '"draft"' in resp.text
+        assert '"lock_params"' in resp.text
+        assert "function closeMetadataFieldMenu" in resp.text
+        assert "document.addEventListener('pointerdown'" in resp.text
+        assert "addEventListener('focusout'" in resp.text
+        assert "function highlightAddedMetadataField" in resp.text
+        assert "scrollIntoView" in resp.text
+        assert "moose-field-added" in resp.text
+        assert "field.replace_scalar_parent === true" in resp.text
+
     def test_editor_loads_plugin_dependencies_before_plugins(self, client):
         resp = client.get(f"/{PREFIX}/edit/")
         assert resp.status_code == 200

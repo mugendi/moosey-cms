@@ -199,9 +199,20 @@ Guifier ships as an ES module only — must use type="module" to import. #}
       ></textarea>
     </div>
 
-    <div id="panel-metadata" class="tab-panel hidden">
-      <div id="guifier-container" class="p-4"></div>
-    </div>
+      <div id="panel-metadata" class="tab-panel hidden">
+        <div class="relative flex items-center justify-between gap-3 border-b border-moose-200 bg-moose-50 px-4 py-3">
+          <div>
+            <p class="text-sm font-semibold text-moose-900">Frontmatter</p>
+            <p class="text-xs text-moose-500">Add fields currently supported by Moosey CMS.</p>
+          </div>
+          <button id="metadata-field-toggle" type="button" onclick="toggleMetadataFieldMenu()" aria-expanded="false" class="rounded-lg bg-moose-700 px-3 py-2 text-sm font-medium text-white hover:bg-moose-800">Add metadata</button>
+          <div id="metadata-field-menu" class="absolute right-4 top-16 z-30 hidden w-[min(28rem,calc(100vw-3rem))] overflow-hidden rounded-xl border border-moose-200 bg-white shadow-2xl">
+            <div class="border-b border-moose-200 p-3"><input id="metadata-field-search" type="search" placeholder="Search supported fields…" oninput="renderMetadataFieldMenu(this.value)" class="w-full rounded-lg border border-moose-300 px-3 py-2 text-sm focus:border-moose-700 focus:outline-none focus:ring-2 focus:ring-moose-200"></div>
+            <div id="metadata-field-list" class="max-h-80 overflow-y-auto p-2"></div>
+          </div>
+        </div>
+        <div id="guifier-container" class="p-4"></div>
+      </div>
   </div>
 </div>
 {# ── File Picker Modal ── #} {% if admin_config._static_dir %}

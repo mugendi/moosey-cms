@@ -51,7 +51,17 @@
         .moose-growl__close:hover { color: #fff; background: rgba(255, 255, 255, .1); }
         @keyframes moose-growl-in { from { opacity: 0; transform: translate3d(1rem, -8px, 0) scale(.98); } }
         @keyframes moose-growl-out { to { opacity: 0; transform: translate3d(1rem, -6px, 0) scale(.98); } }
+        .moose-field-added {
+            border-radius: .65rem;
+            animation: moose-field-added 1.35s ease-out;
+        }
+        @keyframes moose-field-added {
+            0%, 35% { background: rgba(15, 23, 42, .14); box-shadow: 0 0 0 3px rgba(15, 23, 42, .28); }
+            60% { background: rgba(15, 23, 42, .04); box-shadow: 0 0 0 2px rgba(15, 23, 42, .12); }
+            100% { background: transparent; box-shadow: 0 0 0 0 transparent; }
+        }
         @media (prefers-reduced-motion: reduce) { .moose-growl, .moose-growl.is-leaving { animation: none; } }
+        @media (prefers-reduced-motion: reduce) { .moose-field-added { animation-duration: .01ms; box-shadow: 0 0 0 2px rgba(15, 23, 42, .2); } }
     </style>
 
     {% block head %}{% endblock %}

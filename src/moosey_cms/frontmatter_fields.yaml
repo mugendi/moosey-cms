@@ -1,0 +1,296 @@
+version: 1
+fields:
+  title:
+    {
+      label: Title,
+      type: text,
+      default: "",
+      group: Basic,
+      description: "Page title used by admin listings, navigation, content indexes, feeds, templates, and SEO.",
+    }
+  description:
+    {
+      label: Description,
+      type: textarea,
+      default: "",
+      group: Basic,
+      description: "Page summary used by content indexes, RSS items, templates, and SEO.",
+    }
+  template:
+    {
+      label: Template override,
+      type: template,
+      default: "",
+      group: Rendering,
+      description: "Override Moosey's automatic template waterfall; .html is optional.",
+    }
+  draft:
+    {
+      label: Draft,
+      type: boolean,
+      default: false,
+      group: Publishing,
+      description: "Hide the page outside development mode and exclude it from normal indexes.",
+    }
+  visible:
+    {
+      label: Visible in navigation,
+      type: boolean,
+      default: true,
+      group: Publishing,
+      description: "Set false to omit the page from navigation and normal content indexes without blocking direct access.",
+    }
+  date:
+    {
+      label: Content date,
+      type: date,
+      default_factory: today,
+      group: Publishing,
+      description: "Primary content date; a scalar value is normalized as the publication date.",
+    }
+  published:
+    {
+      label: Published date,
+      type: date,
+      default_factory: today,
+      group: Publishing,
+      description: "Explicit publication date used by indexes, RSS ordering, and sitemap timestamps.",
+    }
+  updated:
+    {
+      label: Updated date,
+      type: date,
+      default_factory: today,
+      group: Publishing,
+      description: "Explicit editorial update date used by feeds and sitemap timestamps.",
+    }
+  created:
+    {
+      label: Created date,
+      type: date,
+      default_factory: today,
+      group: Publishing,
+      advanced: true,
+      description: "Explicit creation date; filesystem creation time is otherwise available as date.created.",
+    }
+  nav_title:
+    {
+      label: Navigation title,
+      type: text,
+      default: "",
+      group: Navigation,
+      description: "Short title used in navigation and content indexes instead of title.",
+    }
+  order:
+    {
+      label: Navigation order,
+      type: number,
+      default: 0,
+      group: Navigation,
+      description: "Integer used to order entries in generated directory navigation.",
+    }
+  group:
+    {
+      label: Navigation group,
+      type: text,
+      default: "",
+      group: Navigation,
+      description: "Group name used to organize generated directory navigation.",
+    }
+  external_link:
+    {
+      label: External navigation URL,
+      type: url,
+      default: "",
+      group: Navigation,
+      description: "Use an external URL for generated navigation and treat the page as an external index entry.",
+    }
+  lock_params:
+    {
+      label: Required URL parameters,
+      type: object,
+      default: {},
+      group: Access,
+      description: "Query parameter values required to access the page; this is URL gating, not authentication.",
+    }
+  lock_params_fileset:
+    {
+      path: lock_params._fileset_list_,
+      label: List locked page in navigation,
+      type: boolean,
+      default: false,
+      group: Access,
+      advanced: true,
+      description: "Include a lock_params page in navigation and append its required query parameters.",
+    }
+  lock_params_sitemap:
+    {
+      path: lock_params._sitemap_list_,
+      label: List locked page in sitemap,
+      type: boolean,
+      default: false,
+      group: Access,
+      advanced: true,
+      description: "Include a lock_params page in the sitemap and append its required query parameters.",
+    }
+  noindex:
+    {
+      label: No index,
+      type: boolean,
+      default: false,
+      group: SEO,
+      description: "Mark the page noindex through Moosey's SEO helper and permit exclusion from content indexes.",
+    }
+  keywords:
+    {
+      label: SEO keywords,
+      type: string_array,
+      default: [],
+      group: SEO,
+      description: "Keywords consumed by Moosey's SEO helper; tags are used as a fallback.",
+    }
+  image:
+    {
+      label: Social image,
+      type: image,
+      default: "",
+      group: SEO,
+      description: "Page image used by Moosey's SEO and social metadata helper.",
+    }
+  canonical_url:
+    {
+      label: Canonical URL,
+      type: url,
+      default: "",
+      group: SEO,
+      description: "Explicit canonical URL consumed by Moosey's SEO helper.",
+    }
+  sitemap_exclude:
+    {
+      path: sitemap,
+      label: Exclude from sitemap,
+      type: boolean,
+      default: false,
+      group: Sitemap,
+      description: "Set sitemap to false to omit this page from generated sitemap.xml.",
+    }
+  sitemap_changefreq:
+    {
+      path: sitemap.changefreq,
+      replace_scalar_parent: true,
+      label: Sitemap change frequency,
+      type: select,
+      default: weekly,
+      options: [always, hourly, daily, weekly, monthly, yearly, never],
+      group: Sitemap,
+      description: "Page-specific sitemap changefreq value.",
+    }
+  sitemap_priority:
+    {
+      path: sitemap.priority,
+      replace_scalar_parent: true,
+      label: Sitemap priority,
+      type: number,
+      default: 0.5,
+      minimum: 0,
+      maximum: 1,
+      group: Sitemap,
+      description: "Page-specific sitemap priority from 0.0 to 1.0.",
+    }
+  feed:
+    {
+      label: Include in feed,
+      type: boolean,
+      default: true,
+      group: Feed,
+      description: "Set false to omit this page from generated RSS feeds.",
+    }
+  author:
+    {
+      label: Author,
+      type: text,
+      default: "",
+      group: Feed,
+      description: "RSS item author and SEO author; site author is the fallback.",
+    }
+  tags:
+    {
+      label: Tags,
+      type: string_array,
+      default: [],
+      group: Feed,
+      description: "RSS categories and fallback SEO keywords.",
+    }
+  summary:
+    {
+      label: Summary,
+      type: textarea,
+      default: "",
+      group: Compatibility,
+      alias_for: description,
+      advanced: true,
+      description: "Compatibility fallback for description in the content index.",
+    }
+  redirect:
+    {
+      label: External URL (redirect alias),
+      type: url,
+      default: "",
+      group: Compatibility,
+      alias_for: external_link,
+      advanced: true,
+      description: "Alias for external_link in navigation; it does not issue an HTTP redirect.",
+    }
+  rss:
+    {
+      label: Include in RSS (alias),
+      type: boolean,
+      default: true,
+      group: Compatibility,
+      alias_for: feed,
+      advanced: true,
+      description: "Alias for feed; set false to omit the page from RSS.",
+    }
+  canonical:
+    {
+      label: Canonical URL (alias),
+      type: url,
+      default: "",
+      group: Compatibility,
+      alias_for: canonical_url,
+      advanced: true,
+      description: "Alias for canonical_url used by Moosey's SEO helper.",
+    }
+  changefreq:
+    {
+      label: Sitemap change frequency (legacy),
+      type: select,
+      default: weekly,
+      options: [always, hourly, daily, weekly, monthly, yearly, never],
+      group: Compatibility,
+      alias_for: sitemap.changefreq,
+      advanced: true,
+      description: "Top-level fallback for sitemap.changefreq.",
+    }
+  priority:
+    {
+      label: Sitemap priority (legacy),
+      type: number,
+      default: 0.5,
+      minimum: 0,
+      maximum: 1,
+      group: Compatibility,
+      alias_for: sitemap.priority,
+      advanced: true,
+      description: "Top-level fallback for sitemap.priority.",
+    }
+  slug:
+    {
+      label: Slug,
+      type: text,
+      default: "",
+      group: Advanced,
+      advanced: true,
+      generated: true,
+      description: "Content-index slug; Moosey normally derives this from the filename.",
+    }

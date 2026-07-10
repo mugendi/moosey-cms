@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 from starlette.responses import HTMLResponse
 
 from .helpers import get_secure_target, parse_markdown_file
+from .frontmatter_fields import load_frontmatter_fields
 from .yaml_handler import build_markdown, split_frontmatter
 
 
@@ -240,6 +241,7 @@ def register_admin_routes(
     templates_subdir = admin_config["templates"]
 
     content_dir: Path = dirs["content"]
+    frontmatter_fields = load_frontmatter_fields(content_dir)
 
     # ------------------------------------------------------------------
     # LIST — directory contents with metadata
@@ -424,6 +426,7 @@ def register_admin_routes(
     async def admin_editor_page(request: Request, file_path: str = ""):
         return await _render_admin_template(request, f"{templates_subdir}/editor.html", {
             "admin_config": admin_config, "mode": mode, "file_path": file_path,
+            "frontmatter_fields": frontmatter_fields,
         })
 
     # ------------------------------------------------------------------
@@ -499,6 +502,5 @@ def register_admin_routes(
             target.mkdir(parents=True, exist_ok=False)
             rel = str(target.relative_to(static_dir)).replace("\\", "/")
             return StaticMkdirResponse(path=rel, status="created")
-
 
 

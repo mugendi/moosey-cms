@@ -50,6 +50,7 @@ Check out the [/example](/example/) for templating and content samples used to g
 *   **Rich Markdown:** Supports tables, emojis, task lists, and syntax highlighting out of the box.
 *   **Jinja2 Power:** Use Jinja2 logic directly inside your Markdown files (Securely Sandboxed).
 *   **Admin API:** Built-in REST API for programmatic content management (create, update, delete files and directories).
+*   **Guided Frontmatter:** Add supported metadata in the editor and extend its registry through an automatically discovered [project override](docs/frontmatter.md).
 
 ## 🛠️ Features That Replace Paid Services
 
