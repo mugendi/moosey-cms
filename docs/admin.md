@@ -8,7 +8,7 @@ Moosey CMS ships with a full-featured admin dashboard — a Tailwind-rendered HT
 
 1. **Install the admin templates** into your project:
    ```bash
-   moosey-cms setup --templates ./templates
+   moosey-cms admin --templates ./templates
    ```
    This copies `dashboard.html`, `list.html`, `editor.html`, `base.html`, and `admin.js` into `templates/admin/`.
 

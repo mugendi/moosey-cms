@@ -84,6 +84,28 @@ pip install moosey-cms
 
 ---
 
+## 💻 CLI
+
+moosey-cms ships with a CLI for scaffolding sites, installing admin templates, and running servers.
+
+```bash
+# Scaffold a new site from the example app
+moosey-cms init ./my-site
+
+# Install admin templates into your project
+moosey-cms admin --templates ./templates
+
+# Run dev server (hot-reload)
+moosey-cms dev
+
+# Run production server
+moosey-cms prod
+```
+
+See [CLI Reference](docs/cli.md) for all commands and options.
+
+---
+
 ## 🧪 Running Tests
 
 ```bash

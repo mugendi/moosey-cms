@@ -26,22 +26,38 @@ pip install moosey-cms[all]
 
 See [Images](images.md) for usage details.
 
-## Scaffold Admin Templates
+## Quick Start
 
-After installing, copy the bundled admin templates into your project:
+### 1. Scaffold a new site
 
 ```bash
-moosey-cms setup --templates ./templates
+moosey-cms init ./my-site
+cd my-site
+```
+
+This copies the example app with all templates, content, and config. Then run the dev server:
+
+```bash
+moosey-cms dev
+```
+
+Opens a hot-reloading server at `http://localhost:8000`.
+
+### 2. Add admin templates (optional)
+
+```bash
+moosey-cms admin --templates ./templates
 ```
 
 This creates a `templates/admin/` directory with a ready-to-use dashboard, file browser, and editor. Then add `admin={"prefix": "admin/content", "templates": "admin"}` to your `init_cms()` call. See [CLI Reference](cli.md) for details.
 
-## Quick Start
+### 3. Manual setup (without `init`)
 
-### 1. Create a FastAPI app
+If you prefer to set up manually, create a FastAPI app:
 
 ```python
 # main.py
+import os
 from pathlib import Path
 from fastapi import FastAPI
 from moosey_cms import init_cms
@@ -58,7 +74,7 @@ init_cms(
         "content": BASE_DIR / "content",
         "templates": BASE_DIR / "templates",
     },
-    mode="development",
+    mode=os.environ.get("MOOSEY_MODE", "development"),
     site_data={
         "name": "My Site",
         "description": "A site built with Moosey CMS",
@@ -111,10 +127,14 @@ Welcome to my site built with moosey-cms.
 ### 4. Run
 
 ```bash
-uvicorn main:app --reload
+moosey-cms dev
 ```
 
-Opens a hot-reloading server at `http://localhost:8000`.
+Opens a hot-reloading server at `http://localhost:8000`. For production:
+
+```bash
+moosey-cms prod
+```
 
 ## Running Tests
 

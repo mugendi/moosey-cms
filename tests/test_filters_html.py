@@ -1,17 +1,9 @@
 from unittest.mock import patch
 
-import pytest
-
 import moosey_cms.filters as filters
 from moosey_cms.filters import (
     strip_html, strip_comments, minify_html,
     sanitize, get_sanitize_config, markdown,
-)
-
-
-requires_html_minifier = pytest.mark.skipif(
-    filters._html_minifier is None,
-    reason="minify-html is not installed",
 )
 
 
@@ -58,14 +50,15 @@ class TestStripComments:
 
 
 class TestMinifyHtml:
-    @requires_html_minifier
+    def test_minify_html_dependency_is_available(self):
+        assert hasattr(filters._html_minifier, "minify")
+
     def test_basic(self, sample_html):
         result = minify_html(sample_html["minify"])
         assert "\n" not in result
         assert "  " not in result
         assert "<div><p>text</p></div>" in result
 
-    @requires_html_minifier
     def test_preserves_pre_and_code_whitespace(self):
         html = (
             "<div>\n"
@@ -80,7 +73,6 @@ class TestMinifyHtml:
         assert "  x = 1\n  y = 2  " in result
         assert result.startswith("<div><pre>")
 
-    @requires_html_minifier
     def test_preserves_textarea_whitespace(self):
         html = "<form>\n<textarea>hello\n  world\n</textarea>\n</form>"
 
@@ -88,7 +80,6 @@ class TestMinifyHtml:
 
         assert "<textarea>hello\n  world\n</textarea>" in result
 
-    @requires_html_minifier
     def test_does_not_minify_inline_script_by_default(self):
         script = "const value = 'a    b';\nif (value) {\n  console.log(value);\n}"
         html = f"<div>\n<script>{script}</script>\n</div>"
@@ -97,7 +88,6 @@ class TestMinifyHtml:
 
         assert f"<script>{script}</script>" in result
 
-    @requires_html_minifier
     def test_preserves_json_ld_script_content(self):
         json_ld = (
             '{\n'
@@ -111,7 +101,6 @@ class TestMinifyHtml:
 
         assert json_ld in result
 
-    @requires_html_minifier
     def test_keeps_comments_for_strip_comments_filter(self):
         html = "<div>\n<!-- keep until strip_comments runs -->\n<p>text</p>\n</div>"
 
@@ -119,6 +108,49 @@ class TestMinifyHtml:
 
         assert "<!-- keep until strip_comments runs -->" in result
         assert strip_comments(result) == "<div><p>text</p></div>"
+
+    def test_can_remove_comments_when_requested(self):
+        html = "<div>\n<!-- drop this -->\n<p>text</p>\n</div>"
+
+        result = minify_html(html, keep_comments=False)
+
+        assert result == "<div><p>text</p></div>"
+
+    def test_minifies_full_document(self):
+        html = (
+            "<!doctype html>\n"
+            "<html>\n"
+            "<head>\n"
+            "  <title> Hi </title>\n"
+            "</head>\n"
+            "<body>\n"
+            "  <main>\n"
+            "    <p> text </p>\n"
+            "  </main>\n"
+            "</body>\n"
+            "</html>"
+        )
+
+        result = minify_html(html)
+
+        assert result == (
+            "<!doctype html><html><head><title> Hi </title></head>"
+            "<body><main><p>text</p></main></body></html>"
+        )
+
+    def test_preserves_input_type_text_attribute(self):
+        html = '<form>\n<input type="text" value="x">\n</form>'
+
+        result = minify_html(html)
+
+        assert result == "<form><input type=text value=x></form>"
+
+    def test_production_filter_chain_strips_comments_then_minifies(self):
+        html = "<div>\n<!-- remove me -->\n<p>text</p>\n</div>"
+
+        result = minify_html(strip_comments(html))
+
+        assert result == "<div><p>text</p></div>"
 
     def test_returns_original_html_when_minifier_fails(self):
         html = "<div>\n  <p>text</p>\n</div>"
@@ -129,12 +161,6 @@ class TestMinifyHtml:
                 raise ValueError("bad html")
 
         with patch("moosey_cms.filters._html_minifier", BrokenMinifier):
-            assert minify_html(html) == html
-
-    def test_returns_original_html_when_minifier_unavailable(self):
-        html = "<div>\n  <p>text</p>\n</div>"
-
-        with patch("moosey_cms.filters._html_minifier", None):
             assert minify_html(html) == html
 
     def test_disabled(self):

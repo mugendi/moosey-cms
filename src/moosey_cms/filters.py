@@ -17,16 +17,12 @@ import re
 from jinja2 import pass_context
 
 import bleach
+import minify_html as _html_minifier
 from bs4 import BeautifulSoup
 
 from .seo import seo_tags
 
 log = logging.getLogger(__name__)
-
-try:
-    import minify_html as _html_minifier
-except ImportError:
-    _html_minifier = None
 
 # ============================================================================
 # DATE & TIME FILTERS
@@ -674,10 +670,6 @@ def minify_html(
         return text
 
     text = str(text)
-
-    if _html_minifier is None:
-        log.debug("HTML minification skipped; minify-html is not installed")
-        return text
 
     try:
         return _html_minifier.minify(
