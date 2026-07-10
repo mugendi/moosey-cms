@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin{% endblock %} — Moosey CMS</title>
+
+    <!-- ============================================================
+         Tailwind CSS — CDN for development convenience.
+         WARNING: The CDN script is NOT recommended for production.
+         For production, build CSS with: https://tailwindcss.com/docs/installation
+         ============================================================ -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        moose: { 50:'#f8f6f3', 100:'#eee9e2', 200:'#ddd3c4', 300:'#c8b69f', 400:'#b3987a', 500:'#a08260', 600:'#8a6d50', 700:'#725843', 800:'#5f4a3a', 900:'#513f33', 950:'#2c2019' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-moose-50 text-moose-900 min-h-screen flex">
+
+    <!-- ============================================================
+         Sidebar — fixed left navigation panel.
+         Collapses to a hamburger menu on mobile (< md breakpoint).
+         ============================================================ -->
+
+    {# Extract prefix for URL building #}
+    {% set prefix = admin_config.prefix %}
+
+    <!-- Mobile overlay backdrop -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed md:sticky top-0 left-0 z-40 h-screen w-64 bg-moose-900 text-white flex flex-col transition-transform duration-200 -translate-x-full md:translate-x-0">
+
+        {# ── Sidebar header / brand ── #}
+        <div class="flex items-center justify-between px-4 py-4 border-b border-moose-800">
+            <a href="/{{ prefix }}/" class="text-lg font-bold tracking-tight hover:text-moose-200 transition-colors">
+                🦌 Moosey CMS
+            </a>
+            <button onclick="toggleSidebar()" class="md:hidden text-moose-400 hover:text-white" aria-label="Close sidebar">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        {# ── Navigation links ── #}
+        <nav class="flex-1 overflow-y-auto py-3">
+            <ul class="space-y-1 px-3">
+
+                {# Dashboard link #}
+                {% block nav_dashboard %}
+                <li>
+                    <a href="/{{ prefix }}/"
+                       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
+                              {% if active_page == 'dashboard' %}bg-moose-800 text-white{% else %}text-moose-300 hover:bg-moose-800 hover:text-white{% endif %} transition-colors">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1"/></svg>
+                        Dashboard
+                    </a>
+                </li>
+                {% endblock %}
+
+                {# Content / Browse link #}
+                {% block nav_content %}
+                <li>
+                    <a href="/{{ prefix }}/browse/"
+                       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
+                              {% if active_page == 'list' %}bg-moose-800 text-white{% else %}text-moose-300 hover:bg-moose-800 hover:text-white{% endif %} transition-colors">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                        Content
+                    </a>
+                </li>
+                {% endblock %}
+
+                {# New File link #}
+                {% block nav_new %}
+                <li>
+                    <a href="/{{ prefix }}/edit/"
+                       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
+                              {% if active_page == 'editor' %}bg-moose-800 text-white{% else %}text-moose-300 hover:bg-moose-800 hover:text-white{% endif %} transition-colors">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        New File
+                    </a>
+                </li>
+                {% endblock %}
+            </ul>
+        </nav>
+
+        {# ── Sidebar footer ── #}
+        <div class="px-4 py-3 border-t border-moose-800 text-xs text-moose-500">
+            mode: {{ mode | default('development') }}
+        </div>
+    </aside>
+
+    <!-- ============================================================
+         Main content area
+         ============================================================ -->
+    <div class="flex-1 flex flex-col min-h-screen">
+
+        {# ── Top bar (mobile) ── #}
+        <header class="sticky top-0 z-20 bg-white border-b border-moose-200 px-4 py-3 flex items-center gap-3 md:hidden">
+            <button onclick="toggleSidebar()" class="text-moose-600 hover:text-moose-900" aria-label="Open sidebar">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <span class="font-semibold text-sm">Moosey CMS</span>
+        </header>
+
+        {# ── Flash message container ── #}
+        <div id="flash-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+        {# ── Page content block ── #}
+        <main class="flex-1 p-4 md:p-8">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Shared JS utilities -->
+    {# -- Shared Admin JavaScript (inlined via Jinja2 include) -- #}
+    <script>
+    {% include admin_config.templates ~ "/admin.js" %}
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -71,6 +71,19 @@
     {# ---- Tailwind CSS + Typography Plugin ---- #}
     {# Loaded from CDN for demo convenience. In production, run the Tailwind
        CLI build and serve the compiled CSS from /static/css/style.css. #}
+    {#
+       PRODUCTION WARNING
+       ==================
+       The Tailwind CDN script above is for development convenience only.
+       It is NOT suitable for production — it adds ~100 KB of JavaScript,
+       processes CSS on every page load, and may be rate-limited.
+
+       For production, pre-build your CSS:
+         npx tailwindcss -i ./src/input.css -o ./static/css/style.css --minify
+
+       Then replace the <script> tag with a <link>:
+         <link rel="stylesheet" href="/static/css/style.css">
+    #}
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script>
         tailwind.config = {

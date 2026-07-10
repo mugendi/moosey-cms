@@ -200,6 +200,11 @@ def init_cms_once(app):
             # esbuild) runs after save and you want the browser to wait
             # until assets are ready.
             reload_delay=0.0,
+
+            # Admin content-editing UI.  'prefix' is the URL base where the
+            # admin routes are served; 'templates' is the subdirectory under
+            # example/templates/ that holds the admin Jinja2 files.
+            admin={"prefix": "admin/content", "templates": "admin"},
         )
         app.state.cms_initialized = True
 

@@ -240,13 +240,13 @@ def init_cms(
         templates=templates,
         reloader=reloader,
         mode=mode,
-        admin=admin,
+        admin_config=admin,
     )
 
     return app
 
 
-def init_routes(app, dirs: Dirs, templates, mode, reloader, admin=None):
+def init_routes(app, dirs: Dirs, templates, mode, reloader, admin_config=None):
 
     # init router
     router = APIRouter()
@@ -283,25 +283,25 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader, admin=None):
     # Admin content-editing API (registered BEFORE the catch-all so
     # its more-specific patterns take priority).
     # ------------------------------------------------------------------
-    if admin:
+    if admin_config:
         admin_router = APIRouter()
         admin.register_admin_routes(
             router=admin_router,
             dirs=dirs,
             mode=mode,
-            admin_config=admin,
+            admin_config=admin_config,
         )
         app.include_router(admin_router, prefix="")
 
         # Store the admin config on app.state so downstream code can query it.
-        app.state.admin = admin
+        app.state.admin = admin_config
 
     @router.get("/{full_path:path}", include_in_schema=False)
     async def catch_all(request: Request, full_path: str):
 
         # If admin routes are enabled, let the admin router handle its
         # own paths — never fall through to the catch-all.
-        if admin and full_path.startswith(admin["prefix"]):
+        if admin_config and full_path.startswith(admin_config["prefix"]):
             return await async_template_response(
                 templates, "404.html", {"request": request}, status_code=404
             )
