@@ -127,7 +127,7 @@ def init_cms(
     admin_prefix = None
 
     # validate dirs inputs
-    CMSConfig(
+    config = CMSConfig(
         host=host,
         port=port,
         dirs=dirs,
@@ -136,6 +136,7 @@ def init_cms(
         reload_delay=reload_delay,
         admin=admin,
     )
+    admin = config.admin  # guaranteed dict or None after validation
 
     # Admin is now a validated dict (or None). Extract prefix for internal use.
     admin_prefix = admin["prefix"] if admin else None
