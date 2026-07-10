@@ -1,45 +1,224 @@
-# Admin API
+# Admin Dashboard & API
 
-A built-in REST API for programmatic content management. Create, update, and delete Markdown files and directories — no database required.
+Moosey CMS ships with a full-featured admin dashboard — a Tailwind-rendered HTML UI for content CRUD operations, plus a JSON API for programmatic access.
+
+---
 
 ## Quick Start
 
-Pass `admin_prefix` to `init_cms()`:
+1. **Install the admin templates** into your project:
+   ```bash
+   moosey-cms setup --templates ./templates
+   ```
+   This copies `dashboard.html`, `list.html`, `editor.html`, `base.html`, and `admin.js` into `templates/admin/`.
+
+2. **Enable the admin** by passing the `admin` dict to `init_cms()`:
+   ```python
+   init_cms(
+       app,
+       ...,
+       admin={"prefix": "admin/content", "templates": "admin"},
+   )
+   ```
+
+3. **Visit the dashboard** at `http://localhost:8000/admin/content/`.
+
+---
+
+## Configuration
+
+### `admin` dict (recommended)
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `prefix` | `str` | — (required) | URL prefix, e.g. `"admin/content"`. No leading/trailing slash. |
+| `templates` | `str` | `"admin"` | Subdirectory within your `templates/` dir where admin templates live. |
 
 ```python
-init_cms(
-    app,
-    ...,
-    admin_prefix="admin/content",
-)
+admin={"prefix": "admin/content", "templates": "admin"}
 ```
 
-The admin API is now live at `http://localhost:8000/admin/content/...`.
+### Backward-compatible `admin_prefix` string
 
-## Security
-
-!!! warning
-    The admin API has **no built-in authentication**. You must secure it yourself — for example, with a [FastAPI dependency](https://fastapi.tiangolo.com/advanced/security/) or middleware that checks credentials before the admin routes are reached.
-
-All admin endpoints are plain JSON. There is no HTML UI — use them as the backend for your own editor.
-
-## Enabling
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `admin_prefix` | `str` | URL prefix without leading slash (e.g. `"admin"`, `"admin/content"`) |
+The old `admin_prefix="admin/content"` form still works — it auto-converts to `{"prefix": "admin/content", "templates": "admin"}`.
 
 ```python
-# Basic — API at /admin/...
-init_cms(app, ..., admin_prefix="admin")
-
-# Namespaced — API at /admin/content/...
 init_cms(app, ..., admin_prefix="admin/content")
+# Equivalent to: admin={"prefix": "admin/content"}
 ```
 
-The admin `APIRouter` is registered **before** the catch-all content router, so more-specific admin routes take priority.
+Both `admin` and `admin_prefix` can be passed simultaneously; `admin` takes precedence.
 
-## Endpoints
+---
+
+## Admin Routes
+
+### HTML Dashboard Routes
+
+| Route | Template | Description |
+|-------|----------|-------------|
+| `GET /{prefix}/` | `dashboard.html` | Overview with stats cards, recent files, quick actions |
+| `GET /{prefix}/browse/` | `list.html` | File/directory browser with breadcrumbs |
+| `GET /{prefix}/browse/{subpath}` | `list.html` | Browse a specific subdirectory |
+| `GET /{prefix}/edit/` | `editor.html` | Create a new file |
+| `GET /{prefix}/edit/{file_path}` | `editor.html` | Edit an existing file |
+
+These routes use `Jinja2` templates located in your project's `templates/admin/` directory (configurable via the `templates` key). The admin router is registered **before** the catch-all content router, so admin paths never fall through to a 404 page.
+
+### JSON API Routes
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/{prefix}/list` | List content root directory |
+| `GET` | `/{prefix}/list/{subpath}` | List a subdirectory |
+| `GET` | `/{prefix}/file/{file_path}` | Read a file (frontmatter + body) |
+| `POST` | `/{prefix}/file/{file_path}` | Create a new file |
+| `PUT` | `/{prefix}/file/{file_path}` | Update an existing file |
+| `DELETE` | `/{prefix}/file/{file_path}` | Delete a file |
+| `POST` | `/{prefix}/dir/{dir_path}` | Create a directory |
+| `DELETE` | `/{prefix}/dir/{dir_path}` | Delete a directory |
+
+All JSON endpoints return structured responses and standard HTTP status codes.
+
+See the [JSON API Reference](#json-api-reference) section below for detailed endpoint docs.
+
+---
+
+## Customizing Templates
+
+### File List
+
+The admin templates live in `templates/admin/`:
+
+| File | Purpose |
+|------|---------|
+| `base.html` | Layout with Tailwind sidebar, nav, flash messages, responsive hamburger menu |
+| `dashboard.html` | Dashboard overview extending `base.html` |
+| `list.html` | File browser with breadcrumbs and CRUD actions |
+| `editor.html` | Markdown editor with CodeMirror 6 split-pane |
+| `admin.js` | Shared JS utilities (`toggleSidebar`, `showFlash`, escape-key modals) |
+
+### Template Variables
+
+Every admin page receives:
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `admin_config` | `dict` | The admin config dict (`prefix`, `templates` keys) |
+| `mode` | `str` | `"development"` or `"production"` |
+| `request` | `Request` | The Starlette/FastAPI request object |
+| `subpath` | `str` | Current browse path (list page only) |
+| `file_path` | `str` | Current file path (editor page only) |
+
+Access `admin_config.prefix` in templates for URL building:
+```jinja2
+{% set prefix = admin_config.prefix %}
+<a href="/{{ prefix }}/browse/">Content</a>
+```
+
+### Adding Custom Routes
+
+Register additional admin pages inside your application — they coexist with the admin router:
+
+```python
+@app.get("/admin/content/analytics")
+async def analytics_page(request: Request):
+    return templates.TemplateResponse("admin/analytics.html", {
+        "request": request,
+        "admin_config": app.state.admin,
+    })
+```
+
+---
+
+## Authentication
+
+The admin dashboard has **no built-in authentication** — you must secure it yourself. Two approaches:
+
+### Middleware
+
+```python
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class AdminAuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        if request.url.path.startswith("/admin/"):
+            auth = request.headers.get("Authorization")
+            if auth != "Bearer my-secret-token":
+                return HTMLResponse(status_code=401)
+        return await call_next(request)
+
+app.add_middleware(AdminAuthMiddleware)
+```
+
+### FastAPI Dependency
+
+```python
+from fastapi import Depends, HTTPException, status
+
+async def verify_admin(request: Request):
+    # check session, cookie, header, etc.
+    if not request.session.get("admin_logged_in"):
+        raise HTTPException(status_code=403)
+
+# Apply via routes that call the admin templates:
+@app.get("/admin/", dependencies=[Depends(verify_admin)])
+async def admin_dashboard():
+    ...
+```
+
+---
+
+## Tailwind in Production
+
+The admin templates load Tailwind CSS via CDN for development convenience:
+
+```html
+<!-- WARNING: The CDN script is NOT recommended for production. -->
+<script src="https://cdn.tailwindcss.com"></script>
+```
+
+For production, build the CSS file:
+
+```bash
+npm init -y
+npm install tailwindcss @tailwindcss/cli
+npx tailwindcss -i ./src/input.css -o ./static/admin.css
+```
+
+Create `src/input.css`:
+```css
+@import "tailwindcss";
+```
+
+Then configure `tailwind.config.js` to scan your admin templates:
+```js
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: ["./templates/admin/**/*.html"],
+  theme: {
+    extend: {
+      colors: {
+        moose: {
+          50: '#f8f6f3', 100: '#eee9e2', 200: '#ddd3c4',
+          300: '#c8b69f', 400: '#b3987a', 500: '#a08260',
+          600: '#8a6d50', 700: '#725843', 800: '#5f4a3a',
+          900: '#513f33', 950: '#2c2019',
+        },
+      },
+    },
+  },
+};
+```
+
+Replace the CDN script in `base.html` with a local stylesheet link:
+```html
+<link rel="stylesheet" href="/static/admin.css">
+```
+
+---
+
+## JSON API Reference
 
 ### List directory
 
@@ -265,36 +444,27 @@ DELETE /{prefix}/dir/{dir_path}
 curl -X DELETE http://localhost:8000/admin/content/dir/blog/recipes
 ```
 
-## Request Format
+---
 
-All create/update requests use JSON with two fields:
-
-```python
-{
-    "frontmatter": dict,   # YAML frontmatter keys (optional, defaults to {})
-    "body": str            # Markdown body content (optional, defaults to "")
-}
-```
-
-The server serializes these into a valid Markdown file with YAML frontmatter. Lists, booleans, numbers, and block scalars are formatted correctly.
-
-## Error Responses
-
-| Status | Meaning | Example |
-|--------|---------|---------|
-| `400` | Path is the wrong type (e.g. file instead of dir) | `"Path is a directory, not a file"` |
-| `404` | File or directory does not exist | `"File not found"` |
-| `409` | Resource already exists | `"File already exists"` |
-| `422` | Request body failed validation | Pydantic validation error |
-| `500` | Internal error (e.g. file parse failure) | `"Failed to parse file: ..."` |
-
-## Path Traversal Protection
+### Path Traversal Protection
 
 All paths are resolved against the content root using strict `pathlib` checks. Attempts to escape the content directory (`../../etc/passwd`) are blocked before the route handler runs.
 
-## Atomic Writes
+### Atomic Writes
 
 Files are written atomically via a temp-file + `os.replace()` pattern. If a write fails mid-stream, the original file is not corrupted — the temp file is cleaned up automatically.
+
+### Error Responses
+
+| Status | Meaning | Example |
+|--------|---------|---------|
+| `400` | Path is the wrong type | `"Path is a directory, not a file"` |
+| `404` | File or directory does not exist | `"File not found"` |
+| `409` | Resource already exists | `"File already exists"` |
+| `422` | Request body failed validation | Pydantic validation error |
+| `500` | Internal error | `"Failed to parse file: ..."` |
+
+---
 
 ## Example: Full CRUD Session
 
