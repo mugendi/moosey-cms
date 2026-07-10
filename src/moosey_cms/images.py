@@ -330,11 +330,14 @@ def _apply_aspect(img, target_ar: Optional[Tuple[int, int]], fit: str,
         crop_w = src_w
         crop_h = int(src_w / target_ratio)
 
-    # When focus=face, expand the crop to guarantee the salient region is
-    # never truncated, even at the cost of deviating from the target AR.
+    focus_box = None
+
+    # When focus=face, aim at a padded head/shoulders box rather than the raw
+    # Haar face rectangle; the raw rectangle excludes hair and chin.
     if focus == "face":
         box = face_box_path(img)
         if box is not None:
+            focus_box = _expand_face_box(box, src_w, src_h)
             bx, by, bw, bh = box
             need_w = max(crop_w, bw)
             need_h = max(crop_h, bh)
@@ -348,7 +351,10 @@ def _apply_aspect(img, target_ar: Optional[Tuple[int, int]], fit: str,
                 crop_w = min(crop_w, src_w)
                 crop_h = min(crop_h, src_h)
 
-    left, top = _focus_offset(src_w, src_h, crop_w, crop_h, focus, img)
+    if focus_box is not None:
+        left, top = _shift_to_box(focus_box, src_w, src_h, crop_w, crop_h)
+    else:
+        left, top = _focus_offset(src_w, src_h, crop_w, crop_h, focus, img)
     return img.crop((left, top, left + crop_w, top + crop_h))
 
 
@@ -365,9 +371,15 @@ def _focus_offset(src_w: int, src_h: int, crop_w: int, crop_h: int,
     if focus == "face":
         box = face_box_path(img)  # uses underlying path via img.filename
         if box is not None:
-            return _shift_to_box(box, src_w, src_h, crop_w, crop_h)
-        # No OpenCV available - for portraits keep the top (heads are at the
-        # top of headshots); for landscapes fall back to center.
+            return _shift_to_box(
+                _expand_face_box(box, src_w, src_h),
+                src_w,
+                src_h,
+                crop_w,
+                crop_h,
+            )
+        # No trustworthy face found - for portraits keep the top (heads are
+        # often near the top of headshots); for landscapes fall back to center.
         focus = "top" if src_h > src_w else "center"
 
     if focus.startswith("point-"):
@@ -390,6 +402,31 @@ def _focus_offset(src_w: int, src_h: int, crop_w: int, crop_h: int,
         "bottom-right":(src_w - crop_w, src_h - crop_h),
     }
     return presets.get(focus, presets["center"])
+
+
+def _expand_face_box(box, src_w, src_h) -> Tuple[int, int, int, int]:
+    """Return a padded face box that includes hair/headroom and some shoulders."""
+    bx, by, bw, bh = box
+    pad_x = int(bw * 0.45)
+    pad_top = int(bh * 0.75)
+    pad_bottom = int(bh * 0.90)
+
+    left = max(0, bx - pad_x)
+    top = max(0, by - pad_top)
+    right = min(src_w, bx + bw + pad_x)
+    bottom = min(src_h, by + bh + pad_bottom)
+
+    return left, top, max(1, right - left), max(1, bottom - top)
+
+
+def _plausible_face_box(box, src_w: int, src_h: int) -> bool:
+    """Reject tiny false positives that are unlikely to be the subject face."""
+    if box is None:
+        return False
+    _bx, _by, bw, bh = box
+    short_side = max(1, min(src_w, src_h))
+    min_face = max(30, int(short_side * 0.08))
+    return bw >= min_face and bh >= min_face
 
 
 def _shift_to_box(box, src_w, src_h, crop_w, crop_h) -> Tuple[int, int]:
@@ -498,13 +535,17 @@ def face_box_path(img) -> Optional[Tuple[int, int, int, int]]:
         import numpy as np  # type: ignore
         arr = np.array(img.convert("RGB"))
         gray = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
+        short_side = max(1, min(img.size))
+        min_face = max(30, int(short_side * 0.08))
         faces = detector.detectMultiScale(
-            gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30)
+            gray, scaleFactor=1.1, minNeighbors=5, minSize=(min_face, min_face)
         )
         if len(faces):
             # Pick the largest detected face.
             x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
-            return int(x), int(y), int(w), int(h)
+            box = int(x), int(y), int(w), int(h)
+            if _plausible_face_box(box, img.width, img.height):
+                return box
     except Exception as exc:
         log.debug("face detection failed: %s", exc)
     return None
@@ -625,10 +666,12 @@ def generate(source: Path, target: Path, params: Dict[str, Any]) -> None:
         if target_ar:
             img = _apply_aspect(img, target_ar, params.get("fit", "cover"),
                                 params.get("focus", "auto"))
-            # If we also have explicit w/h, the AR crop produced a box with
-            # the right ratio; now resize to the final dimensions.
-            if w and h:
-                img = img.resize((w, h), Image.Resampling.LANCZOS)
+            # The AR crop produced the right ratio; now honor either one or
+            # both explicit dimensions.
+            if w or h:
+                new_w = w or int(img.width * h / img.height)
+                new_h = h or int(img.height * w / img.width)
+                img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
         elif w or h:
             # No AR, just scale.
             new_w = w or int(img.width * h / img.height)
