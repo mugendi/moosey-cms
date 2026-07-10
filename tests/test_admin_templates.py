@@ -131,6 +131,15 @@ class TestAdminEditorTemplate:
         assert "tuiEditor.changePreviewStyle(previewStyle)" in resp.text
         assert "previewStyle === 'vertical' ? 'tab' : 'vertical'" in resp.text
 
+    def test_guifier_deletions_offer_undo_growl(self, client):
+        resp = client.get(f"/{PREFIX}/edit/")
+        assert resp.status_code == 200
+        assert "function checkGuifierForDeletion()" in resp.text
+        assert "countDataNodes(current) < countDataNodes(guifierSnapshot)" in resp.text
+        assert "A metadata item was removed" in resp.text
+        assert "restoreGuifierSnapshot(previous)" in resp.text
+        assert "moose-growl__action" in resp.text
+
     def test_editor_loads_plugin_dependencies_before_plugins(self, client):
         resp = client.get(f"/{PREFIX}/edit/")
         assert resp.status_code == 200

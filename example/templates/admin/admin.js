@@ -29,7 +29,7 @@ function toggleSidebar() {
    type: 'success' | 'error' | 'info'  (default: 'info')
    duration: milliseconds to show (default: 3000)
    ----------------------------------------------------------- */
-function showFlash(message, type, duration) {
+function showFlash(message, type, duration, action) {
     type = type || 'info';
     duration = duration || 4500;
 
@@ -61,6 +61,18 @@ function showFlash(message, type, duration) {
     text.className = 'moose-growl__message';
     text.textContent = String(message);
     copy.append(title, text);
+
+    if (action && typeof action.onClick === 'function') {
+        const actionButton = document.createElement('button');
+        actionButton.type = 'button';
+        actionButton.className = 'moose-growl__action';
+        actionButton.textContent = action.label || 'Undo';
+        actionButton.addEventListener('click', function () {
+            action.onClick();
+            dismiss();
+        });
+        copy.appendChild(actionButton);
+    }
 
     const close = document.createElement('button');
     close.type = 'button';

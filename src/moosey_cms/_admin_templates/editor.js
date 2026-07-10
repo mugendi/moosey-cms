@@ -5,6 +5,10 @@
 
     var tuiEditor = null;      /* TUI Editor instance */
     var guifierInstance = null; /* Guifier instance */
+    var guifierSnapshot = null; /* Last metadata state, used for deletion undo */
+    var guifierObserver = null;
+    var guifierCheckTimer = null;
+    var suppressGuifierObserver = false;
     var frontmatterData = {};   /* Current frontmatter data */
     var activeTab = 'content';  /* Current active tab */
     var previewStyle = 'vertical'; /* Split-screen by default */
@@ -208,6 +212,64 @@
         return out;
     }
 
+    function cloneData(value) {
+        return JSON.parse(JSON.stringify(value || {}));
+    }
+
+    function readGuifierData() {
+        if (!guifierInstance) return null;
+        try {
+            return JSON.parse(guifierInstance.getData('json'));
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function countDataNodes(value) {
+        if (value === null || typeof value !== 'object') return 1;
+        if (Array.isArray(value)) {
+            return 1 + value.reduce(function(total, item) { return total + countDataNodes(item); }, 0);
+        }
+        return 1 + Object.keys(value).reduce(function(total, key) {
+            return total + 1 + countDataNodes(value[key]);
+        }, 0);
+    }
+
+    function restoreGuifierSnapshot(snapshot) {
+        if (!guifierInstance) return;
+        suppressGuifierObserver = true;
+        guifierSnapshot = cloneData(snapshot);
+        frontmatterData = cloneData(snapshot);
+        guifierInstance.setData(prepareForGuifier(snapshot), 'js');
+        setTimeout(function () { suppressGuifierObserver = false; }, 0);
+        showFlash('Metadata deletion undone', 'success');
+    }
+
+    function checkGuifierForDeletion() {
+        if (suppressGuifierObserver) return;
+        var current = readGuifierData();
+        if (current === null) return;
+
+        if (guifierSnapshot !== null && countDataNodes(current) < countDataNodes(guifierSnapshot)) {
+            var previous = cloneData(guifierSnapshot);
+            showFlash('A metadata item was removed', 'info', 7000, {
+                label: 'Undo',
+                onClick: function () { restoreGuifierSnapshot(previous); }
+            });
+        }
+        guifierSnapshot = cloneData(current);
+        frontmatterData = cloneData(current);
+    }
+
+    function observeGuifier(container) {
+        if (guifierObserver) guifierObserver.disconnect();
+        guifierObserver = new MutationObserver(function () {
+            clearTimeout(guifierCheckTimer);
+            guifierCheckTimer = setTimeout(checkGuifierForDeletion, 40);
+        });
+        guifierObserver.observe(container, { childList: true, subtree: true, characterData: true });
+    }
+
     /* ================================================================
        Guifier initialization
        ================================================================ */
@@ -221,6 +283,8 @@
                     data: prepareForGuifier(data || {}),
                     dataType: 'js'
                 });
+                guifierSnapshot = cloneData(data || {});
+                observeGuifier(container);
                 return;
             } catch (e) {
                 console.warn('Guifier init failed:', e);
@@ -261,9 +325,12 @@
 
     function setFrontmatter(data) {
         frontmatterData = data || {};
+        guifierSnapshot = cloneData(frontmatterData);
         if (guifierInstance) {
             try {
+                suppressGuifierObserver = true;
                 guifierInstance.setData(prepareForGuifier(frontmatterData), 'js');
+                setTimeout(function () { suppressGuifierObserver = false; }, 0);
             } catch (e) {
                 console.warn('Guifier setData failed:', e);
             }

@@ -3,8 +3,8 @@ title: About Us
 # 
 description: We are a team of digital nomads building tools for creators.
 date:
-  updated: '2026-07-10T19:57:19.771Z'
-  created: '2026-07-08T00:00:00.000Z'
+  updated: '2026-07-10T21:18:25.638Z'
+  created: '2026-07-10T21:18:25.640Z'
 slug: about
 ---
 
