@@ -1,8 +1,17 @@
 from unittest.mock import patch
 
+import pytest
+
+import moosey_cms.filters as filters
 from moosey_cms.filters import (
     strip_html, strip_comments, minify_html,
     sanitize, get_sanitize_config, markdown,
+)
+
+
+requires_html_minifier = pytest.mark.skipif(
+    filters._html_minifier is None,
+    reason="minify-html is not installed",
 )
 
 
@@ -49,12 +58,14 @@ class TestStripComments:
 
 
 class TestMinifyHtml:
+    @requires_html_minifier
     def test_basic(self, sample_html):
         result = minify_html(sample_html["minify"])
         assert "\n" not in result
         assert "  " not in result
         assert "<div><p>text</p></div>" in result
 
+    @requires_html_minifier
     def test_preserves_pre_and_code_whitespace(self):
         html = (
             "<div>\n"
@@ -69,6 +80,7 @@ class TestMinifyHtml:
         assert "  x = 1\n  y = 2  " in result
         assert result.startswith("<div><pre>")
 
+    @requires_html_minifier
     def test_preserves_textarea_whitespace(self):
         html = "<form>\n<textarea>hello\n  world\n</textarea>\n</form>"
 
@@ -76,6 +88,7 @@ class TestMinifyHtml:
 
         assert "<textarea>hello\n  world\n</textarea>" in result
 
+    @requires_html_minifier
     def test_does_not_minify_inline_script_by_default(self):
         script = "const value = 'a    b';\nif (value) {\n  console.log(value);\n}"
         html = f"<div>\n<script>{script}</script>\n</div>"
@@ -84,6 +97,7 @@ class TestMinifyHtml:
 
         assert f"<script>{script}</script>" in result
 
+    @requires_html_minifier
     def test_preserves_json_ld_script_content(self):
         json_ld = (
             '{\n'
@@ -97,6 +111,7 @@ class TestMinifyHtml:
 
         assert json_ld in result
 
+    @requires_html_minifier
     def test_keeps_comments_for_strip_comments_filter(self):
         html = "<div>\n<!-- keep until strip_comments runs -->\n<p>text</p>\n</div>"
 
@@ -108,8 +123,12 @@ class TestMinifyHtml:
     def test_returns_original_html_when_minifier_fails(self):
         html = "<div>\n  <p>text</p>\n</div>"
 
-        with patch("moosey_cms.filters._html_minifier.minify",
-                   side_effect=ValueError("bad html")):
+        class BrokenMinifier:
+            @staticmethod
+            def minify(*_args, **_kwargs):
+                raise ValueError("bad html")
+
+        with patch("moosey_cms.filters._html_minifier", BrokenMinifier):
             assert minify_html(html) == html
 
     def test_returns_original_html_when_minifier_unavailable(self):
