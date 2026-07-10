@@ -436,6 +436,9 @@ def static_dir(tmp_path):
     (d / "logo.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 100)
     (d / "cover.jpg").write_bytes(b"\xff\xd8\xff" + b"\x00" * 100)
     (d / "doc.pdf").write_bytes(b"%PDF-1.4" + b"\x00" * 100)
+    (d / "song.mp3").write_bytes(b"ID3" + b"\x00" * 100)
+    (d / "clip.mp4").write_bytes(b"\x00\x00\x00\x1cftyp" + b"\x00" * 100)
+    (d / "readme.txt").write_bytes(b"just text" + b"\x00" * 100)
 
     sub = d / "images"
     sub.mkdir()
@@ -502,6 +505,29 @@ class TestStaticList:
         types = [e["type"] for e in resp.json()["entries"]]
         dir_end = types.index("file")
         assert all(t == "directory" for t in types[:dir_end])
+
+    def test_list_media_types(self, static_client):
+        resp = static_client.get(f"/{PREFIX}/static")
+        entries = resp.json()["entries"]
+        by_name = {e["name"]: e for e in entries}
+        assert by_name["logo.png"]["media_type"] == "image"
+        assert by_name["cover.jpg"]["media_type"] == "image"
+        assert by_name["doc.pdf"]["media_type"] == "pdf"
+        assert by_name["song.mp3"]["media_type"] == "audio"
+        assert by_name["clip.mp4"]["media_type"] == "video"
+        assert by_name["readme.txt"]["media_type"] == "other"
+
+    def test_list_media_types_subdirectory(self, static_client):
+        resp = static_client.get(f"/{PREFIX}/static/images")
+        entries = resp.json()["entries"]
+        by_name = {e["name"]: e for e in entries}
+        assert by_name["hero.webp"]["media_type"] == "image"
+
+    def test_list_media_type_directory_is_other(self, static_client):
+        resp = static_client.get(f"/{PREFIX}/static")
+        entries = resp.json()["entries"]
+        images_dir = next(e for e in entries if e["name"] == "images")
+        assert images_dir["media_type"] == "other"
 
     def test_list_not_found(self, static_client):
         resp = static_client.get(f"/{PREFIX}/static/nonexistent")

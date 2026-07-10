@@ -66,6 +66,7 @@ class StaticEntry(BaseModel):
     name: str
     path: str
     type: str  # "file" | "directory"
+    media_type: str = "other"  # "image" | "pdf" | "video" | "audio" | "other"
     size: int = 0
     modified: Optional[str] = None
     mime_type: Optional[str] = None
@@ -148,6 +149,20 @@ AUDIO_EXTS = frozenset({".mp3", ".wav", ".ogg", ".flac", ".aac"})
 PREVIEWABLE_EXTS = IMAGE_EXTS | VIDEO_EXTS | AUDIO_EXTS | {".pdf"}
 
 
+def classify_static_type(file_path: Path) -> str:
+    """Return the media type label for *file_path* based on its extension."""
+    ext = file_path.suffix.lower()
+    if ext in IMAGE_EXTS:
+        return "image"
+    if ext == ".pdf":
+        return "pdf"
+    if ext in VIDEO_EXTS:
+        return "video"
+    if ext in AUDIO_EXTS:
+        return "audio"
+    return "other"
+
+
 def _static_entry(file_path: Path, static_dir: Path, static_route: str) -> StaticEntry:
     """Build a StaticEntry for a file or directory inside the static dir."""
     stat = file_path.stat()
@@ -156,9 +171,11 @@ def _static_entry(file_path: Path, static_dir: Path, static_route: str) -> Stati
     url_path = str(rel).replace("\\", "/")
     is_dir = file_path.is_dir()
 
+    media = "other"
     mime_type = None
     url = None
     if not is_dir:
+        media = classify_static_type(file_path)
         import mimetypes
         mime_type, _ = mimetypes.guess_type(file_path.name)
         url = f"{static_route.rstrip('/')}/{url_path}"
@@ -167,6 +184,7 @@ def _static_entry(file_path: Path, static_dir: Path, static_route: str) -> Stati
         name=file_path.name,
         path=url_path,
         type="directory" if is_dir else "file",
+        media_type=media,
         size=0 if is_dir else stat.st_size,
         modified=modified,
         mime_type=mime_type,
