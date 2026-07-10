@@ -214,11 +214,18 @@ window.FileIcons = FileIcons;
                 // Add custom "Add File" button (only if static dir is configured)
                 var fpModal = document.getElementById('file-picker-modal');
                 if (fpModal) {
+                    var fpBtn = document.createElement('button');
+                    fpBtn.className = 'toastui-editor-toolbar-icons !m-0';
+                    fpBtn.style.cursor = 'pointer';
+                    fpBtn.style.backgroundImage = 'none';
+                    fpBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
+                    fpBtn.addEventListener('click', function() {
+                        openFilePickerModal();
+                    });
                     toolbar[toolbar.length - 1].push({
                         name: 'addFile',
                         tooltip: 'Add file (image, PDF, video, etc.)',
-                        command: 'openFilePicker',
-                        svg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>'
+                        el: fpBtn
                     });
                 }
 
@@ -230,13 +237,6 @@ window.FileIcons = FileIcons;
                     usageStatistics: false,
                     toolbarItems: toolbar
                 });
-
-                // Register command for the custom button
-                if (fpModal) {
-                    tuiEditor.addCommand('openFilePicker', function() {
-                        openFilePickerModal();
-                    });
-                }
 
                 fallback.classList.add('hidden');
                 container.classList.remove('hidden');
@@ -420,12 +420,12 @@ window.FileIcons = FileIcons;
         fpSelectedFile = null;
     };
 
-    function fpNavigate(path) {
+    window.fpNavigate = function(path) {
         fpCurrentPath = path;
         fpSelectedFile = null;
         document.getElementById('fp-preview').classList.add('hidden');
         fpLoadDirectory(path);
-    }
+    };
 
     function fpLoadDirectory(subpath) {
         var url = '/' + prefix + fpStaticRoute + (subpath ? '/' + subpath : '');
@@ -510,7 +510,7 @@ window.FileIcons = FileIcons;
         }
     }
 
-    function fpSelect(el) {
+    window.fpSelect = function(el) {
         // Deselect previous
         document.querySelectorAll('.fp-card').forEach(function(c) {
             c.classList.remove('border-moose-600', 'bg-moose-50');
@@ -533,7 +533,7 @@ window.FileIcons = FileIcons;
         }
 
         fpShowPreview(fpSelectedFile);
-    }
+    };
 
     function fpShowPreview(file) {
         var panel = document.getElementById('fp-preview');
@@ -575,7 +575,7 @@ window.FileIcons = FileIcons;
             + '<p>' + sizeStr + '</p>';
     }
 
-    function fpInsertSelected() {
+    window.fpInsertSelected = function() {
         if (!fpSelectedFile || !fpSelectedFile.url) return;
         var file = fpSelectedFile;
         var markdown;
@@ -598,9 +598,9 @@ window.FileIcons = FileIcons;
         }
 
         closeFilePicker();
-    }
+    };
 
-    async function fpUploadFiles(fileList) {
+    window.fpUploadFiles = async function(fileList) {
         var path = fpCurrentPath;
         for (var i = 0; i < fileList.length; i++) {
             var file = fileList[i];
@@ -626,7 +626,7 @@ window.FileIcons = FileIcons;
         fpLoadDirectory(fpCurrentPath);
     }
 
-    function fpCreateFolder() {
+    window.fpCreateFolder = function() {
         var name = prompt('Folder name:');
         if (!name) return;
         var createPath = fpCurrentPath ? fpCurrentPath + '/' + name : name;
@@ -642,7 +642,7 @@ window.FileIcons = FileIcons;
             .catch(function(err) {
                 showFlash('Create folder failed: ' + err.message, 'error');
             });
-    }
+    };
 
     /* ================================================================
        Init — deferred CDN scripts (TUI Editor, Guifier) execute

@@ -20,7 +20,7 @@ window.Guifier = Guifier;
 {# ── File Icons — file-type icons from Atom File-icons (port for browser). #}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exuanbo/file-icons-js@latest/dist/css/file-icons-cdn.min.css">
 <script type="module">
-import { FileIcons } from 'https://cdn.jsdelivr.net/npm/@exuanbo/file-icons-js@latest/dist/js/file-icons.esm.min.js';
+import FileIcons from 'https://cdn.jsdelivr.net/npm/@exuanbo/file-icons-js@latest/dist/js/file-icons.esm.min.js';
 window.FileIcons = FileIcons;
 </script>
 {% endblock %}
@@ -203,38 +203,40 @@ window.FileIcons = FileIcons;
 
         if (typeof toastui !== 'undefined' && toastui.Editor) {
             try {
+                var toolbar = [
+                    ['heading', 'bold', 'italic', 'strike'],
+                    ['hr', 'quote'],
+                    ['ul', 'ol', 'task'],
+                    ['table', 'link'],
+                    ['code', 'codeblock']
+                ];
+
+                // Add custom "Add File" button (only if static dir is configured)
+                var fpModal = document.getElementById('file-picker-modal');
+                if (fpModal) {
+                    var fpBtn = document.createElement('button');
+                    fpBtn.className = 'toastui-editor-toolbar-icons !m-0';
+                    fpBtn.style.cursor = 'pointer';
+                    fpBtn.style.backgroundImage = 'none';
+                    fpBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
+                    fpBtn.addEventListener('click', function() {
+                        openFilePickerModal();
+                    });
+                    toolbar[toolbar.length - 1].push({
+                        name: 'addFile',
+                        tooltip: 'Add file (image, PDF, video, etc.)',
+                        el: fpBtn
+                    });
+                }
+
                 tuiEditor = new toastui.Editor({
                     el: container,
                     height: '500px',
                     initialEditType: 'markdown',
                     previewStyle: 'vertical',
                     usageStatistics: false,
-                    toolbarItems: [
-                        ['heading', 'bold', 'italic', 'strike'],
-                        ['hr', 'quote'],
-                        ['ul', 'ol', 'task'],
-                        ['table', 'link'],
-                        ['code', 'codeblock']
-                    ]
+                    toolbarItems: toolbar
                 });
-
-                // Add custom "Add File" button (only if static dir is configured)
-                var fpModal = document.getElementById('file-picker-modal');
-                if (fpModal) {
-                    var addFileButton = {
-                        name: 'addFile',
-                        tooltip: 'Add file (image, PDF, video, etc.)',
-                        command: 'openFilePicker',
-                        svg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>'
-                    };
-
-                    tuiEditor.addCommand('openFilePicker', function() {
-                        openFilePickerModal();
-                    });
-
-                    // Insert after the link button (index ~7)
-                    tuiEditor.toolbar.addItem(addFileButton, 7);
-                }
 
                 fallback.classList.add('hidden');
                 container.classList.remove('hidden');
@@ -418,12 +420,12 @@ window.FileIcons = FileIcons;
         fpSelectedFile = null;
     };
 
-    function fpNavigate(path) {
+    window.fpNavigate = function(path) {
         fpCurrentPath = path;
         fpSelectedFile = null;
         document.getElementById('fp-preview').classList.add('hidden');
         fpLoadDirectory(path);
-    }
+    };
 
     function fpLoadDirectory(subpath) {
         var url = '/' + prefix + fpStaticRoute + (subpath ? '/' + subpath : '');
@@ -484,23 +486,31 @@ window.FileIcons = FileIcons;
                 html += '<img src="' + escHtml(e.url) + '" alt="" class="max-h-full max-w-full object-contain" loading="lazy">';
                 html += '</div>';
             } else {
-                // File icon from file-icons-js
-                html += '<div class="text-3xl text-center mb-2">';
-                if (typeof FileIcons !== 'undefined') {
-                    html += '<i class="' + FileIcons.getClass(e.name) + '"></i>';
-                } else {
-                    html += '📄';
-                }
-                html += '</div>';
+                // File icon — render emoji placeholder, async-update with file-icons
+                html += '<div class="fp-icon text-3xl text-center mb-2">📄</div>';
             }
 
             html += '<div class="text-xs text-moose-700 truncate text-center" title="' + escHtml(e.name) + '">' + escHtml(e.name) + '</div>';
             html += '</div>';
         }
         grid.innerHTML = html;
+
+        // Async-update file icons (FileIcons.getClass is async)
+        if (typeof FileIcons !== 'undefined') {
+            var cards = grid.querySelectorAll('.fp-card[data-type="file"]:not([data-mime^="image/"])');
+            cards.forEach(function(card) {
+                var name = card.getAttribute('data-name');
+                var iconEl = card.querySelector('.fp-icon');
+                if (iconEl) {
+                    FileIcons.getClass(name).then(function(cls) {
+                        iconEl.innerHTML = '<i class="' + cls + '"></i>';
+                    });
+                }
+            });
+        }
     }
 
-    function fpSelect(el) {
+    window.fpSelect = function(el) {
         // Deselect previous
         document.querySelectorAll('.fp-card').forEach(function(c) {
             c.classList.remove('border-moose-600', 'bg-moose-50');
@@ -523,7 +533,7 @@ window.FileIcons = FileIcons;
         }
 
         fpShowPreview(fpSelectedFile);
-    }
+    };
 
     function fpShowPreview(file) {
         var panel = document.getElementById('fp-preview');
@@ -540,12 +550,20 @@ window.FileIcons = FileIcons;
             html = '<video src="' + escHtml(file.url) + '" controls class="w-full rounded"></video>';
         } else if (file.mime_type && file.mime_type.indexOf('audio/') === 0) {
             html = '<audio src="' + escHtml(file.url) + '" controls class="w-full"></audio>';
-        } else if (typeof FileIcons !== 'undefined') {
-            html = '<div class="text-center py-8"><i class="' + FileIcons.getClass(file.name) + '" style="font-size: 48px;"></i></div>';
         } else {
-            html = '<div class="text-center py-8 text-4xl">📄</div>';
+            html = '<div id="fp-preview-icon" class="text-center py-8 text-4xl">📄</div>';
         }
         content.innerHTML = html;
+
+        // Async-update preview icon
+        if (typeof FileIcons !== 'undefined') {
+            var iconEl = document.getElementById('fp-preview-icon');
+            if (iconEl) {
+                FileIcons.getClass(file.name).then(function(cls) {
+                    iconEl.innerHTML = '<i class="' + cls + '" style="font-size: 48px;"></i>';
+                });
+            }
+        }
 
         var sizeStr = file.size > 1024 * 1024
             ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
@@ -557,7 +575,7 @@ window.FileIcons = FileIcons;
             + '<p>' + sizeStr + '</p>';
     }
 
-    function fpInsertSelected() {
+    window.fpInsertSelected = function() {
         if (!fpSelectedFile || !fpSelectedFile.url) return;
         var file = fpSelectedFile;
         var markdown;
@@ -580,9 +598,9 @@ window.FileIcons = FileIcons;
         }
 
         closeFilePicker();
-    }
+    };
 
-    async function fpUploadFiles(fileList) {
+    window.fpUploadFiles = async function(fileList) {
         var path = fpCurrentPath;
         for (var i = 0; i < fileList.length; i++) {
             var file = fileList[i];
@@ -608,7 +626,7 @@ window.FileIcons = FileIcons;
         fpLoadDirectory(fpCurrentPath);
     }
 
-    function fpCreateFolder() {
+    window.fpCreateFolder = function() {
         var name = prompt('Folder name:');
         if (!name) return;
         var createPath = fpCurrentPath ? fpCurrentPath + '/' + name : name;
@@ -624,7 +642,7 @@ window.FileIcons = FileIcons;
             .catch(function(err) {
                 showFlash('Create folder failed: ' + err.message, 'error');
             });
-    }
+    };
 
     /* ================================================================
        Init — deferred CDN scripts (TUI Editor, Guifier) execute
