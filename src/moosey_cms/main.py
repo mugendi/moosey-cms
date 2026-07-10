@@ -289,7 +289,7 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader, admin=None):
             router=admin_router,
             dirs=dirs,
             mode=mode,
-            prefix=admin["prefix"],
+            admin_config=admin,
         )
         app.include_router(admin_router, prefix="")
 

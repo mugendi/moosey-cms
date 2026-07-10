@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional
 import frontmatter
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
+from starlette.responses import HTMLResponse
 
 from .helpers import get_secure_target, parse_markdown_file
 
@@ -134,7 +135,7 @@ def register_admin_routes(
     router: APIRouter,
     dirs: Dict[str, Path],
     mode: str,
-    prefix: str,
+    admin_config: dict,
 ) -> None:
     """Register all admin CRUD endpoints on *router*.
 
@@ -146,10 +147,12 @@ def register_admin_routes(
         Resolved directory dict (``content``, ``templates``, …).
     mode:
         ``"development"`` or ``"production"``.
-    prefix:
-        The admin prefix (e.g. ``"admin/content"``).  Routes will be
-        ``/{prefix}/list``, ``/{prefix}/file/{path}``, etc.
+    admin_config:
+        Dict with ``"prefix"`` (e.g. ``"admin/content"``) and ``"templates"``
+        (templates subdirectory name) keys.
     """
+    prefix = admin_config["prefix"]
+    templates_subdir = admin_config["templates"]
 
     content_dir: Path = dirs["content"]
 
@@ -289,6 +292,47 @@ def register_admin_routes(
 
         shutil.rmtree(target)
         return {"path": str(target.relative_to(content_dir)).replace("\\", "/"), "status": "deleted"}
+
+    # ------------------------------------------------------------------
+    # HTML Dashboard Routes
+    # ------------------------------------------------------------------
+
+    async def _render_admin_template(request, template_name, context):
+        templates = request.app.state.templates
+        try:
+            template = templates.get_template(template_name)
+        except Exception:
+            return HTMLResponse(
+                content=(
+                    f"<h1>Admin template not found</h1>"
+                    f"<p>Expected <code>{template_name}</code> in your templates directory.</p>"
+                    f"<p>Run <code>moosey-cms setup --templates ./templates</code> to install.</p>"
+                ),
+                status_code=500,
+            )
+        rendered = await template.render_async({**context, "request": request})
+        return HTMLResponse(content=rendered)
+
+    @router.get(f"/{prefix}/", include_in_schema=False)
+    @router.get(f"/{prefix}", include_in_schema=False)
+    async def admin_dashboard(request: Request):
+        return await _render_admin_template(request, f"{templates_subdir}/dashboard.html", {
+            "admin_config": admin_config, "mode": mode,
+        })
+
+    @router.get(f"/{prefix}/browse/", include_in_schema=False)
+    @router.get(f"/{prefix}/browse/{{subpath:path}}", include_in_schema=False)
+    async def admin_browse_page(request: Request, subpath: str = ""):
+        return await _render_admin_template(request, f"{templates_subdir}/list.html", {
+            "admin_config": admin_config, "mode": mode, "subpath": subpath,
+        })
+
+    @router.get(f"/{prefix}/edit/", include_in_schema=False)
+    @router.get(f"/{prefix}/edit/{{file_path:path}}", include_in_schema=False)
+    async def admin_editor_page(request: Request, file_path: str = ""):
+        return await _render_admin_template(request, f"{templates_subdir}/editor.html", {
+            "admin_config": admin_config, "mode": mode, "file_path": file_path,
+        })
 
 
 # ---------------------------------------------------------------------------

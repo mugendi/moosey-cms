@@ -64,7 +64,7 @@ def client(content_dir):
         router,
         dirs={"content": content_dir},
         mode="development",
-        prefix="admin",
+        admin_config={"prefix": "admin", "templates": "admin"},
     )
     app.include_router(router)
     return TestClient(app)
@@ -142,7 +142,7 @@ class TestAdminList:
             router,
             dirs={"content": content_dir},
             mode="development",
-            prefix="admin",
+            admin_config={"prefix": "admin", "templates": "admin"},
         )
         app.include_router(router)
         c = TestClient(app)
@@ -388,7 +388,7 @@ class TestBuildMarkdown:
             router,
             dirs={"content": content_dir},
             mode="development",
-            prefix="admin",
+            admin_config={"prefix": "admin", "templates": "admin"},
         )
         app.include_router(router)
         c = TestClient(app)
