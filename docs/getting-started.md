@@ -26,6 +26,16 @@ pip install moosey-cms[all]
 
 See [Images](images.md) for usage details.
 
+## Scaffold Admin Templates
+
+After installing, copy the bundled admin templates into your project:
+
+```bash
+moosey-cms setup --templates ./templates
+```
+
+This creates a `templates/admin/` directory with a ready-to-use dashboard, file browser, and editor. Then add `admin={"prefix": "admin/content", "templates": "admin"}` to your `init_cms()` call. See [CLI Reference](cli.md) for details.
+
 ## Quick Start
 
 ### 1. Create a FastAPI app
