@@ -9,6 +9,7 @@ from html import unescape
 from typing import Any
 from urllib.parse import urljoin
 import hashlib
+import logging
 import math
 import os
 import re
@@ -19,6 +20,13 @@ import bleach
 from bs4 import BeautifulSoup
 
 from .seo import seo_tags
+
+log = logging.getLogger(__name__)
+
+try:
+    import minify_html as _html_minifier
+except ImportError:
+    _html_minifier = None
 
 # ============================================================================
 # DATE & TIME FILTERS
@@ -654,23 +662,30 @@ def strip_comments(text, enabled=True):
 
 def minify_html(text, enabled=True):
     """
-    Minifies HTML by removing unnecessary whitespace and newlines.
-    WARNING: This is a regex-based minifier. It does not respect <pre> tags.
+    Minify rendered HTML while preserving whitespace-sensitive elements.
     """
     if not enabled or not text:
         return text
-    
+
     text = str(text)
-    
-    # 1. Normalize whitespace: 
-    # Replace sequences of whitespace (tabs, newlines) with a single space
-    text = re.sub(r'\s+', ' ', text)
-    
-    # 2. Remove space between tags:
-    # Turns "</div> <div..." into "</div><div..."
-    text = re.sub(r'>\s+<', '><', text)
-    
-    return text.strip()
+
+    if _html_minifier is None:
+        log.debug("HTML minification skipped; minify-html is not installed")
+        return text
+
+    try:
+        return _html_minifier.minify(
+            text,
+            keep_comments=True,
+            keep_closing_tags=True,
+            keep_html_and_head_opening_tags=True,
+            keep_input_type_text_attr=True,
+            minify_css=False,
+            minify_js=False,
+        ).strip()
+    except Exception as exc:
+        log.debug("HTML minification failed; returning original HTML: %s", exc)
+        return text
 
 # ============================================================================
 # SANITIZE - HTML allowlist (bleach, always on by default)

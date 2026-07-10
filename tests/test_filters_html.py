@@ -55,6 +55,69 @@ class TestMinifyHtml:
         assert "  " not in result
         assert "<div><p>text</p></div>" in result
 
+    def test_preserves_pre_and_code_whitespace(self):
+        html = (
+            "<div>\n"
+            "  <pre>line 1\n    line 2\n\tline 3</pre>\n"
+            "  <code>  x = 1\n  y = 2  </code>\n"
+            "</div>"
+        )
+
+        result = minify_html(html)
+
+        assert "line 1\n    line 2\n\tline 3" in result
+        assert "  x = 1\n  y = 2  " in result
+        assert result.startswith("<div><pre>")
+
+    def test_preserves_textarea_whitespace(self):
+        html = "<form>\n<textarea>hello\n  world\n</textarea>\n</form>"
+
+        result = minify_html(html)
+
+        assert "<textarea>hello\n  world\n</textarea>" in result
+
+    def test_does_not_minify_inline_script_by_default(self):
+        script = "const value = 'a    b';\nif (value) {\n  console.log(value);\n}"
+        html = f"<div>\n<script>{script}</script>\n</div>"
+
+        result = minify_html(html)
+
+        assert f"<script>{script}</script>" in result
+
+    def test_preserves_json_ld_script_content(self):
+        json_ld = (
+            '{\n'
+            '  "@context": "https://schema.org",\n'
+            '  "@type": "Organization"\n'
+            '}'
+        )
+        html = f'<script type="application/ld+json">{json_ld}</script>'
+
+        result = minify_html(html)
+
+        assert json_ld in result
+
+    def test_keeps_comments_for_strip_comments_filter(self):
+        html = "<div>\n<!-- keep until strip_comments runs -->\n<p>text</p>\n</div>"
+
+        result = minify_html(html)
+
+        assert "<!-- keep until strip_comments runs -->" in result
+        assert strip_comments(result) == "<div><p>text</p></div>"
+
+    def test_returns_original_html_when_minifier_fails(self):
+        html = "<div>\n  <p>text</p>\n</div>"
+
+        with patch("moosey_cms.filters._html_minifier.minify",
+                   side_effect=ValueError("bad html")):
+            assert minify_html(html) == html
+
+    def test_returns_original_html_when_minifier_unavailable(self):
+        html = "<div>\n  <p>text</p>\n</div>"
+
+        with patch("moosey_cms.filters._html_minifier", None):
+            assert minify_html(html) == html
+
     def test_disabled(self):
         html = "<div>  text  </div>"
         assert minify_html(html, enabled=False) == html
