@@ -50,7 +50,7 @@ All filters are automatically registered when you call `init_cms()`.
 | [`lazy_image`](#lazy_image) | [Image](#image-filters) | Inject lazy attrs |
 | [`strip_html`](#strip_html) | [HTML](#html-filters) | Remove HTML tags |
 | [`strip_comments`](#strip_comments) | [HTML](#html-filters) | Remove HTML comments |
-| [`minify_html`](#minify_html) | [HTML](#html-filters) | Minify whitespace |
+| [`minify_html`](#minify_html) | [HTML](#html-filters) | Parser-backed HTML minification |
 | [`sanitize`](#sanitize) | [HTML](#html-filters) | Bleach safe tag allowlist |
 | [`markdown`](#markdown) | [Content](#content-filters) | Markdown to HTML |
 | [`embed`](#embed) | [Content](#content-filters) | Video/social embed HTML |
@@ -555,13 +555,30 @@ Can be used as a block filter:
 
 ### `minify_html`
 
-Minify HTML by removing unnecessary whitespace and newlines:
+Minify rendered HTML with a parser-backed minifier:
 
 ```jinja2
 {{ content | minify_html }}
 ```
 
-> Warning: Regex-based minifier, does not respect `<pre>` tags.
+`minify_html` removes unnecessary whitespace between regular HTML nodes while
+preserving whitespace-sensitive content such as `<pre>`, `<code>`, and
+`<textarea>`. Inline `<script>` and `<style>` content is left unchanged by
+default.
+
+Use it as a block filter around complete rendered output:
+
+```jinja2
+{% filter minify_html(enabled=(mode == 'production')) %}
+<!doctype html>
+<html>
+  <body>
+    <pre>{{ example_code }}</pre>
+    {{ content | safe }}
+  </body>
+</html>
+{% endfilter %}
+```
 
 ### Production HTML Optimization
 
