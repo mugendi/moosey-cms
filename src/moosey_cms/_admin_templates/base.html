@@ -122,7 +122,10 @@
     </div>
 
     <!-- Shared JS utilities -->
-    <script src="/{{ prefix }}/static/admin.js"></script>
+    {# -- Shared Admin JavaScript (inlined via Jinja2 include) -- #}
+    <script>
+    {% include admin_config.templates ~ "/admin.js" %}
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
