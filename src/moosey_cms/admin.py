@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 from starlette.responses import HTMLResponse
 
 from .helpers import get_secure_target, parse_markdown_file
+from .yaml_handler import build_markdown, split_frontmatter
 
 
 # ---------------------------------------------------------------------------
@@ -28,6 +29,7 @@ from .helpers import get_secure_target, parse_markdown_file
 class FilePayload(BaseModel):
     """Body for creating or updating a content file."""
     frontmatter: Dict[str, Any] = Field(default_factory=dict)
+    frontmatter_raw: Optional[str] = Field(default=None, description="Raw YAML frontmatter text from the original file. When provided, preserves comments and formatting on update.")
     body: str = Field(default="")
 
 
@@ -57,6 +59,7 @@ class FileResponse(BaseModel):
     """Response for the file detail endpoint."""
     path: str
     frontmatter: Dict[str, Any]
+    frontmatter_raw: Optional[str] = Field(default=None, description="Raw YAML frontmatter text (preserves comments). Client should send this back on update to preserve formatting.")
     body: str
     size: int = 0
     modified: Optional[str] = None
@@ -280,6 +283,8 @@ def register_admin_routes(
             raise HTTPException(status_code=400, detail="Path is a directory, not a file")
 
         try:
+            raw_content = target.read_text(encoding="utf-8")
+            raw_fm, body = split_frontmatter(raw_content)
             post = parse_markdown_file(target)
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"Failed to parse file: {exc}")
@@ -288,6 +293,7 @@ def register_admin_routes(
         return FileResponse(
             path=str(target.relative_to(content_dir)).replace("\\", "/"),
             frontmatter=post.metadata,
+            frontmatter_raw=raw_fm if raw_fm else None,
             body=post.content,
             size=stat.st_size,
             modified=datetime.fromtimestamp(stat.st_mtime).isoformat(),
@@ -304,7 +310,7 @@ def register_admin_routes(
         if target.exists():
             raise HTTPException(status_code=409, detail="File already exists")
 
-        md = _build_markdown(payload.frontmatter, payload.body)
+        md = build_markdown(payload.frontmatter, payload.body)
         _atomic_write(target, md)
 
         return {"path": str(target.relative_to(content_dir)).replace("\\", "/"), "status": "created"}
@@ -322,7 +328,11 @@ def register_admin_routes(
         if target.is_dir():
             raise HTTPException(status_code=400, detail="Path is a directory, not a file")
 
-        md = _build_markdown(payload.frontmatter, payload.body)
+        md = build_markdown(
+            payload.frontmatter,
+            payload.body,
+            original_fm=payload.frontmatter_raw,
+        )
         _atomic_write(target, md)
 
         return {"path": str(target.relative_to(content_dir)).replace("\\", "/"), "status": "updated"}
@@ -491,36 +501,4 @@ def register_admin_routes(
             return StaticMkdirResponse(path=rel, status="created")
 
 
-# ---------------------------------------------------------------------------
-# Markdown builder
-# ---------------------------------------------------------------------------
 
-def _build_markdown(meta: Dict[str, Any], body: str) -> str:
-    """Serialize frontmatter dict + body into a Markdown file string."""
-    if meta:
-        fm_lines = ["---"]
-        for key, value in meta.items():
-            if isinstance(value, list):
-                fm_lines.append(f"{key}:")
-                for item in value:
-                    fm_lines.append(f"  - {item}")
-            elif isinstance(value, bool):
-                fm_lines.append(f"{key}: {'true' if value else 'false'}")
-            elif isinstance(value, (int, float)):
-                fm_lines.append(f"{key}: {value}")
-            elif isinstance(value, str) and ("\n" in value or ":" in value or "#" in value):
-                # Use block scalar for strings with special chars
-                fm_lines.append(f"{key}: |")
-                for line in value.split("\n"):
-                    fm_lines.append(f"  {line}")
-            else:
-                fm_lines.append(f"{key}: {value}")
-        fm_lines.append("---")
-        frontmatter_block = "\n".join(fm_lines) + "\n"
-    else:
-        frontmatter_block = ""
-
-    # Ensure body ends with a single newline
-    body_clean = body.rstrip("\n") + "\n" if body else "\n"
-
-    return frontmatter_block + "\n" + body_clean

@@ -1,6 +1,6 @@
 {% extends admin_config.templates ~ "/base.html" %}
 
-{% block title %}{% if file_path %}Edit — {{ file_path }}{% else %}New File{% endif %}{% endblock %}
+{% block title %}{% if file_path %}Edit: {{ file_path }}{% else %}New File{% endif %}{% endblock %}
 
 {% set active_page = 'editor' %}
 
@@ -28,12 +28,27 @@ window.FileIcons = FileIcons;
 {% block content %}
 <div class=" mx-auto space-y-4">
 
-    {# ── Page header ── #}
+    {# ── Page header with clickable breadcrumbs ── #}
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-            <h1 class="text-2xl font-bold text-moose-900">
-                {% if file_path %}Editing {{ file_path }}{% else %}New File{% endif %}
-            </h1>
+            {% if file_path %}
+            <nav class="text-sm text-moose-500 mb-1" aria-label="Breadcrumb">
+                <a href="/{{ prefix }}/browse/" class="hover:text-moose-900 transition-colors">Content</a>
+                {% set parts = file_path.split('/') %}
+                {% for part in parts %}
+                <span class="text-moose-300">/</span>
+                {% if loop.last %}
+                <span class="text-moose-900 font-medium">{{ part }}</span>
+                {% else %}
+                <a href="/{{ prefix }}/browse/{{ parts[:loop.index]|join('/') }}"
+                   class="hover:text-moose-900 transition-colors">{{ part }}</a>
+                {% endif %}
+                {% endfor %}
+            </nav>
+            <h1 class="text-2xl font-bold text-moose-900">Edit</h1>
+            {% else %}
+            <h1 class="text-2xl font-bold text-moose-900">New File</h1>
+            {% endif %}
         </div>
         <div class="flex items-center gap-2">
             <button id="btn-save" onclick="saveFile()"
@@ -69,12 +84,12 @@ window.FileIcons = FileIcons;
 
         {# ── Tab content panels ── #}
         <div id="panel-content" class="tab-panel">
-            <div id="tui-editor" style="min-height: 500px;"></div>
+            <div id="tui-editor"></div>
             <textarea id="fallback-editor" class="hidden w-full h-full p-4 text-sm font-mono text-moose-800 border-0 focus:outline-none resize-none" placeholder="Write your markdown here…"></textarea>
         </div>
 
         <div id="panel-metadata" class="tab-panel hidden">
-            <div id="guifier-container" class="p-4" style="min-height: 400px;"></div>
+            <div id="guifier-container" class="p-4"></div>
         </div>
     </div>
 </div>
@@ -164,6 +179,28 @@ window.FileIcons = FileIcons;
     var activeTab = 'content';  /* Current active tab */
 
     /* ================================================================
+       Dynamic editor height — fill viewport after header
+       ================================================================ */
+    function calcEditorHeight() {
+        var container = document.getElementById('tui-editor');
+        if (!container) return '500px';
+        var rect = container.getBoundingClientRect();
+        var available = window.innerHeight - rect.top - 16; /* 16px bottom padding */
+        return Math.max(available, 300) + 'px'; /* minimum 300px */
+    }
+
+    function applyEditorHeight() {
+        var h = calcEditorHeight();
+        if (tuiEditor) {
+            tuiEditor.setHeight(h);
+        }
+        var guifierEl = document.getElementById('guifier-container');
+        if (guifierEl) {
+            guifierEl.style.minHeight = h;
+        }
+    }
+
+    /* ================================================================
        Tab switching
        ================================================================ */
     window.switchTab = function (tabName) {
@@ -189,8 +226,7 @@ window.FileIcons = FileIcons;
 
         /* Refresh TUI Editor when switching to content tab */
         if (tabName === 'content' && tuiEditor) {
-            tuiEditor.setHeight('auto');
-            tuiEditor.setHeight('500px');
+            applyEditorHeight();
         }
     };
 
@@ -231,7 +267,7 @@ window.FileIcons = FileIcons;
 
                 tuiEditor = new toastui.Editor({
                     el: container,
-                    height: '500px',
+                    height: calcEditorHeight(),
                     initialEditType: 'markdown',
                     previewStyle: 'vertical',
                     usageStatistics: false,
@@ -336,6 +372,8 @@ window.FileIcons = FileIcons;
     /* ================================================================
        Load file content
        ================================================================ */
+    var _frontmatterRaw = null;  // raw YAML text from original file (preserves comments)
+
     function loadFile(path) {
         if (!path) return;
 
@@ -347,6 +385,7 @@ window.FileIcons = FileIcons;
             .then(function (data) {
                 setEditorValue(data.body || '');
                 setFrontmatter(data.frontmatter || {});
+                _frontmatterRaw = data.frontmatter_raw || null;
             })
             .catch(function (err) {
                 showFlash('Could not load file: ' + err.message, 'error');
@@ -367,12 +406,18 @@ window.FileIcons = FileIcons;
         var body = getEditorValue();
         var meta = getFrontmatter();
 
+        var payload = { frontmatter: meta, body: body };
+        /* Send original raw YAML back so server preserves comments */
+        if (_frontmatterRaw) {
+            payload.frontmatter_raw = _frontmatterRaw;
+        }
+
         var method = isNew ? 'POST' : 'PUT';
 
         fetch('/' + prefix + '/file/' + savePath, {
             method: method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ frontmatter: meta, body: body })
+            body: JSON.stringify(payload)
         })
         .then(function (r) {
             if (!r.ok) return r.json().then(function (d) { throw new Error(d.detail || 'Save failed'); });
@@ -385,6 +430,8 @@ window.FileIcons = FileIcons;
                 filePath = result.path;
                 isNew = false;
                 window.history.replaceState({}, '', '/' + prefix + '/edit/' + result.path);
+                /* Reload to get frontmatter_raw for the newly created file */
+                loadFile(result.path);
             }
         })
         .catch(function (err) {

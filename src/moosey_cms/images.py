@@ -756,7 +756,7 @@ def register_routes(app, static_dir: Path, route_prefix: str = "/__moosey/img",
         Maximum source file size in bytes (default 50 MB).
     """
 
-    @app.route(f"{route_prefix}/{{path:path}}")
+    @app.get(f"{route_prefix}/{{path:path}}")
     async def _moosey_img(request: Request) -> Response:
         rel = request.path_params["path"]
         source = (static_dir / rel).resolve()

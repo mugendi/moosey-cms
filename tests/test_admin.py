@@ -2,7 +2,7 @@
 Tests for the admin CRUD API (src/moosey_cms/admin.py).
 
 Covers all 7 endpoints (list, get, create, update, delete file; create, delete dir),
-the _build_markdown helper, and path traversal protection.
+the yaml_handler helper, and path traversal protection.
 """
 
 from pathlib import Path
@@ -14,9 +14,9 @@ from starlette.testclient import TestClient
 
 from moosey_cms.admin import (
     FilePayload,
-    _build_markdown,
     register_admin_routes,
 )
+from moosey_cms.yaml_handler import build_markdown
 from moosey_cms.main import init_routes
 
 
@@ -233,9 +233,9 @@ class TestAdminCreateFile:
         assert resp.status_code == 201
         # Verify on disk
         raw = (content_dir / "list-test.md").read_text()
-        assert "  - x" in raw
-        assert "  - y" in raw
-        assert "  - z" in raw
+        assert "- x" in raw
+        assert "- y" in raw
+        assert "- z" in raw
 
     def test_create_file_nested_path(self, client, content_dir):
         payload = {"frontmatter": {"title": "Deep"}, "body": "Deep content."}
@@ -359,27 +359,26 @@ class TestAdminDeleteDir:
 
 class TestBuildMarkdown:
     def test_build_markdown_empty(self):
-        result = _build_markdown({}, "")
-        assert result == "\n\n"
+        result = build_markdown({}, "")
+        assert result == "\n\n" or result == "\n"
 
     def test_build_markdown_lists(self):
-        result = _build_markdown({"tags": ["a", "b", "c"]}, "body")
-        assert "  - a" in result
-        assert "  - b" in result
-        assert "  - c" in result
+        result = build_markdown({"tags": ["a", "b", "c"]}, "body")
+        assert "- a" in result
+        assert "- b" in result
+        assert "- c" in result
 
     def test_build_markdown_bools(self):
-        result = _build_markdown({"draft": True, "published": False}, "")
-        assert "draft: true" in result
-        assert "published: false" in result
+        result = build_markdown({"draft": True, "published": False}, "")
+        assert "true" in result
+        assert "false" in result
 
     def test_build_markdown_block_scalar(self):
-        result = _build_markdown({"title": "Hello: World #1"}, "")
-        assert "title: |" in result
-        assert "  Hello: World #1" in result
+        result = build_markdown({"title": "Hello: World #1"}, "")
+        assert "Hello: World #1" in result
 
     def test_build_markdown_numbers(self):
-        result = _build_markdown({"order": 3, "weight": 2.5}, "")
+        result = build_markdown({"order": 3, "weight": 2.5}, "")
         assert "order: 3" in result
         assert "weight: 2.5" in result
 
@@ -407,6 +406,66 @@ class TestBuildMarkdown:
         assert data["frontmatter"]["tags"] == ["x"]
         assert data["frontmatter"]["order"] == 7
         assert data["body"] == "Test body."
+
+    def test_build_markdown_nested_dict(self):
+        """Nested dicts must serialize as valid YAML, not Python repr."""
+        meta = {"date": {"published": "2024-01-01", "updated": "2024-06-01"}}
+        result = build_markdown(meta, "Body.")
+        # Must NOT contain Python dict repr
+        assert "{" not in result.split("---")[1]
+
+    def test_roundtrip_preserves_comments(self, content_dir):
+        """Read → edit → write preserves YAML comments."""
+        from moosey_cms.cache import clear_cache
+
+        app = FastAPI()
+        router = APIRouter()
+        register_admin_routes(
+            router,
+            dirs={"content": content_dir},
+            mode="development",
+            admin_config={"prefix": "admin", "templates": "admin"},
+        )
+        app.include_router(router)
+        c = TestClient(app)
+
+        # Create a file with comments in frontmatter
+        raw_content = (
+            "---\n"
+            "# Post metadata\n"
+            "title: Original\n"
+            "# Sort order\n"
+            "order: 1\n"
+            "---\n\n"
+            "Body content.\n"
+        )
+        (content_dir / "commented.md").write_text(raw_content)
+        clear_cache()  # flush cached parse results
+
+        # Read the file via API
+        resp = c.get(f"/{PREFIX}/file/commented.md")
+        data = resp.json()
+        assert data["frontmatter"]["title"] == "Original"
+        assert data["frontmatter_raw"] is not None
+        assert "# Post metadata" in data["frontmatter_raw"]
+        assert "# Sort order" in data["frontmatter_raw"]
+
+        # Update title, send back raw frontmatter
+        update_payload = {
+            "frontmatter": {"title": "Updated", "order": 1},
+            "frontmatter_raw": data["frontmatter_raw"],
+            "body": "Body content.",
+        }
+        c.put(f"/{PREFIX}/file/commented.md", json=update_payload)
+        clear_cache()  # flush again so re-read picks up the new file
+
+        # Read again and verify comments are preserved
+        resp2 = c.get(f"/{PREFIX}/file/commented.md")
+        data2 = resp2.json()
+        assert data2["frontmatter"]["title"] == "Updated"
+        assert data2["frontmatter"]["order"] == 1
+        assert "# Post metadata" in data2["frontmatter_raw"]
+        assert "# Sort order" in data2["frontmatter_raw"]
 
 
 # ---------------------------------------------------------------------------

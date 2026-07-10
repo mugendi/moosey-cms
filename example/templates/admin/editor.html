@@ -1,6 +1,6 @@
 {% extends admin_config.templates ~ "/base.html" %}
 
-{% block title %}{% if file_path %}Edit — {{ file_path }}{% else %}New File{% endif %}{% endblock %}
+{% block title %}{% if file_path %}Edit: {{ file_path }}{% else %}New File{% endif %}{% endblock %}
 
 {% set active_page = 'editor' %}
 
@@ -336,6 +336,8 @@ window.FileIcons = FileIcons;
     /* ================================================================
        Load file content
        ================================================================ */
+    var _frontmatterRaw = null;  // raw YAML text from original file (preserves comments)
+
     function loadFile(path) {
         if (!path) return;
 
@@ -347,6 +349,7 @@ window.FileIcons = FileIcons;
             .then(function (data) {
                 setEditorValue(data.body || '');
                 setFrontmatter(data.frontmatter || {});
+                _frontmatterRaw = data.frontmatter_raw || null;
             })
             .catch(function (err) {
                 showFlash('Could not load file: ' + err.message, 'error');
@@ -367,12 +370,18 @@ window.FileIcons = FileIcons;
         var body = getEditorValue();
         var meta = getFrontmatter();
 
+        var payload = { frontmatter: meta, body: body };
+        /* Send original raw YAML back so server preserves comments */
+        if (_frontmatterRaw) {
+            payload.frontmatter_raw = _frontmatterRaw;
+        }
+
         var method = isNew ? 'POST' : 'PUT';
 
         fetch('/' + prefix + '/file/' + savePath, {
             method: method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ frontmatter: meta, body: body })
+            body: JSON.stringify(payload)
         })
         .then(function (r) {
             if (!r.ok) return r.json().then(function (d) { throw new Error(d.detail || 'Save failed'); });
@@ -385,6 +394,8 @@ window.FileIcons = FileIcons;
                 filePath = result.path;
                 isNew = false;
                 window.history.replaceState({}, '', '/' + prefix + '/edit/' + result.path);
+                /* Reload to get frontmatter_raw for the newly created file */
+                loadFile(result.path);
             }
         })
         .catch(function (err) {

@@ -185,6 +185,63 @@ init_cms(
 )
 ```
 
+### Admin Setup
+
+Moosey CMS includes a built-in admin UI for editing content directly in the browser. The admin UI features a tabbed editor with WYSIWYG (TUI Editor) and metadata editing (Guifier).
+
+**1. Enable admin in `init_cms()`:**
+
+```python
+init_cms(
+    app,
+    # ... other params ...
+    admin={
+        "prefix": "admin/content",  # Route prefix for admin UI
+        "templates": "admin"         # Subdirectory in templates/ for admin templates
+    }
+)
+```
+
+**2. Install admin templates:**
+
+```bash
+# Install admin templates into your project
+moosey-cms admin --templates ./templates
+```
+
+This creates `templates/admin/` with the default editor and base layout templates.
+
+**3. Template structure:**
+
+```text
+templates/
+├── admin/
+│   ├── base.html      # Admin layout (sidebar, navigation)
+│   ├── editor.html    # Tabbed file editor (main UI)
+│   └── admin.js       # Shared admin utilities
+├── layout/
+│   └── base.html      # Public site layout
+└── ...
+```
+
+**4. Static files (required for file uploads):**
+
+```python
+from fastapi.staticfiles import StaticFiles
+
+# Mount static files directory
+app.mount("/static", StaticFiles(directory="static"), name="static")
+```
+
+The admin UI allows:
+- Browsing and editing Markdown files with frontmatter
+- Creating new files and directories
+- Uploading images and other static assets
+- Live preview of content changes
+- Metadata editing via JSON schema form
+
+See [Admin Documentation](docs/admin.md) for full details.
+
 ---
 
 ## 📂 Directory Structure

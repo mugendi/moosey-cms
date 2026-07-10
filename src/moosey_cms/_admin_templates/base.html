@@ -78,18 +78,6 @@
                     </a>
                 </li>
                 {% endblock %}
-
-                {# New File link #}
-                {% block nav_new %}
-                <li>
-                    <a href="/{{ prefix }}/edit/"
-                       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
-                              {% if active_page == 'editor' %}bg-moose-800 text-white{% else %}text-moose-300 hover:bg-moose-800 hover:text-white{% endif %} transition-colors">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        New File
-                    </a>
-                </li>
-                {% endblock %}
             </ul>
         </nav>
 
