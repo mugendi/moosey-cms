@@ -17,6 +17,7 @@ from . import filters
 from . import helpers
 from . import site
 from . import schemas
+from . import admin
 from . import images as images_module
 
 from .cache import clear_cache_on_file_change, clear_cache
@@ -27,7 +28,7 @@ from .hot_reload_script import inject_script_middleware
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from jinja2.ext import Extension
 from markupsafe import Markup
 import re
@@ -93,6 +94,7 @@ def init_cms(
     mode: str,
     site_data: SiteData = {},
     reload_delay: float = 0,
+    admin_prefix: str = None,
 ):
     """
     Initialize the Moosey CMS.
@@ -111,6 +113,11 @@ def init_cms(
                       build has finished before refreshing.  Defaults to ``0``
                       (immediate reload).  Only has an effect in
                       ``"development"`` mode.
+        admin_prefix: Route prefix for the admin content-editing API
+                      (e.g. ``"admin/content"``).  When set, CRUD endpoints
+                      are registered at ``/<prefix>/list``,
+                      ``/<prefix>/file/…``, ``/<prefix>/dir/…``.
+                      Disabled by default (``None``).
     """
 
     # validate dirs inputs
@@ -121,7 +128,12 @@ def init_cms(
         mode=mode,
         site_data=site_data,
         reload_delay=reload_delay,
+        admin_prefix=admin_prefix,
     )
+
+    # Normalise admin_prefix: strip slashes, treat empty string as None
+    if admin_prefix:
+        admin_prefix = admin_prefix.strip().strip("/") or None
 
     # resolve paths (static may be a dict with "dir"/"route" keys)
     def _resolve(v):
@@ -133,10 +145,11 @@ def init_cms(
     # create templates
     # templates = Jinja2Templates(directory=str(dirs["templates"]))
     templates = Jinja2Templates(
-        #
-        directory=str(dirs["templates"]),
-        extensions=[],
-        enable_async=True,
+        env=Environment(
+            loader=FileSystemLoader(str(dirs["templates"])),
+            autoescape=select_autoescape(["html"]),
+            enable_async=True,
+        ),
     )
 
     # Important for filters like seo to access them
@@ -215,12 +228,19 @@ def init_cms(
         reloader = ConnectionManager()
         inject_script_middleware(app, host, port)
 
-    init_routes(app=app, dirs=dirs, templates=templates, reloader=reloader, mode=mode)
+    init_routes(
+        app=app,
+        dirs=dirs,
+        templates=templates,
+        reloader=reloader,
+        mode=mode,
+        admin_prefix=admin_prefix,
+    )
 
     return app
 
 
-def init_routes(app, dirs: Dirs, templates, mode, reloader):
+def init_routes(app, dirs: Dirs, templates, mode, reloader, admin_prefix=None):
 
     # init router
     router = APIRouter()
@@ -253,8 +273,32 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader):
             except WebSocketDisconnect:
                 reloader.disconnect(websocket)
 
+    # ------------------------------------------------------------------
+    # Admin content-editing API (registered BEFORE the catch-all so
+    # its more-specific patterns take priority).
+    # ------------------------------------------------------------------
+    if admin_prefix:
+        admin_router = APIRouter()
+        admin.register_admin_routes(
+            router=admin_router,
+            dirs=dirs,
+            mode=mode,
+            prefix=admin_prefix,
+        )
+        app.include_router(admin_router, prefix="")
+
+        # Store the prefix on app.state so downstream code can query it.
+        app.state.admin_prefix = admin_prefix
+
     @router.get("/{full_path:path}", include_in_schema=False)
     async def catch_all(request: Request, full_path: str):
+
+        # If admin routes are enabled, let the admin router handle its
+        # own paths — never fall through to the catch-all.
+        if admin_prefix and full_path.startswith(admin_prefix):
+            return await async_template_response(
+                templates, "404.html", {"request": request}, status_code=404
+            )
 
         app = request.app
 

@@ -80,3 +80,21 @@ class CMSConfig(BaseModel):
             "refreshing. Only has an effect in development mode."
         ),
     )
+    admin_prefix: Optional[str] = Field(
+        default=None,
+        description=(
+            "Route prefix for the admin content-editing API "
+            "(e.g. 'admin/content').  When set, CRUD endpoints are "
+            "registered at /<prefix>/list, /<prefix>/file/…, /<prefix>/dir/…."
+        ),
+    )
+
+    @field_validator("admin_prefix")
+    @classmethod
+    def validate_admin_prefix(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        v = v.strip().strip("/")
+        if not v:
+            return None
+        return v
