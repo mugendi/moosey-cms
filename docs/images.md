@@ -156,3 +156,7 @@ Processed images are cached on disk in a `.moosey/` subfolder next to the source
 | DeprecationWarning in logs | Using `image_url` or `responsive_image` | Switch to `image` filter |
 | Wrong crop area | Focus mode not set | Specify `focus` param |
 | Poor quality output | Quality too low | Increase `q` parameter |
+
+---
+
+← [Previous: Markdown](markdown.md) | [Next: SEO](seo.md) →

@@ -202,3 +202,7 @@ site_data = {
     },
 }
 ```
+
+---
+
+← [Previous: Images](images.md) | [Next: Admin API](admin.md) →

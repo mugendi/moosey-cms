@@ -106,8 +106,32 @@ uvicorn main:app --reload
 
 Opens a hot-reloading server at `http://localhost:8000`.
 
-## Next Steps
+## Configuration Reference
 
-- Browse the [Filters Reference](filters.md) for all available Jinja2 filters.
-- Learn about [Image Processing](images.md) for responsive images.
-- See [Templates](templates.md) for drafts, tags, and template waterfall.
+The `init_cms()` function accepts these parameters:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `app` | `FastAPI` | Your FastAPI application instance |
+| `host` | `str` | Server host (used for hot-reload script injection) |
+| `port` | `int` | Server port |
+| `dirs` | `dict` | Dictionary containing `content` and `templates` Paths |
+| `mode` | `str` | `"development"`, `"production"`, `"staging"`, or `"testing"` |
+| `site_data` | `dict` | Global data (name, author, social links, `web` config for sitemap/robots/RSS) |
+| `reload_delay` | `float` | Seconds to delay hot-reload after file change. Default: `0` |
+| `admin_prefix` | `str` | URL prefix for the admin content API (e.g. `"admin"`). No admin API if omitted |
+
+## Documentation
+
+| Doc | What you'll learn |
+|-----|-------------------|
+| **[Templates](templates.md)** | Template waterfall, layouts, static files, pagination, collections |
+| **[Filters Reference](filters.md)** | All 54 built-in Jinja2 filters for dates, text, numbers, images, and more |
+| **[Markdown Rendering](markdown.md)** | Using the `markdown` and `markdown_inline` filters, enabled extensions |
+| **[Image Processing](images.md)** | Responsive images, `srcset`, face detection, CDN support |
+| **[SEO](seo.md)** | Meta tags, Open Graph, structured data, robots.txt, canonical URLs |
+| **[Admin API](admin.md)** | Programmatic content management — create, update, delete files and directories |
+| **[Security](security.md)** | HTML sanitization, Content Security Policy, sandboxed templates |
+| **[Patterns](patterns.md)** | Real-world project structures and conventions |
+
+**[Read Next: Templates →](templates.md)**

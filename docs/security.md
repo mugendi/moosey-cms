@@ -71,3 +71,7 @@ See `get_secure_target()` in `helpers.py`.
 ## Sandboxed Template Rendering
 
 Frontmatter strings and Markdown body content are rendered through a `SandboxedEnvironment` that blocks access to private attributes (`__class__`, `__subclasses__`), dangerous built-ins (`eval`, `exec`, `open`, `import`), and module imports. Only the `site_data`, `mode`, and registered filters are available.
+
+---
+
+← [Previous: Admin API](admin.md) | [Next: Patterns](patterns.md) →

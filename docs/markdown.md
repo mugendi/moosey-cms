@@ -59,3 +59,7 @@ def hello():
     print("Hello, World!")
 ```
 ````
+
+---
+
+← [Previous: Filters](filters.md) | [Next: Images](images.md) →

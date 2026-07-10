@@ -692,3 +692,7 @@ Inline a static asset's contents directly into the page:
 ```
 
 Looks up files under the configured static directory.
+
+---
+
+← [Previous: Templates](templates.md) | [Next: Markdown](markdown.md) →

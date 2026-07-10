@@ -158,3 +158,7 @@ site_data = {
 ```
 
 See [SEO](seo.md) for details.
+
+---
+
+← [Previous: Getting Started](getting-started.md) | [Next: Filters](filters.md) →
