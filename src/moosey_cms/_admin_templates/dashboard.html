@@ -1,0 +1,132 @@
+{% extends admin_config.templates ~ "/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% set active_page = 'dashboard' %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-8">
+
+    {# ── Page header ── #}
+    <div>
+        <h1 class="text-2xl font-bold text-moose-900">Dashboard</h1>
+        <p class="text-moose-500 text-sm mt-1">Overview of your content directory.</p>
+    </div>
+
+    {# ── Stats cards ── #}
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="stats-cards">
+        <div class="bg-white rounded-xl border border-moose-200 p-4 text-center">
+            <p class="text-2xl font-bold text-moose-800" id="stat-files">—</p>
+            <p class="text-xs text-moose-500 mt-1">Files</p>
+        </div>
+        <div class="bg-white rounded-xl border border-moose-200 p-4 text-center">
+            <p class="text-2xl font-bold text-moose-800" id="stat-dirs">—</p>
+            <p class="text-xs text-moose-500 mt-1">Directories</p>
+        </div>
+        <div class="bg-white rounded-xl border border-moose-200 p-4 text-center">
+            <p class="text-2xl font-bold text-moose-800" id="stat-size">—</p>
+            <p class="text-xs text-moose-500 mt-1">Total Size</p>
+        </div>
+        <div class="bg-white rounded-xl border border-moose-200 p-4 text-center">
+            <p class="text-2xl font-bold text-moose-800" id="stat-modified">—</p>
+            <p class="text-xs text-moose-500 mt-1">Last Modified</p>
+        </div>
+    </div>
+
+    {# ── Quick actions ── #}
+    <div class="flex flex-wrap gap-3">
+        <a href="/{{ admin_config.prefix }}/edit/"
+           class="inline-flex items-center gap-2 bg-moose-700 hover:bg-moose-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            New File
+        </a>
+        <a href="/{{ admin_config.prefix }}/browse/"
+           class="inline-flex items-center gap-2 bg-white hover:bg-moose-100 text-moose-700 border border-moose-300 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            Browse Content
+        </a>
+    </div>
+
+    {# ── Recent content ── #}
+    <div class="bg-white rounded-xl border border-moose-200 overflow-hidden">
+        <div class="px-5 py-4 border-b border-moose-100">
+            <h2 class="text-sm font-semibold text-moose-800">Recent Content</h2>
+        </div>
+        <div id="recent-list" class="divide-y divide-moose-100">
+            <p class="px-5 py-4 text-sm text-moose-400">Loading…</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var prefix = '{{ admin_config.prefix }}';
+
+    /* ── Helpers ── */
+    function formatSize(bytes) {
+        if (!bytes || bytes === 0) return '—';
+        var units = ['B', 'KB', 'MB', 'GB'];
+        var i = 0;
+        while (bytes >= 1024 && i < units.length - 1) { bytes /= 1024; i++; }
+        return bytes.toFixed(i ? 1 : 0) + ' ' + units[i];
+    }
+
+    function timeAgo(isoStr) {
+        if (!isoStr) return '—';
+        var diff = (Date.now() - new Date(isoStr).getTime()) / 1000;
+        if (diff < 60)   return 'just now';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        return Math.floor(diff / 86400) + 'd ago';
+    }
+
+    /* ── Load root directory listing ── */
+    fetch('/' + prefix + '/list')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            var entries = data.entries || [];
+            var files = entries.filter(function (e) { return e.type === 'file'; });
+            var dirs  = entries.filter(function (e) { return e.type === 'directory'; });
+
+            var totalSize = files.reduce(function (s, e) { return s + (e.size || 0); }, 0);
+
+            document.getElementById('stat-files').textContent = files.length;
+            document.getElementById('stat-dirs').textContent  = dirs.length;
+            document.getElementById('stat-size').textContent  = formatSize(totalSize);
+
+            /* Most recently modified entry */
+            var latest = entries
+                .filter(function (e) { return e.modified; })
+                .sort(function (a, b) { return new Date(b.modified) - new Date(a.modified); })[0];
+            document.getElementById('stat-modified').textContent = latest ? timeAgo(latest.modified) : '—';
+
+            /* Recent files list (max 5) */
+            var recent = files
+                .sort(function (a, b) { return new Date(b.modified || 0) - new Date(a.modified || 0); })
+                .slice(0, 5);
+
+            var container = document.getElementById('recent-list');
+            if (recent.length === 0) {
+                container.innerHTML = '<p class="px-5 py-4 text-sm text-moose-400">No files yet. Create your first file!</p>';
+                return;
+            }
+
+            container.innerHTML = recent.map(function (e) {
+                var editUrl = '/' + prefix + '/edit/' + e.path;
+                return '<a href="' + editUrl + '" class="flex items-center justify-between px-5 py-3 hover:bg-moose-50 transition-colors">'
+                    + '<div>'
+                    + '<p class="text-sm font-medium text-moose-800">' + (e.title || e.name) + '</p>'
+                    + '<p class="text-xs text-moose-400">' + e.path + '</p>'
+                    + '</div>'
+                    + '<span class="text-xs text-moose-400">' + timeAgo(e.modified) + '</span>'
+                    + '</a>';
+            }).join('');
+        })
+        .catch(function (err) {
+            showFlash('Failed to load dashboard data: ' + err.message, 'error');
+        });
+})();
+</script>
+{% endblock %}

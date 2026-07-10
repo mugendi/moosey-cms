@@ -1,0 +1,280 @@
+{% extends admin_config.templates ~ "/base.html" %}
+
+{% block title %}Content Browser{% endblock %}
+
+{% set active_page = 'list' %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+    {# ── Page header ── #}
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <h1 class="text-2xl font-bold text-moose-900">Content</h1>
+            <p class="text-moose-500 text-sm mt-1">Browse and manage your content files.</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="openNewFileModal()"
+                    class="inline-flex items-center gap-1.5 bg-moose-700 hover:bg-moose-800 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                New File
+            </button>
+            <button onclick="openNewDirModal()"
+                    class="inline-flex items-center gap-1.5 bg-white hover:bg-moose-100 text-moose-700 border border-moose-300 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                New Folder
+            </button>
+        </div>
+    </div>
+
+    {# ── Breadcrumb navigation ── #}
+    <nav id="breadcrumb" class="flex items-center gap-1 text-sm text-moose-500"></nav>
+
+    {# ── File / directory table ── #}
+    <div class="bg-white rounded-xl border border-moose-200 overflow-hidden">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b border-moose-100 text-left text-xs font-medium text-moose-500 uppercase tracking-wider">
+                    <th class="px-5 py-3">Name</th>
+                    <th class="px-5 py-3 w-24 text-right">Size</th>
+                    <th class="px-5 py-3 w-36 text-right">Modified</th>
+                    <th class="px-5 py-3 w-20 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="entries-body" class="divide-y divide-moose-50">
+                <tr><td colspan="4" class="px-5 py-6 text-center text-moose-400">Loading…</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ============================================================
+     New File Modal
+     ============================================================ -->
+<div id="new-file-modal" class="modal-overlay hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+        <h3 class="text-lg font-semibold text-moose-900">Create New File</h3>
+        <input id="new-file-name" type="text" placeholder="e.g. blog/my-post.md"
+               class="w-full border border-moose-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-moose-500 focus:border-transparent">
+        <div class="flex justify-end gap-2">
+            <button onclick="closeModal('new-file-modal')" class="px-4 py-2 text-sm text-moose-600 hover:text-moose-900 transition-colors">Cancel</button>
+            <button onclick="createFile()" class="px-4 py-2 text-sm bg-moose-700 hover:bg-moose-800 text-white rounded-lg transition-colors">Create</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     New Folder Modal
+     ============================================================ -->
+<div id="new-dir-modal" class="modal-overlay hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+        <h3 class="text-lg font-semibold text-moose-900">Create New Folder</h3>
+        <input id="new-dir-name" type="text" placeholder="e.g. blog"
+               class="w-full border border-moose-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-moose-500 focus:border-transparent">
+        <div class="flex justify-end gap-2">
+            <button onclick="closeModal('new-dir-modal')" class="px-4 py-2 text-sm text-moose-600 hover:text-moose-900 transition-colors">Cancel</button>
+            <button onclick="createDir()" class="px-4 py-2 text-sm bg-moose-700 hover:bg-moose-800 text-white rounded-lg transition-colors">Create</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     Delete Confirmation Modal
+     ============================================================ -->
+<div id="delete-modal" class="modal-overlay hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+        <h3 class="text-lg font-semibold text-moose-900">Confirm Delete</h3>
+        <p class="text-sm text-moose-600">Are you sure you want to delete <strong id="delete-target-name"></strong>?</p>
+        <input type="hidden" id="delete-target-path">
+        <input type="hidden" id="delete-target-type">
+        <div class="flex justify-end gap-2">
+            <button onclick="closeModal('delete-modal')" class="px-4 py-2 text-sm text-moose-600 hover:text-moose-900 transition-colors">Cancel</button>
+            <button onclick="confirmDelete()" class="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">Delete</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var prefix  = '{{ admin_config.prefix }}';
+    var subpath = '{{ subpath | default("") }}';
+
+    /* ── Helpers ── */
+    function formatSize(bytes) {
+        if (!bytes || bytes === 0) return '—';
+        var units = ['B', 'KB', 'MB', 'GB'];
+        var i = 0;
+        while (bytes >= 1024 && i < units.length - 1) { bytes /= 1024; i++; }
+        return bytes.toFixed(i ? 1 : 0) + ' ' + units[i];
+    }
+
+    function timeAgo(isoStr) {
+        if (!isoStr) return '—';
+        var diff = (Date.now() - new Date(isoStr).getTime()) / 1000;
+        if (diff < 60)   return 'just now';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        return Math.floor(diff / 86400) + 'd ago';
+    }
+
+    /* ── Modal helpers ── */
+    window.openNewFileModal = function () {
+        document.getElementById('new-file-name').value = '';
+        document.getElementById('new-file-modal').classList.remove('hidden');
+    };
+    window.openNewDirModal = function () {
+        document.getElementById('new-dir-name').value = '';
+        document.getElementById('new-dir-modal').classList.remove('hidden');
+    };
+    window.closeModal = function (id) {
+        document.getElementById(id).classList.add('hidden');
+    };
+
+    /* ── Breadcrumb rendering ── */
+    function renderBreadcrumb(path) {
+        var nav = document.getElementById('breadcrumb');
+        var parts = path ? path.split('/').filter(Boolean) : [];
+        var html = '<a href="/' + prefix + '/browse/" class="hover:text-moose-800 transition-colors">Content</a>';
+        var accumulated = '';
+        parts.forEach(function (part) {
+            accumulated += '/' + part;
+            html += ' <span class="text-moose-300">/</span> '
+                  + '<a href="/' + prefix + '/browse' + accumulated + '" class="hover:text-moose-800 transition-colors">' + part + '</a>';
+        });
+        nav.innerHTML = html;
+    }
+
+    /* ── Entry rendering ── */
+    function renderEntries(entries) {
+        var tbody = document.getElementById('entries-body');
+        if (!entries || entries.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="px-5 py-6 text-center text-moose-400">This directory is empty.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = entries.map(function (e) {
+            var icon;
+            if (e.type === 'directory') {
+                icon = '<svg class="w-5 h-5 text-moose-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>';
+            } else if (e.name.endsWith('.md')) {
+                icon = '<svg class="w-5 h-5 text-moose-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>';
+            } else {
+                icon = '<svg class="w-5 h-5 text-moose-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>';
+            }
+
+            var nameHtml;
+            if (e.type === 'directory') {
+                var newPath = subpath ? subpath + '/' + e.name : e.name;
+                nameHtml = '<a href="/' + prefix + '/browse/' + newPath + '" class="text-moose-800 hover:text-moose-600 font-medium transition-colors">' + e.name + '/</a>';
+            } else {
+                nameHtml = '<a href="/' + prefix + '/edit/' + e.path + '" class="text-moose-800 hover:text-moose-600 font-medium transition-colors">' + e.name + '</a>';
+                if (e.title) {
+                    nameHtml += '<span class="block text-xs text-moose-400">' + e.title + '</span>';
+                }
+            }
+
+            var deleteBtn = '<button onclick="openDeleteModal(\'' + e.path.replace(/'/g, "\\'") + '\', \'' + e.type + '\', \'' + e.name.replace(/'/g, "\\'") + '\')" '
+                + 'class="text-moose-400 hover:text-red-600 transition-colors" title="Delete">'
+                + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'
+                + '</button>';
+
+            return '<tr class="hover:bg-moose-50 transition-colors">'
+                + '<td class="px-5 py-3"><div class="flex items-center gap-3">' + icon + '<div>' + nameHtml + '</div></div></td>'
+                + '<td class="px-5 py-3 text-right text-moose-400">' + (e.type === 'directory' ? '—' : formatSize(e.size)) + '</td>'
+                + '<td class="px-5 py-3 text-right text-moose-400">' + timeAgo(e.modified) + '</td>'
+                + '<td class="px-5 py-3 text-right">' + deleteBtn + '</td>'
+                + '</tr>';
+        }).join('');
+    }
+
+    /* ── Delete modal ── */
+    window.openDeleteModal = function (path, type, name) {
+        document.getElementById('delete-target-path').value = path;
+        document.getElementById('delete-target-type').value = type;
+        document.getElementById('delete-target-name').textContent = name;
+        document.getElementById('delete-modal').classList.remove('hidden');
+    };
+
+    window.confirmDelete = function () {
+        var path = document.getElementById('delete-target-path').value;
+        var type = document.getElementById('delete-target-type').value;
+        var endpoint = type === 'directory' ? '/dir/' : '/file/';
+
+        fetch('/' + prefix + endpoint + path, { method: 'DELETE' })
+            .then(function (r) {
+                if (!r.ok) return r.json().then(function (d) { throw new Error(d.detail || 'Delete failed'); });
+                return r.json();
+            })
+            .then(function () {
+                showFlash('Deleted ' + path, 'success');
+                closeModal('delete-modal');
+                loadDirectory(subpath);
+            })
+            .catch(function (err) { showFlash(err.message, 'error'); });
+    };
+
+    /* ── Create file ── */
+    window.createFile = function () {
+        var name = document.getElementById('new-file-name').value.trim();
+        if (!name) { showFlash('Enter a file name', 'error'); return; }
+        var filePath = subpath ? subpath + '/' + name : name;
+
+        fetch('/' + prefix + '/file/' + filePath, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ frontmatter: {}, body: '' })
+        })
+        .then(function (r) {
+            if (!r.ok) return r.json().then(function (d) { throw new Error(d.detail || 'Create failed'); });
+            return r.json();
+        })
+        .then(function () {
+            showFlash('Created ' + name, 'success');
+            closeModal('new-file-modal');
+            loadDirectory(subpath);
+        })
+        .catch(function (err) { showFlash(err.message, 'error'); });
+    };
+
+    /* ── Create directory ── */
+    window.createDir = function () {
+        var name = document.getElementById('new-dir-name').value.trim();
+        if (!name) { showFlash('Enter a folder name', 'error'); return; }
+        var dirPath = subpath ? subpath + '/' + name : name;
+
+        fetch('/' + prefix + '/dir/' + dirPath, { method: 'POST' })
+            .then(function (r) {
+                if (!r.ok) return r.json().then(function (d) { throw new Error(d.detail || 'Create failed'); });
+                return r.json();
+            })
+            .then(function () {
+                showFlash('Created folder ' + name, 'success');
+                closeModal('new-dir-modal');
+                loadDirectory(subpath);
+            })
+            .catch(function (err) { showFlash(err.message, 'error'); });
+    };
+
+    /* ── Load directory listing ── */
+    function loadDirectory(path) {
+        var url = path ? '/' + prefix + '/list/' + path : '/' + prefix + '/list';
+        fetch(url)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                renderBreadcrumb(data.path);
+                renderEntries(data.entries);
+            })
+            .catch(function (err) {
+                showFlash('Failed to load directory: ' + err.message, 'error');
+            });
+    }
+
+    /* Expose for reload after delete */
+    window.loadDirectory = loadDirectory;
+
+    /* ── Init ── */
+    loadDirectory(subpath);
+})();
+</script>
+{% endblock %}
