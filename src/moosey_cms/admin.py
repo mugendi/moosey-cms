@@ -5,6 +5,7 @@ This software is released under the MIT License.
 https://opensource.org/licenses/MIT
 """
 
+import mimetypes
 import os
 import shutil
 import tempfile
@@ -146,8 +147,6 @@ IMAGE_EXTS = frozenset({
 })
 VIDEO_EXTS = frozenset({".mp4", ".webm", ".ogg", ".mov", ".avi"})
 AUDIO_EXTS = frozenset({".mp3", ".wav", ".ogg", ".flac", ".aac"})
-PREVIEWABLE_EXTS = IMAGE_EXTS | VIDEO_EXTS | AUDIO_EXTS | {".pdf"}
-
 
 def classify_static_type(file_path: Path) -> str:
     """Return the media type label for *file_path* based on its extension."""
@@ -176,7 +175,6 @@ def _static_entry(file_path: Path, static_dir: Path, static_route: str) -> Stati
     url = None
     if not is_dir:
         media = classify_static_type(file_path)
-        import mimetypes
         mime_type, _ = mimetypes.guess_type(file_path.name)
         url = f"{static_route.rstrip('/')}/{url_path}"
 
@@ -465,7 +463,6 @@ def register_admin_routes(
             if len(contents) > 10 * 1024 * 1024:
                 raise HTTPException(status_code=400, detail="File too large (max 10MB)")
 
-            import tempfile, os
             fd, tmp = tempfile.mkstemp(dir=target.parent, suffix=".tmp", prefix=".moosey-")
             try:
                 with os.fdopen(fd, "wb") as f:
@@ -478,7 +475,6 @@ def register_admin_routes(
                     pass
                 raise
 
-            import mimetypes
             mime_type, _ = mimetypes.guess_type(target.name)
             rel = str(target.relative_to(static_dir)).replace("\\", "/")
             url = f"{static_route.rstrip('/')}/{rel}"

@@ -475,7 +475,7 @@ window.FileIcons = FileIcons;
             html += 'data-mime="' + escHtml(e.mime_type || '') + '" ';
             html += 'data-name="' + escHtml(e.name) + '" ';
             html += 'data-size="' + e.size + '" ';
-            html += 'onclick="fpSelect(this)">';
+            html += 'onclick="fpSelect(this)" ondblclick="fpSelect(this);fpInsertSelected()">';
 
             if (e.type === 'directory') {
                 html += '<div class="text-3xl text-center mb-2">📁</div>';
@@ -596,8 +596,9 @@ window.FileIcons = FileIcons;
                     body: formData,
                 });
                 if (!resp.ok) {
-                    var err = await resp.json();
-                    showFlash('Upload failed: ' + (err.detail || 'Unknown error'), 'error');
+                    var msg;
+                    try { var err = await resp.json(); msg = err.detail || 'Upload failed'; } catch(e) { msg = 'Upload failed'; }
+                    showFlash('Upload failed: ' + msg, 'error');
                 }
             } catch (e) {
                 showFlash('Upload failed: ' + e.message, 'error');
