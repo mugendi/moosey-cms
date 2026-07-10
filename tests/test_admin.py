@@ -5,6 +5,8 @@ Covers all 7 endpoints (list, get, create, update, delete file; create, delete d
 the _build_markdown helper, and path traversal protection.
 """
 
+from pathlib import Path
+
 import pytest
 from fastapi import FastAPI
 from fastapi.routing import APIRouter
@@ -15,6 +17,7 @@ from moosey_cms.admin import (
     _build_markdown,
     register_admin_routes,
 )
+from moosey_cms.main import init_routes
 
 
 # ---------------------------------------------------------------------------
@@ -593,3 +596,83 @@ class TestStaticMkdir:
         resp = static_client.post(f"/{PREFIX}/static/mkdir/a/b/c")
         assert resp.status_code == 201
         assert resp.json()["path"] == "a/b/c"
+
+
+# ---------------------------------------------------------------------------
+# init_routes static dir injection
+# ---------------------------------------------------------------------------
+
+
+class TestInitRoutesStaticInjection:
+    """Verify that init_routes injects _static_dir and _static_route into admin_config."""
+
+    def _make_app(self, tmp_path, static_dir=None, image_route=None):
+        app = FastAPI()
+        content_dir = tmp_path / "content"
+        content_dir.mkdir()
+        app.state.site_data = {}
+        app.state.mode = "production"
+        if static_dir is not None:
+            app.state.moosey_static_dir = Path(static_dir)
+        if image_route is not None:
+            app.state.moosey_image_route_prefix = image_route
+        return app, {"content": content_dir}
+
+    def test_injects_static_dir_and_route(self, tmp_path):
+        static = tmp_path / "static"
+        static.mkdir()
+        app, dirs = self._make_app(tmp_path, static_dir=static, image_route="/img/")
+        admin_config = {"prefix": "admin", "templates": "admin"}
+        init_routes(
+            app=app,
+            dirs=dirs,
+            templates=None,
+            mode="production",
+            reloader=None,
+            admin_config=admin_config,
+        )
+        assert admin_config["_static_dir"] == static
+        assert admin_config["_static_route"] == "/img"
+
+    def test_defaults_route_to_static(self, tmp_path):
+        static = tmp_path / "static"
+        static.mkdir()
+        app, dirs = self._make_app(tmp_path, static_dir=static)
+        admin_config = {"prefix": "admin", "templates": "admin"}
+        init_routes(
+            app=app,
+            dirs=dirs,
+            templates=None,
+            mode="production",
+            reloader=None,
+            admin_config=admin_config,
+        )
+        assert admin_config["_static_dir"] == static
+        assert admin_config["_static_route"] == "/static"
+
+    def test_no_static_dir_no_injection(self, tmp_path):
+        app, dirs = self._make_app(tmp_path)
+        admin_config = {"prefix": "admin", "templates": "admin"}
+        init_routes(
+            app=app,
+            dirs=dirs,
+            templates=None,
+            mode="production",
+            reloader=None,
+            admin_config=admin_config,
+        )
+        assert "_static_dir" not in admin_config
+        assert "_static_route" not in admin_config
+
+    def test_no_admin_config_no_injection(self, tmp_path):
+        static = tmp_path / "static"
+        static.mkdir()
+        app, dirs = self._make_app(tmp_path, static_dir=static)
+        init_routes(
+            app=app,
+            dirs=dirs,
+            templates=None,
+            mode="production",
+            reloader=None,
+            admin_config=None,
+        )
