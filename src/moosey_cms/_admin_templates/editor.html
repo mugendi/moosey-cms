@@ -16,6 +16,13 @@
 import Guifier from 'https://cdn.jsdelivr.net/npm/guifier@1.0.33/dist/Guifier.min.js';
 window.Guifier = Guifier;
 </script>
+
+{# ── File Icons — file-type icons from Atom File-icons (port for browser). #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exuanbo/file-icons-js@latest/dist/css/file-icons-cdn.min.css">
+<script type="module">
+import { FileIcons } from 'https://cdn.jsdelivr.net/npm/@exuanbo/file-icons-js@latest/dist/js/file-icons.esm.min.js';
+window.FileIcons = FileIcons;
+</script>
 {% endblock %}
 
 {% block content %}
@@ -71,6 +78,77 @@ window.Guifier = Guifier;
         </div>
     </div>
 </div>
+{# ── File Picker Modal ── #}
+{% if admin_config._static_dir %}
+<div id="file-picker-modal" class="fixed inset-0 z-50 hidden">
+    {# Backdrop #}
+    <div class="absolute inset-0 bg-black/50" onclick="closeFilePicker()"></div>
+
+    {# Modal #}
+    <div class="absolute inset-4 md:inset-8 lg:inset-16 bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
+
+        {# Header #}
+        <div class="flex items-center justify-between px-4 py-3 border-b border-moose-200">
+            <h2 class="text-lg font-semibold text-moose-900">File Picker</h2>
+            <button onclick="closeFilePicker()" class="text-moose-400 hover:text-moose-600">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        {# Breadcrumbs #}
+        <div id="fp-breadcrumbs" class="px-4 py-2 text-sm text-moose-600 border-b border-moose-100 bg-moose-50">
+            <span class="cursor-pointer hover:text-moose-900" onclick="fpNavigate('')">Root</span>
+        </div>
+
+        {# Main content area: grid + preview #}
+        <div class="flex flex-1 overflow-hidden">
+
+            {# File grid #}
+            <div class="flex-1 overflow-y-auto p-4">
+                <div id="fp-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    {# Populated by JS #}
+                </div>
+                <div id="fp-empty" class="hidden text-center py-12 text-moose-400">
+                    <p class="text-lg mb-2">No files yet</p>
+                    <button onclick="document.getElementById('fp-upload-input').click()"
+                            class="text-sm text-moose-600 underline hover:text-moose-900">Upload one</button>
+                </div>
+            </div>
+
+            {# Preview panel (hidden by default) #}
+            <div id="fp-preview" class="hidden w-80 border-l border-moose-200 bg-moose-50 p-4 overflow-y-auto">
+                <div id="fp-preview-content" class="mb-4"></div>
+                <div id="fp-preview-info" class="text-sm text-moose-600 mb-4"></div>
+                <button id="fp-insert-btn" onclick="fpInsertSelected()"
+                        class="w-full bg-moose-700 hover:bg-moose-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+                    Insert
+                </button>
+            </div>
+        </div>
+
+        {# Footer #}
+        <div class="flex items-center justify-between px-4 py-3 border-t border-moose-200 bg-moose-50">
+            <div class="flex gap-2">
+                <input type="file" id="fp-upload-input" multiple class="hidden"
+                       onchange="fpUploadFiles(this.files)">
+                <button onclick="document.getElementById('fp-upload-input').click()"
+                        class="text-sm bg-white border border-moose-300 hover:bg-moose-100 text-moose-700 px-3 py-1.5 rounded-lg transition-colors">
+                    Upload
+                </button>
+                <button onclick="fpCreateFolder()"
+                        class="text-sm bg-white border border-moose-300 hover:bg-moose-100 text-moose-700 px-3 py-1.5 rounded-lg transition-colors">
+                    New Folder
+                </button>
+            </div>
+            <button onclick="closeFilePicker()"
+                    class="text-sm text-moose-500 hover:text-moose-700">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block scripts %}
@@ -301,6 +379,240 @@ window.Guifier = Guifier;
     }
 
     /* ================================================================
+       File Picker
+       ================================================================ */
+    var fpCurrentPath = '';
+    var fpSelectedFile = null;  // { name, path, url, mime_type }
+    var fpStaticRoute = '{{ admin_config._static_route | default("/static") }}';
+
+    function openFilePickerModal() {
+        if (!document.getElementById('file-picker-modal')) return;
+        fpCurrentPath = '';
+        fpSelectedFile = null;
+        document.getElementById('file-picker-modal').classList.remove('hidden');
+        document.getElementById('fp-preview').classList.add('hidden');
+        fpLoadDirectory('');
+    }
+
+    window.closeFilePicker = function() {
+        document.getElementById('file-picker-modal').classList.add('hidden');
+        fpSelectedFile = null;
+    };
+
+    function fpNavigate(path) {
+        fpCurrentPath = path;
+        fpSelectedFile = null;
+        document.getElementById('fp-preview').classList.add('hidden');
+        fpLoadDirectory(path);
+    }
+
+    function fpLoadDirectory(subpath) {
+        var url = '/' + prefix + '/static' + (subpath ? '/' + subpath : '');
+        fetch(url)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                fpRenderBreadcrumbs(data.path);
+                fpRenderGrid(data.entries);
+            })
+            .catch(function(err) {
+                showFlash('Could not load files: ' + err.message, 'error');
+            });
+    }
+
+    function fpRenderBreadcrumbs(pathStr) {
+        var container = document.getElementById('fp-breadcrumbs');
+        var parts = pathStr ? pathStr.split('/').filter(Boolean) : [];
+        var html = '<span class="cursor-pointer hover:text-moose-900" onclick="fpNavigate(\'\')">Root</span>';
+        var accumulated = '';
+        for (var i = 0; i < parts.length; i++) {
+            accumulated += (accumulated ? '/' : '') + parts[i];
+            var p = accumulated;
+            html += ' <span class="text-moose-300">/</span> ';
+            html += '<span class="cursor-pointer hover:text-moose-900" onclick="fpNavigate(\'' + p + '\')">' + escHtml(parts[i]) + '</span>';
+        }
+        html += ' <span class="text-moose-300">/</span>';
+        container.innerHTML = html;
+    }
+
+    function fpRenderGrid(entries) {
+        var grid = document.getElementById('fp-grid');
+        var empty = document.getElementById('fp-empty');
+
+        if (entries.length === 0) {
+            grid.innerHTML = '';
+            empty.classList.remove('hidden');
+            return;
+        }
+        empty.classList.add('hidden');
+
+        var html = '';
+        for (var i = 0; i < entries.length; i++) {
+            var e = entries[i];
+            var isPreviewable = e.mime_type && (
+                e.mime_type.indexOf('image/') === 0 ||
+                e.mime_type.indexOf('video/') === 0 ||
+                e.mime_type.indexOf('audio/') === 0 ||
+                e.mime_type === 'application/pdf'
+            );
+
+            html += '<div class="fp-card border border-moose-200 rounded-lg p-3 cursor-pointer hover:border-moose-500 hover:shadow transition-all" ';
+            html += 'data-path="' + escHtml(e.path) + '" ';
+            html += 'data-url="' + escHtml(e.url || '') + '" ';
+            html += 'data-type="' + e.type + '" ';
+            html += 'data-mime="' + escHtml(e.mime_type || '') + '" ';
+            html += 'data-name="' + escHtml(e.name) + '" ';
+            html += 'data-size="' + e.size + '" ';
+            html += 'onclick="fpSelect(this)">';
+
+            if (e.type === 'directory') {
+                html += '<div class="text-3xl text-center mb-2">📁</div>';
+            } else if (e.mime_type && e.mime_type.indexOf('image/') === 0 && e.url) {
+                html += '<div class="aspect-square mb-2 overflow-hidden rounded bg-moose-100 flex items-center justify-center">';
+                html += '<img src="' + escHtml(e.url) + '" alt="" class="max-h-full max-w-full object-contain" loading="lazy">';
+                html += '</div>';
+            } else {
+                // File icon from file-icons-js
+                html += '<div class="text-3xl text-center mb-2">';
+                if (typeof FileIcons !== 'undefined') {
+                    html += '<i class="' + FileIcons.getClass(e.name) + '"></i>';
+                } else {
+                    html += '📄';
+                }
+                html += '</div>';
+            }
+
+            html += '<div class="text-xs text-moose-700 truncate text-center" title="' + escHtml(e.name) + '">' + escHtml(e.name) + '</div>';
+            html += '</div>';
+        }
+        grid.innerHTML = html;
+    }
+
+    function fpSelect(el) {
+        // Deselect previous
+        document.querySelectorAll('.fp-card').forEach(function(c) {
+            c.classList.remove('border-moose-600', 'bg-moose-50');
+        });
+        // Select this one
+        el.classList.add('border-moose-600', 'bg-moose-50');
+
+        var type = el.getAttribute('data-type');
+        var url = el.getAttribute('data-url');
+        var name = el.getAttribute('data-name');
+        var mime = el.getAttribute('data-mime');
+        var path = el.getAttribute('data-path');
+        var size = parseInt(el.getAttribute('data-size'), 10);
+
+        fpSelectedFile = { name: name, path: path, url: url, mime_type: mime, size: size };
+
+        if (type === 'directory') {
+            fpNavigate(path);
+            return;
+        }
+
+        fpShowPreview(fpSelectedFile);
+    }
+
+    function fpShowPreview(file) {
+        var panel = document.getElementById('fp-preview');
+        var content = document.getElementById('fp-preview-content');
+        var info = document.getElementById('fp-preview-info');
+        panel.classList.remove('hidden');
+
+        var html = '';
+        if (file.mime_type && file.mime_type.indexOf('image/') === 0) {
+            html = '<img src="' + escHtml(file.url) + '" alt="' + escHtml(file.name) + '" class="max-w-full rounded">';
+        } else if (file.mime_type === 'application/pdf') {
+            html = '<iframe src="' + escHtml(file.url) + '" class="w-full h-64 rounded border border-moose-200"></iframe>';
+        } else if (file.mime_type && file.mime_type.indexOf('video/') === 0) {
+            html = '<video src="' + escHtml(file.url) + '" controls class="w-full rounded"></video>';
+        } else if (file.mime_type && file.mime_type.indexOf('audio/') === 0) {
+            html = '<audio src="' + escHtml(file.url) + '" controls class="w-full"></audio>';
+        } else if (typeof FileIcons !== 'undefined') {
+            html = '<div class="text-center py-8"><i class="' + FileIcons.getClass(file.name) + '" style="font-size: 48px;"></i></div>';
+        } else {
+            html = '<div class="text-center py-8 text-4xl">📄</div>';
+        }
+        content.innerHTML = html;
+
+        var sizeStr = file.size > 1024 * 1024
+            ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+            : file.size > 1024
+                ? (file.size / 1024).toFixed(1) + ' KB'
+                : file.size + ' B';
+        info.innerHTML = '<p class="font-medium text-moose-900">' + escHtml(file.name) + '</p>'
+            + '<p>' + escHtml(file.mime_type || 'Unknown type') + '</p>'
+            + '<p>' + sizeStr + '</p>';
+    }
+
+    function fpInsertSelected() {
+        if (!fpSelectedFile || !fpSelectedFile.url) return;
+        var file = fpSelectedFile;
+        var markdown;
+
+        if (file.mime_type && file.mime_type.indexOf('image/') === 0) {
+            markdown = '![' + file.name + '](' + file.url + ')';
+        } else {
+            markdown = '[' + file.name + '](' + file.url + ')';
+        }
+
+        if (tuiEditor) {
+            tuiEditor.insertText(markdown);
+        } else {
+            var ta = document.getElementById('fallback-editor');
+            var start = ta.selectionStart;
+            var end = ta.selectionEnd;
+            ta.value = ta.value.substring(0, start) + markdown + ta.value.substring(end);
+            ta.selectionStart = ta.selectionEnd = start + markdown.length;
+            ta.focus();
+        }
+
+        closeFilePicker();
+    }
+
+    async function fpUploadFiles(fileList) {
+        var path = fpCurrentPath;
+        for (var i = 0; i < fileList.length; i++) {
+            var file = fileList[i];
+            var uploadPath = path ? path + '/' + file.name : file.name;
+            var formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                var resp = await fetch('/' + prefix + '/static/upload/' + uploadPath, {
+                    method: 'POST',
+                    body: formData,
+                });
+                if (!resp.ok) {
+                    var err = await resp.json();
+                    showFlash('Upload failed: ' + (err.detail || 'Unknown error'), 'error');
+                }
+            } catch (e) {
+                showFlash('Upload failed: ' + e.message, 'error');
+            }
+        }
+        document.getElementById('fp-upload-input').value = '';
+        fpLoadDirectory(fpCurrentPath);
+    }
+
+    function fpCreateFolder() {
+        var name = prompt('Folder name:');
+        if (!name) return;
+        var createPath = fpCurrentPath ? fpCurrentPath + '/' + name : name;
+
+        fetch('/' + prefix + '/static/mkdir/' + createPath, { method: 'POST' })
+            .then(function(r) {
+                if (!r.ok) return r.json().then(function(d) { throw new Error(d.detail || 'Failed'); });
+                return r.json();
+            })
+            .then(function() {
+                fpLoadDirectory(fpCurrentPath);
+            })
+            .catch(function(err) {
+                showFlash('Create folder failed: ' + err.message, 'error');
+            });
+    }
+
+    /* ================================================================
        Init — deferred CDN scripts (TUI Editor, Guifier) execute
        before DOMContentLoaded, so globals are available here.
        ================================================================ */
@@ -311,6 +623,15 @@ window.Guifier = Guifier;
         if (filePath) {
             loadFile(filePath);
         }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                var modal = document.getElementById('file-picker-modal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    closeFilePicker();
+                }
+            }
+        });
     });
 })();
 </script>
