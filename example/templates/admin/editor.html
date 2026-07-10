@@ -1,725 +1,326 @@
-{% extends admin_config.templates ~ "/base.html" %}
+{% extends admin_config.templates ~ "/base.html" %} {% block title %}{% if
+file_path %}Edit: {{ file_path }}{% else %}New File{% endif %}{% endblock %} {%
+set active_page = 'editor' %} {% block head %} {# ── TUI Editor (toast-ui) —
+WYSIWYG/Markdown editor for content. #}
+<link
+  rel="stylesheet"
+  href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"
+/>
+<link
+  rel="stylesheet"
+  href="https://uicdn.toast.com/chart/latest/toastui-chart.min.css"
+/>
+<link
+  rel="stylesheet"
+  href="https://uicdn.toast.com/tui-color-picker/latest/tui-color-picker.min.css"
+/>
+<link
+  rel="stylesheet"
+  href="https://uicdn.toast.com/editor-plugin-color-syntax/latest/toastui-editor-plugin-color-syntax.min.css"
+/>
+<script
+  src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"
+  defer
+></script>
+<script
+  src="https://uicdn.toast.com/chart/latest/toastui-chart.min.js"
+  defer
+></script>
+<script
+  src="https://uicdn.toast.com/tui-color-picker/latest/tui-color-picker.min.js"
+  defer
+></script>
+<script
+  src="https://uicdn.toast.com/editor-plugin-chart/latest/toastui-editor-plugin-chart.min.js"
+  defer
+></script>
+<script
+  src="https://uicdn.toast.com/editor-plugin-code-syntax-highlight/latest/toastui-editor-plugin-code-syntax-highlight-all.min.js"
+  defer
+></script>
+<script
+  src="https://uicdn.toast.com/editor-plugin-color-syntax/latest/toastui-editor-plugin-color-syntax.min.js"
+  defer
+></script>
+<script
+  src="https://uicdn.toast.com/editor-plugin-table-merged-cell/latest/toastui-editor-plugin-table-merged-cell.min.js"
+  defer
+></script>
+<script
+  src="https://uicdn.toast.com/editor-plugin-uml/latest/toastui-editor-plugin-uml.min.js"
+  defer
+></script>
 
-{% block title %}{% if file_path %}Edit: {{ file_path }}{% else %}New File{% endif %}{% endblock %}
-
-{% set active_page = 'editor' %}
-
-{% block head %}
-{# ── TUI Editor (toast-ui) — WYSIWYG/Markdown editor for content. #}
-<link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css">
-<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js" defer></script>
-
-{# ── Guifier — Visual JSON/YAML editor for frontmatter metadata. #}
-{# Note: Guifier ships as an ES module only — must use type="module" to import. #}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/guifier@1.0.33/dist/Guifier.min.css">
+{# ── Guifier — Visual JSON/YAML editor for frontmatter metadata. #} {# Note:
+Guifier ships as an ES module only — must use type="module" to import. #}
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/guifier@1.0.33/dist/Guifier.min.css"
+/>
 <script type="module">
-import Guifier from 'https://cdn.jsdelivr.net/npm/guifier@1.0.33/dist/Guifier.min.js';
-window.Guifier = Guifier;
+  import Guifier from "https://cdn.jsdelivr.net/npm/guifier@1.0.33/dist/Guifier.min.js";
+  window.Guifier = Guifier;
 </script>
 
 {# ── File Icons — file-type icons from Atom File-icons (port for browser). #}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exuanbo/file-icons-js@latest/dist/css/file-icons-cdn.min.css">
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/@exuanbo/file-icons-js@latest/dist/css/file-icons-cdn.min.css"
+/>
 <script type="module">
-import FileIcons from 'https://cdn.jsdelivr.net/npm/@exuanbo/file-icons-js@latest/dist/js/file-icons.esm.min.js';
-window.FileIcons = FileIcons;
+  import FileIcons from "https://cdn.jsdelivr.net/npm/@exuanbo/file-icons-js@latest/dist/js/file-icons.esm.min.js";
+  window.FileIcons = FileIcons;
 </script>
-{% endblock %}
-
-{% block content %}
-<div class=" mx-auto space-y-4">
-
-    {# ── Page header with clickable breadcrumbs ── #}
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-            {% if file_path %}
-            <nav class="text-sm text-moose-500 mb-1" aria-label="Breadcrumb">
-                <a href="/{{ prefix }}/browse/" class="hover:text-moose-900 transition-colors">Content</a>
-                {% set parts = file_path.split('/') %}
-                {% for part in parts %}
-                <span class="text-moose-300">/</span>
-                {% if loop.last %}
-                <span class="text-moose-900 font-medium">{{ part }}</span>
-                {% else %}
-                <a href="/{{ prefix }}/browse/{{ parts[:loop.index]|join('/') }}"
-                   class="hover:text-moose-900 transition-colors">{{ part }}</a>
-                {% endif %}
-                {% endfor %}
-            </nav>
-            <h1 class="text-2xl font-bold text-moose-900">Edit</h1>
-            {% else %}
-            <h1 class="text-2xl font-bold text-moose-900">New File</h1>
-            {% endif %}
-        </div>
-        <div class="flex items-center gap-2">
-            <button id="btn-save" onclick="saveFile()"
-                    class="inline-flex items-center gap-1.5 bg-moose-700 hover:bg-moose-800 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                Save
-            </button>
-        </div>
-    </div>
-
-    {# ── File path input (for new files) ── #}
-    {% if not file_path %}
+{% endblock %} {% block content %}
+<div class="mx-auto space-y-4">
+  {# ── Page header with clickable breadcrumbs ── #}
+  <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
-        <label for="file-path-input" class="block text-xs font-medium text-moose-500 mb-1">File path (e.g. blog/my-post.md)</label>
-        <input id="file-path-input" type="text" placeholder="blog/my-post.md"
-               class="w-full border border-moose-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-moose-500 focus:border-transparent">
+      {% if file_path %}
+      <nav class="text-sm text-moose-500 mb-1" aria-label="Breadcrumb">
+        <a
+          href="/{{ prefix }}/browse/"
+          class="hover:text-moose-900 transition-colors"
+          >Content</a
+        >
+        {% set parts = file_path.split('/') %} {% for part in parts %}
+        <span class="text-moose-300">/</span>
+        {% if loop.last %}
+        <span class="text-moose-900 font-medium">{{ part }}</span>
+        {% else %}
+        <a
+          href="/{{ prefix }}/browse/{{ parts[:loop.index]|join('/') }}"
+          class="hover:text-moose-900 transition-colors"
+          >{{ part }}</a
+        >
+        {% endif %} {% endfor %}
+      </nav>
+      <h1 class="text-2xl font-bold text-moose-900">Edit</h1>
+      {% else %}
+      <h1 class="text-2xl font-bold text-moose-900">New File</h1>
+      {% endif %}
     </div>
-    {% endif %}
-
-    {# ── Tabbed editor interface ── #}
-    <div class="bg-white rounded-xl border border-moose-200 overflow-hidden">
-        {# ── Tab navigation ── #}
-        <div class="flex border-b border-moose-200">
-            <button id="tab-content" onclick="switchTab('content')"
-                    class="tab-button active px-5 py-3 text-sm font-medium border-b-2 border-moose-700 text-moose-900 bg-moose-50">
-                Content
-            </button>
-            <button id="tab-metadata" onclick="switchTab('metadata')"
-                    class="tab-button px-5 py-3 text-sm font-medium border-b-2 border-transparent text-moose-500 hover:text-moose-700 hover:bg-moose-50 transition-colors">
-                Metadata
-            </button>
-        </div>
-
-        {# ── Tab content panels ── #}
-        <div id="panel-content" class="tab-panel">
-            <div id="tui-editor"></div>
-            <textarea id="fallback-editor" class="hidden w-full h-full p-4 text-sm font-mono text-moose-800 border-0 focus:outline-none resize-none" placeholder="Write your markdown here…"></textarea>
-        </div>
-
-        <div id="panel-metadata" class="tab-panel hidden">
-            <div id="guifier-container" class="p-4"></div>
-        </div>
+    <div class="flex items-center gap-2">
+      <button
+        id="btn-save"
+        onclick="saveFile()"
+        class="inline-flex items-center gap-1.5 bg-moose-700 hover:bg-moose-800 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
+      >
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+        Save
+      </button>
     </div>
+  </div>
+
+  {# ── File path input (for new files) ── #} {% if not file_path %}
+  <div>
+    <label
+      for="file-path-input"
+      class="block text-xs font-medium text-moose-500 mb-1"
+      >File path (e.g. blog/my-post.md)</label
+    >
+    <input
+      id="file-path-input"
+      type="text"
+      placeholder="blog/my-post.md"
+      class="w-full border border-moose-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-moose-500 focus:border-transparent"
+    />
+  </div>
+  {% endif %} {# ── Tabbed editor interface ── #}
+  <div class="bg-white rounded-xl border border-moose-200 overflow-hidden">
+    {# ── Tab navigation ── #}
+
+    <div class="flex items-center justify-between">
+      <div class="flex border-b border-moose-200">
+        <button
+          id="tab-content"
+          onclick="switchTab('content')"
+          class="tab-button active px-5 py-3 text-sm font-medium border-b-2 border-moose-700 text-moose-900 bg-moose-50"
+        >
+          Content
+        </button>
+        <button
+          id="tab-metadata"
+          onclick="switchTab('metadata')"
+          class="tab-button px-5 py-3 text-sm font-medium border-b-2 border-transparent text-moose-500 hover:text-moose-700 hover:bg-moose-50 transition-colors"
+        >
+          Metadata
+        </button>
+      </div>
+
+      <div class="pr-2">
+        <button
+          id="preview-style-toggle"
+          type="button"
+          onclick="togglePreviewStyle()"
+          aria-pressed="false"
+          title="Switch to tabbed preview"
+          class="inline-flex items-center gap-1.5 bg-white hover:bg-moose-100 text-moose-700 border border-moose-300 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 5h16v14H4zM12 5v14"
+            />
+          </svg>
+          <span id="preview-style-label">Split</span>
+        </button>
+      </div>
+    </div>
+
+    {# ── Tab content panels ── #}
+    <div id="panel-content" class="tab-panel">
+      <div id="tui-editor"></div>
+      <textarea
+        id="fallback-editor"
+        class="hidden w-full h-full p-4 text-sm font-mono text-moose-800 border-0 focus:outline-none resize-none"
+        placeholder="Write your markdown here…"
+      ></textarea>
+    </div>
+
+    <div id="panel-metadata" class="tab-panel hidden">
+      <div id="guifier-container" class="p-4"></div>
+    </div>
+  </div>
 </div>
-{# ── File Picker Modal ── #}
-{% if admin_config._static_dir %}
+{# ── File Picker Modal ── #} {% if admin_config._static_dir %}
 <div id="file-picker-modal" class="fixed inset-0 z-50 hidden">
-    {# Backdrop #}
-    <div class="absolute inset-0 bg-black/50" onclick="closeFilePicker()"></div>
+  {# Backdrop #}
+  <div class="absolute inset-0 bg-black/50" onclick="closeFilePicker()"></div>
 
-    {# Modal #}
-    <div class="absolute inset-4 md:inset-8 lg:inset-16 bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
-
-        {# Header #}
-        <div class="flex items-center justify-between px-4 py-3 border-b border-moose-200">
-            <h2 class="text-lg font-semibold text-moose-900">File Picker</h2>
-            <button onclick="closeFilePicker()" class="text-moose-400 hover:text-moose-600">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-        </div>
-
-        {# Breadcrumbs #}
-        <div id="fp-breadcrumbs" class="px-4 py-2 text-sm text-moose-600 border-b border-moose-100 bg-moose-50">
-            <span class="cursor-pointer hover:text-moose-900" onclick="fpNavigate('')">Root</span>
-        </div>
-
-        {# Main content area: grid + preview #}
-        <div class="flex flex-1 overflow-hidden">
-
-            {# File grid #}
-            <div class="flex-1 overflow-y-auto p-4">
-                <div id="fp-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    {# Populated by JS #}
-                </div>
-                <div id="fp-empty" class="hidden text-center py-12 text-moose-400">
-                    <p class="text-lg mb-2">No files yet</p>
-                    <button onclick="document.getElementById('fp-upload-input').click()"
-                            class="text-sm text-moose-600 underline hover:text-moose-900">Upload one</button>
-                </div>
-            </div>
-
-            {# Preview panel (hidden by default) #}
-            <div id="fp-preview" class="hidden w-80 border-l border-moose-200 bg-moose-50 p-4 overflow-y-auto">
-                <div id="fp-preview-content" class="mb-4"></div>
-                <div id="fp-preview-info" class="text-sm text-moose-600 mb-4"></div>
-                <button id="fp-insert-btn" onclick="fpInsertSelected()"
-                        class="w-full bg-moose-700 hover:bg-moose-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-                    Insert
-                </button>
-            </div>
-        </div>
-
-        {# Footer #}
-        <div class="flex items-center justify-between px-4 py-3 border-t border-moose-200 bg-moose-50">
-            <div class="flex gap-2">
-                <input type="file" id="fp-upload-input" multiple class="hidden"
-                       onchange="fpUploadFiles(this.files)">
-                <button onclick="document.getElementById('fp-upload-input').click()"
-                        class="text-sm bg-white border border-moose-300 hover:bg-moose-100 text-moose-700 px-3 py-1.5 rounded-lg transition-colors">
-                    Upload
-                </button>
-                <button onclick="fpCreateFolder()"
-                        class="text-sm bg-white border border-moose-300 hover:bg-moose-100 text-moose-700 px-3 py-1.5 rounded-lg transition-colors">
-                    New Folder
-                </button>
-            </div>
-            <button onclick="closeFilePicker()"
-                    class="text-sm text-moose-500 hover:text-moose-700">
-                Cancel
-            </button>
-        </div>
+  {# Modal #}
+  <div
+    class="absolute inset-4 md:inset-8 lg:inset-16 bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden"
+  >
+    {# Header #}
+    <div
+      class="flex items-center justify-between px-4 py-3 border-b border-moose-200"
+    >
+      <h2 class="text-lg font-semibold text-moose-900">File Picker</h2>
+      <button
+        onclick="closeFilePicker()"
+        class="text-moose-400 hover:text-moose-600"
+      >
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
     </div>
+
+    {# Breadcrumbs #}
+    <div
+      id="fp-breadcrumbs"
+      class="px-4 py-2 text-sm text-moose-600 border-b border-moose-100 bg-moose-50"
+    >
+      <span class="cursor-pointer hover:text-moose-900" onclick="fpNavigate('')"
+        >Root</span
+      >
+    </div>
+
+    {# Main content area: grid + preview #}
+    <div class="flex flex-1 overflow-hidden">
+      {# File grid #}
+      <div class="flex-1 overflow-y-auto p-4">
+        <div
+          id="fp-grid"
+          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"
+        >
+          {# Populated by JS #}
+        </div>
+        <div id="fp-empty" class="hidden text-center py-12 text-moose-400">
+          <p class="text-lg mb-2">No files yet</p>
+          <button
+            onclick="document.getElementById('fp-upload-input').click()"
+            class="text-sm text-moose-600 underline hover:text-moose-900"
+          >
+            Upload one
+          </button>
+        </div>
+      </div>
+
+      {# Preview panel (hidden by default) #}
+      <div
+        id="fp-preview"
+        class="hidden w-80 border-l border-moose-200 bg-moose-50 p-4 overflow-y-auto"
+      >
+        <div id="fp-preview-content" class="mb-4"></div>
+        <div id="fp-preview-info" class="text-sm text-moose-600 mb-4"></div>
+        <button
+          id="fp-insert-btn"
+          onclick="fpInsertSelected()"
+          class="w-full bg-moose-700 hover:bg-moose-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+        >
+          Insert
+        </button>
+      </div>
+    </div>
+
+    {# Footer #}
+    <div
+      class="flex items-center justify-between px-4 py-3 border-t border-moose-200 bg-moose-50"
+    >
+      <div class="flex gap-2">
+        <input
+          type="file"
+          id="fp-upload-input"
+          multiple
+          class="hidden"
+          onchange="fpUploadFiles(this.files)"
+        />
+        <button
+          onclick="document.getElementById('fp-upload-input').click()"
+          class="text-sm bg-white border border-moose-300 hover:bg-moose-100 text-moose-700 px-3 py-1.5 rounded-lg transition-colors"
+        >
+          Upload
+        </button>
+        <button
+          onclick="fpCreateFolder()"
+          class="text-sm bg-white border border-moose-300 hover:bg-moose-100 text-moose-700 px-3 py-1.5 rounded-lg transition-colors"
+        >
+          New Folder
+        </button>
+      </div>
+      <button
+        onclick="closeFilePicker()"
+        class="text-sm text-moose-500 hover:text-moose-700"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
 </div>
-{% endif %}
-
-{% endblock %}
-
-{% block scripts %}
+{% endif %} {% endblock %} {% block scripts %}
 <script>
-(function () {
-    var prefix   = '{{ admin_config.prefix }}';
-    var filePath = '{{ file_path | default("") }}';
-    var isNew    = !filePath;
-
-    var tuiEditor = null;      /* TUI Editor instance */
-    var guifierInstance = null; /* Guifier instance */
-    var frontmatterData = {};   /* Current frontmatter data */
-    var activeTab = 'content';  /* Current active tab */
-
-    /* ================================================================
-       Dynamic editor height — fill viewport after header
-       ================================================================ */
-    function calcEditorHeight() {
-        var container = document.getElementById('tui-editor');
-        if (!container) return '500px';
-        var rect = container.getBoundingClientRect();
-        var available = window.innerHeight - rect.top - 16; /* 16px bottom padding */
-        return Math.max(available, 300) + 'px'; /* minimum 300px */
-    }
-
-    function applyEditorHeight() {
-        var h = calcEditorHeight();
-        if (tuiEditor) {
-            tuiEditor.setHeight(h);
-        }
-        var guifierEl = document.getElementById('guifier-container');
-        if (guifierEl) {
-            guifierEl.style.minHeight = h;
-        }
-    }
-
-    /* ================================================================
-       Tab switching
-       ================================================================ */
-    window.switchTab = function (tabName) {
-        activeTab = tabName;
-
-        /* Update tab buttons */
-        document.querySelectorAll('.tab-button').forEach(function(btn) {
-            btn.classList.remove('active', 'border-moose-700', 'text-moose-900', 'bg-moose-50');
-            btn.classList.add('border-transparent', 'text-moose-500');
-        });
-
-        var activeBtn = document.getElementById('tab-' + tabName);
-        activeBtn.classList.add('active', 'border-moose-700', 'text-moose-900', 'bg-moose-50');
-        activeBtn.classList.remove('border-transparent', 'text-moose-500');
-
-        /* Update tab panels */
-        document.querySelectorAll('.tab-panel').forEach(function(panel) {
-            panel.classList.add('hidden');
-        });
-
-        var activePanel = document.getElementById('panel-' + tabName);
-        activePanel.classList.remove('hidden');
-
-        /* Refresh TUI Editor when switching to content tab */
-        if (tabName === 'content' && tuiEditor) {
-            applyEditorHeight();
-        }
-    };
-
-    /* ================================================================
-       TUI Editor initialization
-       ================================================================ */
-    function initTuiEditor() {
-        var container = document.getElementById('tui-editor');
-        var fallback  = document.getElementById('fallback-editor');
-
-        if (typeof toastui !== 'undefined' && toastui.Editor) {
-            try {
-                var toolbar = [
-                    ['heading', 'bold', 'italic', 'strike'],
-                    ['hr', 'quote'],
-                    ['ul', 'ol', 'task'],
-                    ['table', 'link'],
-                    ['code', 'codeblock']
-                ];
-
-                // Add custom "Add File" button (only if static dir is configured)
-                var fpModal = document.getElementById('file-picker-modal');
-                if (fpModal) {
-                    var fpBtn = document.createElement('button');
-                    fpBtn.className = 'toastui-editor-toolbar-icons !-mx-1 !my-0 !pl-1';
-                    fpBtn.style.cursor = 'pointer';
-                    fpBtn.style.backgroundImage = 'none';
-                    fpBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
-                    fpBtn.addEventListener('click', function() {
-                        openFilePickerModal();
-                    });
-                    toolbar[toolbar.length - 1].push({
-                        name: 'addFile',
-                        tooltip: 'Add file (image, PDF, video, etc.)',
-                        el: fpBtn
-                    });
-                }
-
-                tuiEditor = new toastui.Editor({
-                    el: container,
-                    height: calcEditorHeight(),
-                    initialEditType: 'markdown',
-                    previewStyle: 'vertical',
-                    usageStatistics: false,
-                    toolbarItems: toolbar
-                });
-
-                fallback.classList.add('hidden');
-                container.classList.remove('hidden');
-                return;
-            } catch (e) {
-                console.warn('TUI Editor init failed, falling back to textarea:', e);
-            }
-        }
-
-        /* Fallback: plain textarea */
-        container.classList.add('hidden');
-        fallback.classList.remove('hidden');
-    }
-
-    /* ================================================================
-       Guifier — date detection & data pre-processing
-       Guifier uses lodash.isDate() which only recognises Date instances.
-       ISO date strings like "2024-01-15" must be converted to Date
-       objects before Guifier sees them, otherwise they render as text.
-       ================================================================ */
-    function looksLikeDate(v) {
-        return typeof v === 'string' && /^\d{4}-\d{2}-\d{2}(T|\s)/.test(v);
-    }
-
-    function prepareForGuifier(obj) {
-        if (obj === null || typeof obj !== 'object') {
-            return looksLikeDate(obj) ? new Date(obj) : obj;
-        }
-        if (Array.isArray(obj)) return obj.map(prepareForGuifier);
-        var out = {};
-        for (var k in obj) { out[k] = prepareForGuifier(obj[k]); }
-        return out;
-    }
-
-    /* ================================================================
-       Guifier initialization
-       ================================================================ */
-    function initGuifier(data) {
-        var container = document.getElementById('guifier-container');
-
-        if (typeof Guifier !== 'undefined') {
-            try {
-                guifierInstance = new Guifier({
-                    elementSelector: '#guifier-container',
-                    data: prepareForGuifier(data || {}),
-                    dataType: 'js'
-                });
-                return;
-            } catch (e) {
-                console.warn('Guifier init failed:', e);
-            }
-        }
-
-        /* Fallback: simple key-value editor */
-        container.innerHTML = '<p class="text-moose-400 text-sm italic">Guifier not loaded. Using basic editor.</p>';
-    }
-
-    /* ================================================================
-       Editor helpers
-       ================================================================ */
-    function getEditorValue() {
-        if (tuiEditor) return tuiEditor.getMarkdown();
-        return document.getElementById('fallback-editor').value;
-    }
-
-    function setEditorValue(text) {
-        if (tuiEditor) {
-            tuiEditor.setMarkdown(text || '');
-        } else {
-            document.getElementById('fallback-editor').value = text || '';
-        }
-    }
-
-    function getFrontmatter() {
-        if (guifierInstance) {
-            try {
-                var jsonString = guifierInstance.getData('json');
-                return JSON.parse(jsonString);
-            } catch (e) {
-                console.warn('Guifier getData failed:', e);
-            }
-        }
-        return frontmatterData;
-    }
-
-    function setFrontmatter(data) {
-        frontmatterData = data || {};
-        if (guifierInstance) {
-            try {
-                guifierInstance.setData(prepareForGuifier(frontmatterData), 'js');
-            } catch (e) {
-                console.warn('Guifier setData failed:', e);
-            }
-        }
-    }
-
-    /* ================================================================
-       Load file content
-       ================================================================ */
-    var _frontmatterRaw = null;  // raw YAML text from original file (preserves comments)
-
-    function loadFile(path) {
-        if (!path) return;
-
-        fetch('/' + prefix + '/file/' + path)
-            .then(function (r) {
-                if (!r.ok) throw new Error('File not found');
-                return r.json();
-            })
-            .then(function (data) {
-                setEditorValue(data.body || '');
-                setFrontmatter(data.frontmatter || {});
-                _frontmatterRaw = data.frontmatter_raw || null;
-            })
-            .catch(function (err) {
-                showFlash('Could not load file: ' + err.message, 'error');
-            });
-    }
-
-    /* ================================================================
-       Save file
-       ================================================================ */
-    window.saveFile = function () {
-        var savePath = filePath;
-        if (isNew) {
-            var input = document.getElementById('file-path-input');
-            savePath = input ? input.value.trim() : '';
-            if (!savePath) { showFlash('Enter a file path', 'error'); return; }
-        }
-
-        var body = getEditorValue();
-        var meta = getFrontmatter();
-
-        var payload = { frontmatter: meta, body: body };
-        /* Send original raw YAML back so server preserves comments */
-        if (_frontmatterRaw) {
-            payload.frontmatter_raw = _frontmatterRaw;
-        }
-
-        var method = isNew ? 'POST' : 'PUT';
-
-        fetch('/' + prefix + '/file/' + savePath, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        })
-        .then(function (r) {
-            if (!r.ok) return r.json().then(function (d) { throw new Error(d.detail || 'Save failed'); });
-            return r.json();
-        })
-        .then(function (result) {
-            showFlash('Saved!', 'success');
-            if (isNew && result.path) {
-                /* Update URL so subsequent saves use PUT */
-                filePath = result.path;
-                isNew = false;
-                window.history.replaceState({}, '', '/' + prefix + '/edit/' + result.path);
-                /* Reload to get frontmatter_raw for the newly created file */
-                loadFile(result.path);
-            }
-        })
-        .catch(function (err) {
-            showFlash('Save failed: ' + err.message, 'error');
-        });
-    };
-
-    /* ================================================================
-       Utility
-       ================================================================ */
-    function escHtml(s) {
-        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
-
-    /* ================================================================
-       File Picker
-       ================================================================ */
-    var fpCurrentPath = '';
-    var fpSelectedFile = null;  // { name, path, url, mime_type }
-    var fpStaticRoute = '{{ admin_config._static_route | default("/static") }}';
-
-    window.openFilePickerModal = function() {
-        if (!document.getElementById('file-picker-modal')) return;
-        fpCurrentPath = '';
-        fpSelectedFile = null;
-        document.getElementById('file-picker-modal').classList.remove('hidden');
-        document.getElementById('fp-preview').classList.add('hidden');
-        fpLoadDirectory('');
-    };
-
-    window.closeFilePicker = function() {
-        document.getElementById('file-picker-modal').classList.add('hidden');
-        fpSelectedFile = null;
-    };
-
-    window.fpNavigate = function(path) {
-        fpCurrentPath = path;
-        fpSelectedFile = null;
-        document.getElementById('fp-preview').classList.add('hidden');
-        fpLoadDirectory(path);
-    };
-
-    function fpLoadDirectory(subpath) {
-        var url = '/' + prefix + fpStaticRoute + (subpath ? '/' + subpath : '');
-        fetch(url)
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                fpRenderBreadcrumbs(data.path);
-                fpRenderGrid(data.entries);
-            })
-            .catch(function(err) {
-                showFlash('Could not load files: ' + err.message, 'error');
-            });
-    }
-
-    function fpRenderBreadcrumbs(pathStr) {
-        var container = document.getElementById('fp-breadcrumbs');
-        var parts = pathStr ? pathStr.split('/').filter(Boolean) : [];
-        var html = '<span class="cursor-pointer hover:text-moose-900" onclick="fpNavigate(\'\')">Root</span>';
-        var accumulated = '';
-        for (var i = 0; i < parts.length; i++) {
-            accumulated += (accumulated ? '/' : '') + parts[i];
-            var p = accumulated;
-            html += ' <span class="text-moose-300">/</span> ';
-            html += '<span class="cursor-pointer hover:text-moose-900" onclick="fpNavigate(\'' + p + '\')">' + escHtml(parts[i]) + '</span>';
-        }
-        html += ' <span class="text-moose-300">/</span>';
-        container.innerHTML = html;
-    }
-
-    function fpRenderGrid(entries) {
-        var grid = document.getElementById('fp-grid');
-        var empty = document.getElementById('fp-empty');
-
-        if (entries.length === 0) {
-            grid.innerHTML = '';
-            empty.classList.remove('hidden');
-            return;
-        }
-        empty.classList.add('hidden');
-
-        var html = '';
-        for (var i = 0; i < entries.length; i++) {
-            var e = entries[i];
-
-            html += '<div class="fp-card border border-moose-200 rounded-lg p-3 cursor-pointer hover:border-moose-500 hover:shadow transition-all" ';
-            html += 'data-path="' + escHtml(e.path) + '" ';
-            html += 'data-url="' + escHtml(e.url || '') + '" ';
-            html += 'data-type="' + e.type + '" ';
-            html += 'data-mime="' + escHtml(e.mime_type || '') + '" ';
-            html += 'data-name="' + escHtml(e.name) + '" ';
-            html += 'data-size="' + e.size + '" ';
-            html += 'onclick="fpSelect(this)" ondblclick="fpSelect(this);fpInsertSelected()">';
-
-            if (e.type === 'directory') {
-                html += '<div class="text-3xl text-center mb-2">📁</div>';
-            } else if (e.mime_type && e.mime_type.indexOf('image/') === 0 && e.url) {
-                html += '<div class="aspect-square mb-2 overflow-hidden rounded bg-moose-100 flex items-center justify-center">';
-                html += '<img src="' + escHtml(e.url) + '" alt="" class="max-h-full max-w-full object-contain" loading="lazy">';
-                html += '</div>';
-            } else {
-                // File icon — render emoji placeholder, async-update with file-icons
-                html += '<div class="fp-icon text-3xl text-center mb-2">📄</div>';
-            }
-
-            html += '<div class="text-xs text-moose-700 truncate text-center" title="' + escHtml(e.name) + '">' + escHtml(e.name) + '</div>';
-            html += '</div>';
-        }
-        grid.innerHTML = html;
-
-        // Async-update file icons (FileIcons.getClass is async)
-        if (typeof FileIcons !== 'undefined') {
-            var cards = grid.querySelectorAll('.fp-card[data-type="file"]:not([data-mime^="image/"])');
-            cards.forEach(function(card) {
-                var name = card.getAttribute('data-name');
-                var iconEl = card.querySelector('.fp-icon');
-                if (iconEl) {
-                    FileIcons.getClass(name).then(function(cls) {
-                        iconEl.innerHTML = '<i class="' + cls + '"></i>';
-                    });
-                }
-            });
-        }
-    }
-
-    window.fpSelect = function(el) {
-        // Deselect previous
-        document.querySelectorAll('.fp-card').forEach(function(c) {
-            c.classList.remove('border-moose-600', 'bg-moose-50');
-        });
-        // Select this one
-        el.classList.add('border-moose-600', 'bg-moose-50');
-
-        var type = el.getAttribute('data-type');
-        var url = el.getAttribute('data-url');
-        var name = el.getAttribute('data-name');
-        var mime = el.getAttribute('data-mime');
-        var path = el.getAttribute('data-path');
-        var size = parseInt(el.getAttribute('data-size'), 10);
-
-        fpSelectedFile = { name: name, path: path, url: url, mime_type: mime, size: size };
-
-        if (type === 'directory') {
-            fpNavigate(path);
-            return;
-        }
-
-        fpShowPreview(fpSelectedFile);
-    };
-
-    function fpShowPreview(file) {
-        var panel = document.getElementById('fp-preview');
-        var content = document.getElementById('fp-preview-content');
-        var info = document.getElementById('fp-preview-info');
-        panel.classList.remove('hidden');
-
-        var html = '';
-        if (file.mime_type && file.mime_type.indexOf('image/') === 0) {
-            html = '<img src="' + escHtml(file.url) + '" alt="' + escHtml(file.name) + '" class="max-w-full rounded">';
-        } else if (file.mime_type === 'application/pdf') {
-            html = '<iframe src="' + escHtml(file.url) + '" class="w-full h-64 rounded border border-moose-200"></iframe>';
-        } else if (file.mime_type && file.mime_type.indexOf('video/') === 0) {
-            html = '<video src="' + escHtml(file.url) + '" controls class="w-full rounded"></video>';
-        } else if (file.mime_type && file.mime_type.indexOf('audio/') === 0) {
-            html = '<audio src="' + escHtml(file.url) + '" controls class="w-full"></audio>';
-        } else {
-            html = '<div id="fp-preview-icon" class="text-center py-8 text-4xl">📄</div>';
-        }
-        content.innerHTML = html;
-
-        // Async-update preview icon
-        if (typeof FileIcons !== 'undefined') {
-            var iconEl = document.getElementById('fp-preview-icon');
-            if (iconEl) {
-                FileIcons.getClass(file.name).then(function(cls) {
-                    iconEl.innerHTML = '<i class="' + cls + '" style="font-size: 48px;"></i>';
-                });
-            }
-        }
-
-        var sizeStr = file.size > 1024 * 1024
-            ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
-            : file.size > 1024
-                ? (file.size / 1024).toFixed(1) + ' KB'
-                : file.size + ' B';
-        info.innerHTML = '<p class="font-medium text-moose-900">' + escHtml(file.name) + '</p>'
-            + '<p>' + escHtml(file.mime_type || 'Unknown type') + '</p>'
-            + '<p>' + sizeStr + '</p>';
-    }
-
-    window.fpInsertSelected = function() {
-        if (!fpSelectedFile || !fpSelectedFile.url) return;
-        var file = fpSelectedFile;
-        var markdown;
-
-        if (file.mime_type && file.mime_type.indexOf('image/') === 0) {
-            markdown = '![' + file.name + '](' + file.url + ')';
-        } else {
-            markdown = '[' + file.name + '](' + file.url + ')';
-        }
-
-        if (tuiEditor) {
-            tuiEditor.insertText(markdown);
-        } else {
-            var ta = document.getElementById('fallback-editor');
-            var start = ta.selectionStart;
-            var end = ta.selectionEnd;
-            ta.value = ta.value.substring(0, start) + markdown + ta.value.substring(end);
-            ta.selectionStart = ta.selectionEnd = start + markdown.length;
-            ta.focus();
-        }
-
-        closeFilePicker();
-    };
-
-    window.fpUploadFiles = async function(fileList) {
-        var path = fpCurrentPath;
-        for (var i = 0; i < fileList.length; i++) {
-            var file = fileList[i];
-            var uploadPath = path ? path + '/' + file.name : file.name;
-            var formData = new FormData();
-            formData.append('file', file);
-
-            try {
-                var resp = await fetch('/' + prefix + fpStaticRoute + '/upload/' + uploadPath, {
-                    method: 'POST',
-                    body: formData,
-                });
-                if (!resp.ok) {
-                    var msg;
-                    try { var err = await resp.json(); msg = err.detail || 'Upload failed'; } catch(e) { msg = 'Upload failed'; }
-                    showFlash('Upload failed: ' + msg, 'error');
-                }
-            } catch (e) {
-                showFlash('Upload failed: ' + e.message, 'error');
-            }
-        }
-        document.getElementById('fp-upload-input').value = '';
-        fpLoadDirectory(fpCurrentPath);
-    }
-
-    window.fpCreateFolder = function() {
-        var name = prompt('Folder name:');
-        if (!name) return;
-        var createPath = fpCurrentPath ? fpCurrentPath + '/' + name : name;
-
-        fetch('/' + prefix + fpStaticRoute + '/mkdir/' + createPath, { method: 'POST' })
-            .then(function(r) {
-                if (!r.ok) return r.json().then(function(d) { throw new Error(d.detail || 'Failed'); });
-                return r.json();
-            })
-            .then(function() {
-                fpLoadDirectory(fpCurrentPath);
-            })
-            .catch(function(err) {
-                showFlash('Create folder failed: ' + err.message, 'error');
-            });
-    };
-
-    /* ================================================================
-       Init — deferred CDN scripts (TUI Editor, Guifier) execute
-       before DOMContentLoaded, so globals are available here.
-       ================================================================ */
-    document.addEventListener('DOMContentLoaded', function () {
-        initTuiEditor();
-        initGuifier({});
-
-        if (filePath) {
-            loadFile(filePath);
-        }
-
-        /* Apply dynamic height after init */
-        applyEditorHeight();
-
-        /* Recalculate on window resize */
-        window.addEventListener('resize', function () {
-            applyEditorHeight();
-        });
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                var modal = document.getElementById('file-picker-modal');
-                if (modal && !modal.classList.contains('hidden')) {
-                    closeFilePicker();
-                }
-            }
-        });
-    });
-})();
+  {% include admin_config.templates ~ "/editor.js" %}
 </script>
 {% endblock %}
