@@ -49,6 +49,7 @@ Check out the [/example](/example/) for templating and content samples used to g
 *   **Site Management:** Built-in `sitemap.xml`, `robots.txt`, RSS feeds, and a reusable content index.
 *   **Rich Markdown:** Supports tables, emojis, task lists, and syntax highlighting out of the box.
 *   **Jinja2 Power:** Use Jinja2 logic directly inside your Markdown files (Securely Sandboxed).
+*   **Admin API:** Built-in REST API for programmatic content management (create, update, delete files and directories).
 
 ## 🛠️ Features That Replace Paid Services
 
@@ -405,8 +406,6 @@ Moosey CMS comes packed with a comprehensive library of Jinja2 filters to help y
 
 [More On Filters](docs/filters.md) and how to use some interesting ones such as stripping comments.
 
-[Advanced Features](docs/advanced-features.md) and how to use some interesting ones such as stripping comments.
-
 
 ## ⚙️ Configuration Reference
 
@@ -421,6 +420,7 @@ The `init_cms` function accepts the following parameters:
 | `mode` | `str` | `"development"` (enables hot reload/no cache), `"production"`, `"staging"`, or `"testing"`. |
 | `site_data` | `dict` | Global data (name, author, social links, optional `web` config for sitemap/robots/RSS). |
 | `reload_delay` | `float` | Seconds to delay hot-reload broadcast after a file change. Useful when a build step runs post-save. Default: `0` (immediate). Development mode only. |
+| `admin_prefix` | `str` | URL prefix for the admin content API (e.g. `"admin"`). No admin API if omitted. |
 
 ---
 
@@ -439,16 +439,7 @@ Security is an ongoing process. If you discover a vulnerability, bug, or potenti
 
 ## Documentation
 
-New to moosey-cms? Start here:
-
-1. **[Getting Started](docs/getting-started.md)** - Installation, configuration, and your first page.
-2. **[Filters Reference](docs/filters.md)** - All built-in Jinja2 filters for dates, text, numbers, HTML, and more.
-3. **[Markdown Rendering](docs/markdown.md)** - Using `markdown` and `markdown_inline` filters.
-4. **[Image Processing](docs/images.md)** - Automatic image resizing, responsive `srcset`, face detection, CDN support.
-5. **[Templates](docs/templates.md)** - Template syntax, static files, pagination, RSS, sitemaps, collections, and custom pages.
-6. **[Security](docs/security.md)** - HTML sanitization, Content Security Policy, sandboxing.
-7. **[Patterns](docs/patterns.md)** - Real-world project structures and conventions.
-8. **[SEO](docs/seo.md)** - Meta tags, Open Graph, structured data, robots.txt, canonical URLs.
+**[Get Started →](docs/getting-started.md)**
 
 ## Gratitude
 This project is inspired by [fastapi-blog](https://github.com/pydanny/fastapi-blog) by [Daniel](https://github.com/pydanny). Initially, I wanted to use **fastapi-blog** and it worked really well till I needed features like hot-reloading. 
