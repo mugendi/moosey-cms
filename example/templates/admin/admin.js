@@ -31,29 +31,58 @@ function toggleSidebar() {
    ----------------------------------------------------------- */
 function showFlash(message, type, duration) {
     type = type || 'info';
-    duration = duration || 3000;
+    duration = duration || 4500;
 
     const container = document.getElementById('flash-container');
     if (!container) return;
 
-    const colorMap = {
-        success: 'bg-green-600',
-        error:   'bg-red-600',
-        info:    'bg-moose-700',
+    const growlMeta = {
+        success: { title: 'Success', icon: '✓' },
+        error:   { title: 'Error', icon: '!' },
+        warning: { title: 'Warning', icon: '!' },
+        info:    { title: 'Moosey CMS', icon: 'i' },
     };
+    const meta = growlMeta[type] || growlMeta.info;
 
     const el = document.createElement('div');
-    el.className = colorMap[type] || colorMap.info
-        + ' text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium'
-        + ' flex items-center gap-2 transition-opacity duration-300';
+    el.className = 'moose-growl';
+    el.setAttribute('role', type === 'error' ? 'alert' : 'status');
 
-    el.textContent = message;
-    container.appendChild(el);
+    const icon = document.createElement('div');
+    icon.className = 'moose-growl__icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = meta.icon;
 
-    setTimeout(function () {
-        el.style.opacity = '0';
+    const copy = document.createElement('div');
+    const title = document.createElement('p');
+    title.className = 'moose-growl__title';
+    title.textContent = meta.title;
+    const text = document.createElement('p');
+    text.className = 'moose-growl__message';
+    text.textContent = String(message);
+    copy.append(title, text);
+
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'moose-growl__close';
+    close.setAttribute('aria-label', 'Dismiss notification');
+    close.textContent = '×';
+
+    let timer;
+    function dismiss() {
+        if (!el.isConnected || el.classList.contains('is-leaving')) return;
+        clearTimeout(timer);
+        el.classList.add('is-leaving');
+        el.addEventListener('animationend', function () { el.remove(); }, { once: true });
         setTimeout(function () { el.remove(); }, 300);
-    }, duration);
+    }
+    close.addEventListener('click', dismiss);
+    el.addEventListener('mouseenter', function () { clearTimeout(timer); });
+    el.addEventListener('mouseleave', function () { timer = setTimeout(dismiss, duration); });
+
+    el.append(icon, copy, close);
+    container.prepend(el);
+    timer = setTimeout(dismiss, duration);
 }
 
 /* -----------------------------------------------------------

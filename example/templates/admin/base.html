@@ -16,12 +16,38 @@
             theme: {
                 extend: {
                     colors: {
-                        moose: { 50:'#f8f6f3', 100:'#eee9e2', 200:'#ddd3c4', 300:'#c8b69f', 400:'#b3987a', 500:'#a08260', 600:'#8a6d50', 700:'#725843', 800:'#5f4a3a', 900:'#513f33', 950:'#2c2019' }
+                        moose: { 50:'#ffffff', 100:'#f8fafc', 200:'#e2e8f0', 300:'#cbd5e1', 400:'#94a3b8', 500:'#64748b', 600:'#334155', 700:'#0f172a', 800:'#0f172a', 900:'#0f172a', 950:'#0f172a' }
                     }
                 }
             }
         }
     </script>
+    <style>
+        :root { --admin-ink: #0f172a; --admin-surface: #ffffff; }
+        #flash-container { pointer-events: none; }
+        .moose-growl {
+            pointer-events: auto; width: min(24rem, calc(100vw - 2rem));
+            display: grid; grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+            gap: .75rem; align-items: center; padding: .75rem;
+            color: var(--admin-surface); background: rgba(15, 23, 42, .96);
+            border: 1px solid rgba(255, 255, 255, .14); border-radius: .9rem;
+            box-shadow: 0 18px 48px rgba(15, 23, 42, .28), 0 3px 12px rgba(15, 23, 42, .18);
+            backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+            animation: moose-growl-in .28s cubic-bezier(.2, .8, .2, 1) both;
+        }
+        .moose-growl.is-leaving { animation: moose-growl-out .22s ease both; }
+        .moose-growl__icon {
+            display: grid; place-items: center; width: 2.5rem; height: 2.5rem;
+            border-radius: .7rem; color: #0f172a; background: #fff; font-weight: 800;
+        }
+        .moose-growl__title { margin: 0; font-size: .82rem; font-weight: 700; }
+        .moose-growl__message { margin: .12rem 0 0; color: #e2e8f0; font-size: .78rem; line-height: 1.35; }
+        .moose-growl__close { color: #cbd5e1; padding: .35rem; font-size: 1rem; line-height: 1; border-radius: .4rem; }
+        .moose-growl__close:hover { color: #fff; background: rgba(255, 255, 255, .1); }
+        @keyframes moose-growl-in { from { opacity: 0; transform: translate3d(1rem, -8px, 0) scale(.98); } }
+        @keyframes moose-growl-out { to { opacity: 0; transform: translate3d(1rem, -6px, 0) scale(.98); } }
+        @media (prefers-reduced-motion: reduce) { .moose-growl, .moose-growl.is-leaving { animation: none; } }
+    </style>
 
     {% block head %}{% endblock %}
 </head>
@@ -101,7 +127,7 @@
         </header>
 
         {# ── Flash message container ── #}
-        <div id="flash-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+        <div id="flash-container" class="fixed top-4 right-4 z-50 space-y-2" aria-live="polite" aria-atomic="false"></div>
 
         {# ── Page content block ── #}
         <main class="flex-1 p-4 md:p-8">
