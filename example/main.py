@@ -184,6 +184,7 @@ def init_cms_once(app):
             dirs={
                 "content": CONTENT_DIR,
                 "templates": TEMPLATES_DIR,
+                "static": STATIC_DIR,
             },
             # mode="production" disables hot-reload and enables the
             # 30-day TTL cache. mode="development" (shown here) clears

@@ -279,9 +279,7 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader, admin_config=None):
         # Inject static dir info so admin static file routes work
         if hasattr(app.state, "moosey_static_dir"):
             admin_config["_static_dir"] = app.state.moosey_static_dir
-            admin_config["_static_route"] = getattr(
-                app.state, "moosey_image_route_prefix", "/static"
-            ).rstrip("/") or "/static"
+            admin_config["_static_route"] = "/static"
 
         admin_router = APIRouter()
         admin.register_admin_routes(

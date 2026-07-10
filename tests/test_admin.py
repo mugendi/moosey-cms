@@ -632,7 +632,7 @@ class TestInitRoutesStaticInjection:
             admin_config=admin_config,
         )
         assert admin_config["_static_dir"] == static
-        assert admin_config["_static_route"] == "/img"
+        assert admin_config["_static_route"] == "/static"
 
     def test_defaults_route_to_static(self, tmp_path):
         static = tmp_path / "static"
