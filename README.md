@@ -93,6 +93,9 @@ moosey-cms ships with a CLI for scaffolding sites, installing admin templates, a
 # Scaffold a new site from the example app
 moosey-cms init ./my-site
 
+# Initialize or update config for existing project
+moosey-cms config
+
 # Install admin templates into your project
 moosey-cms admin --templates ./templates
 
@@ -242,6 +245,52 @@ The admin UI allows:
 - Metadata editing via JSON schema form
 
 See [Admin Documentation](docs/admin.md) for full details.
+
+---
+
+## ⚙️ Configuration File
+
+Moosey CMS uses a YAML configuration file (`.moosey-cms.yaml`) in your project root. This file is auto-generated when you run `moosey-cms init`.
+
+**Default config structure:**
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 8000
+  reload_delay: 0.25
+
+site:
+  name: "My Site"
+  admin_prefix: "admin"
+
+crypto:
+  key: "your-generated-key-here"
+```
+
+**How it works:**
+- `init_cms()` automatically loads `.moosey-cms.yaml` from your project root
+- Python arguments passed to `init_cms()` override YAML values
+- The `crypto.key` is **required** - the CMS will not start without it
+
+**Advanced configuration (uncomment in your config file):**
+```yaml
+# Image CDN configuration
+# image_cdn:
+#   provider: cloudflare  # cloudflare, cloudinary, imgix, imagekit
+#   base_url: "https://cdn.example.com"
+
+# Image processing defaults
+# image_processing:
+#   quality: 85
+#   format: webp
+
+# HTML sanitize settings
+# sanitize:
+#   allowed_tags: ["p", "a", "img", "h1", "h2", "h3"]
+#   allowed_attributes: ["href", "src", "alt"]
+```
+
+**Important:** Do not change the `crypto.key` after initialization. Assets encrypted with this key cannot be decrypted with a different key.
 
 ---
 
