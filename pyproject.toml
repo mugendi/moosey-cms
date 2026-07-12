@@ -33,6 +33,7 @@ dependencies = [
     "minify-html>=0.18.1",
     "pycountry>=26.2.16",
     "pymdown-extensions>=10.20",
+    "pynacl>=1.6.2",
     "pytest>=9.1.1",
     "python-frontmatter>=1.1.0",
     "python-slugify>=8.0.4",
