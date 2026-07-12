@@ -17,7 +17,7 @@ from pathlib import Path
 
 import questionary
 
-from .config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, save_config
+from .config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, CacheConfig, save_config
 from .crypto import generate_key
 
 # ---------------------------------------------------------------------------
@@ -102,10 +102,30 @@ def cmd_init(args: argparse.Namespace) -> None:
 
     site_name = questionary.text("Site name:", default="My Site").ask()
     host = questionary.text("Host:", default="0.0.0.0").ask()
-    port = questionary.text("Port:", default="8000").ask()
+    port = questionary.text("Port:", default="8210").ask()
     reload_delay = questionary.text("Reload delay (seconds):", default="0.25").ask()
     admin_prefix = questionary.text("Admin prefix:", default="admin/content").ask()
     admin_templates = questionary.text("Admin templates:", default="admin").ask()
+
+    # Cache configuration
+    print("\nCache configuration:\n")
+    cache_backend = questionary.select(
+        "Cache backend:",
+        choices=["memory", "redis"],
+        default="memory"
+    ).ask()
+
+    cache_ttl = questionary.text(
+        "Cache TTL (seconds):",
+        default="2592000"
+    ).ask()
+
+    redis_url = None
+    if cache_backend == "redis":
+        redis_url = questionary.text(
+            "Redis URL:",
+            default="redis://localhost:6379/0"
+        ).ask()
 
     # Generate crypto key
     crypto_key = generate_key()
@@ -122,6 +142,11 @@ def cmd_init(args: argparse.Namespace) -> None:
             admin={"prefix": admin_prefix, "templates": admin_templates},
         ),
         crypto=CryptoConfig(key=crypto_key),
+        cache=CacheConfig(
+            backend=cache_backend,
+            ttl=int(cache_ttl),
+            redis_url=redis_url or "redis://localhost:6379/0",
+        ),
     )
 
     # Save config file
@@ -140,7 +165,7 @@ def cmd_init(args: argparse.Namespace) -> None:
     print(f"  cd {dst.name}")
     print("  moosey-cms dev")
     print()
-    print("Visit http://localhost:8000")
+    print("Visit http://localhost:8210")
 
 
 MAIN_PY_TEMPLATE = """import uvicorn
@@ -153,7 +178,7 @@ if __name__ == "__main__":
 
 def cmd_config(args: argparse.Namespace) -> None:
     """Initialize or update config for an existing project."""
-    from .config import load_config
+    from .lib.config import load_config
 
     config_path = Path.cwd() / ".moosey-cms.yaml"
 
@@ -178,8 +203,29 @@ def cmd_config(args: argparse.Namespace) -> None:
     reload_delay = questionary.text(
         "Reload delay (seconds):", default=str(existing.server.reload_delay)
     ).ask()
-    admin_prefix = questionary.text("Admin prefix:", default="admin/content").ask()
-    admin_templates = questionary.text("Admin templates:", default="admin").ask()
+    admin_data = existing.site.admin if isinstance(existing.site.admin, dict) else {"prefix": existing.site.admin.prefix, "templates": existing.site.admin.templates}
+    admin_prefix = questionary.text("Admin prefix:", default=admin_data.get("prefix", "admin/content")).ask()
+    admin_templates = questionary.text("Admin templates:", default=admin_data.get("templates", "admin")).ask()
+
+    # Cache configuration
+    print("\nCache configuration:\n")
+    cache_backend = questionary.select(
+        "Cache backend:",
+        choices=["memory", "redis"],
+        default=existing.cache.backend
+    ).ask()
+
+    cache_ttl = questionary.text(
+        "Cache TTL (seconds):",
+        default=str(existing.cache.ttl)
+    ).ask()
+
+    redis_url = None
+    if cache_backend == "redis":
+        redis_url = questionary.text(
+            "Redis URL:",
+            default=existing.cache.redis_url
+        ).ask()
 
     # Handle crypto key
     if args.generate_key or not existing.crypto.key:
@@ -198,6 +244,11 @@ def cmd_config(args: argparse.Namespace) -> None:
             admin={"prefix": admin_prefix, "templates": admin_templates},
         ),
         crypto=CryptoConfig(key=crypto_key),
+        cache=CacheConfig(
+            backend=cache_backend,
+            ttl=int(cache_ttl),
+            redis_url=redis_url or "redis://localhost:6379/0",
+        ),
     )
 
     # Save config
@@ -306,7 +357,7 @@ def main() -> None:
     dev_p = sub.add_parser("dev", help="Run development server (hot-reload)")
     dev_p.add_argument("--host", default="0.0.0.0", help="Bind host (default: 0.0.0.0)")
     dev_p.add_argument(
-        "--port", type=int, default=8000, help="Bind port (default: 8000)"
+        "--port", type=int, default=8210, help="Bind port (default: 8210)"
     )
 
     # -- prod --
@@ -315,7 +366,7 @@ def main() -> None:
         "--host", default="0.0.0.0", help="Bind host (default: 0.0.0.0)"
     )
     prod_p.add_argument(
-        "--port", type=int, default=8000, help="Bind port (default: 8000)"
+        "--port", type=int, default=8210, help="Bind port (default: 8210)"
     )
 
     args = parser.parse_args()
