@@ -35,7 +35,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 from urllib.parse import urlencode
 
-from fastapi import Request
+from fastapi import Request, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse, Response
 
 log = logging.getLogger("moosey_cms.images")
@@ -47,18 +47,35 @@ CACHE_DIR = ".moosey"
 # and x (`1x1`) notations are accepted; the canonical form stored in params
 # uses `x` to keep URL and filename consistent and cross-platform safe.
 ASPECT_PRESETS: Dict[str, Optional[Tuple[int, int]]] = {
-    "1:1": (1, 1), "1x1": (1, 1), "square": (1, 1),
-    "16:9": (16, 9), "16x9": (16, 9), "wide": (21, 9),
-    "4:3": (4, 3), "4x3": (4, 3), "3:2": (3, 2), "3x2": (3, 2),
-    "portrait": (3, 4), "landscape": (4, 3),
-    "21:9": (21, 9), "21x9": (21, 9),
+    "1:1": (1, 1),
+    "1x1": (1, 1),
+    "square": (1, 1),
+    "16:9": (16, 9),
+    "16x9": (16, 9),
+    "wide": (21, 9),
+    "4:3": (4, 3),
+    "4x3": (4, 3),
+    "3:2": (3, 2),
+    "3x2": (3, 2),
+    "portrait": (3, 4),
+    "landscape": (4, 3),
+    "21:9": (21, 9),
+    "21x9": (21, 9),
     "auto": None,
 }
 
 _FIT_OPTIONS = {"cover", "contain", "fill", "crop", "scale-down"}
 _FOCUS_OPTIONS = {
-    "auto", "center", "top", "bottom", "left", "right",
-    "top-left", "top-right", "bottom-left", "bottom-right",
+    "auto",
+    "center",
+    "top",
+    "bottom",
+    "left",
+    "right",
+    "top-left",
+    "top-right",
+    "bottom-left",
+    "bottom-right",
     "face",
 }
 _FMT_OPTIONS = {"webp", "avif", "jpg", "png", "jpeg", "auto"}
@@ -76,9 +93,24 @@ _ALIASES = {
 }
 
 _KNOWN_PARAMS = {
-    "ar", "fit", "focus", "fmt", "q", "bg", "blur", "sharpen",
-    "grayscale", "brightness", "contrast", "saturation",
-    "dpr", "meta", "watermark", "resize", "w", "h",
+    "ar",
+    "fit",
+    "focus",
+    "fmt",
+    "q",
+    "bg",
+    "blur",
+    "sharpen",
+    "grayscale",
+    "brightness",
+    "contrast",
+    "saturation",
+    "dpr",
+    "meta",
+    "watermark",
+    "resize",
+    "w",
+    "h",
 }
 
 _FACE_WARNED = False
@@ -88,6 +120,7 @@ _FACE_DETECTOR = None  # cached cv2 CascadeClassifier
 # ---------------------------------------------------------------------------
 # Param parsing & filename building
 # ---------------------------------------------------------------------------
+
 
 class ImageError(ValueError):
     """Raised for invalid URL params or unsupported operations."""
@@ -135,8 +168,10 @@ def parse_params(qs: Dict[str, Any]) -> Dict[str, Any]:
     # Dimensions
     w = _coerce_int(canon.get("w"), "w", 1, MAX_DIM)
     h = _coerce_int(canon.get("h"), "h", 1, MAX_DIM)
-    if w is not None: out["w"] = w
-    if h is not None: out["h"] = h
+    if w is not None:
+        out["w"] = w
+    if h is not None:
+        out["h"] = h
 
     # Aspect ratio
     ar = str(canon.get("ar", "auto")).lower()
@@ -176,7 +211,8 @@ def parse_params(qs: Dict[str, Any]) -> Dict[str, Any]:
     out["fmt"] = fmt
 
     q = _coerce_int(canon.get("q"), "q", 1, 100)
-    if q is not None: out["q"] = q
+    if q is not None:
+        out["q"] = q
 
     meta = str(canon.get("meta", "none")).lower()
     if meta not in _META_OPTIONS:
@@ -186,10 +222,12 @@ def parse_params(qs: Dict[str, Any]) -> Dict[str, Any]:
     # Adjustments
     for k in ("blur", "sharpen"):
         v = _coerce_int(canon.get(k), k, 0, 100)
-        if v: out[k] = v
+        if v:
+            out[k] = v
     for k in ("brightness", "contrast", "saturation"):
         v = _clamp_pct(canon.get(k), k)
-        if v: out[k] = v
+        if v:
+            out[k] = v
 
     # Boolean toggles
     if str(canon.get("grayscale", "")).lower() in ("1", "true", "yes", "on"):
@@ -215,12 +253,16 @@ def parse_params(qs: Dict[str, Any]) -> Dict[str, Any]:
 
     # String options
     bg = canon.get("bg")
-    if bg: out["bg"] = str(bg)
+    if bg:
+        out["bg"] = str(bg)
 
     watermark = canon.get("watermark")
-    if watermark: out["watermark"] = str(watermark)
+    if watermark:
+        out["watermark"] = str(watermark)
 
-    resize_filter = str(canon.get("resize") or "").lower() if False else None  # placeholder
+    resize_filter = (
+        str(canon.get("resize") or "").lower() if False else None
+    )  # placeholder
     rf = str(canon.get("rf", "") or canon.get("resize", "") or "").lower()
     # Note: `resize` above is interpreted as a scale ratio. If it's a known
     # filter name, treat it as the resample filter instead. We resolve the
@@ -288,11 +330,13 @@ def _get_lock(key: str) -> asyncio.Lock:
     return _GEN_LOCKS.setdefault(key, asyncio.Lock())
 
 
-def _apply_aspect(img, target_ar: Optional[Tuple[int, int]], fit: str,
-                  focus: str) -> "Image":
+def _apply_aspect(
+    img, target_ar: Optional[Tuple[int, int]], fit: str, focus: str
+) -> "Image":
     """Crop/resize ``img`` to ``target_ar`` honoring fit & focus."""
     # Lazy PIL
     from PIL import Image  # type: ignore
+
     if target_ar is None:
         return img
     src_w, src_h = img.size
@@ -318,8 +362,9 @@ def _apply_aspect(img, target_ar: Optional[Tuple[int, int]], fit: str,
             (min(new_w, src_w), min(new_h, src_h)),
             Image.Resampling.LANCZOS,
         )
-        canvas.paste(resized, ((new_w - resized.width) // 2,
-                               (new_h - resized.height) // 2))
+        canvas.paste(
+            resized, ((new_w - resized.width) // 2, (new_h - resized.height) // 2)
+        )
         return canvas
 
     # cover / fill / crop - same AR box crop semantics
@@ -358,8 +403,9 @@ def _apply_aspect(img, target_ar: Optional[Tuple[int, int]], fit: str,
     return img.crop((left, top, left + crop_w, top + crop_h))
 
 
-def _focus_offset(src_w: int, src_h: int, crop_w: int, crop_h: int,
-                  focus: str, img) -> Tuple[int, int]:
+def _focus_offset(
+    src_w: int, src_h: int, crop_w: int, crop_h: int, focus: str, img
+) -> Tuple[int, int]:
     """Compute crop top-left for the given focus keyword."""
     focus = focus or "auto"
     if focus == "auto":
@@ -385,21 +431,22 @@ def _focus_offset(src_w: int, src_h: int, crop_w: int, crop_h: int,
     if focus.startswith("point-"):
         try:
             _, px, py = focus.split("-")
-            return int(int(px) / 100 * (src_w - crop_w)), \
-                   int(int(py) / 100 * (src_h - crop_h))
+            return int(int(px) / 100 * (src_w - crop_w)), int(
+                int(py) / 100 * (src_h - crop_h)
+            )
         except Exception:
             pass
 
     presets = {
-        "center":      ((src_w - crop_w) // 2, (src_h - crop_h) // 2),
-        "top":         ((src_w - crop_w) // 2, 0),
-        "bottom":      ((src_w - crop_w) // 2, src_h - crop_h),
-        "left":        (0, (src_h - crop_h) // 2),
-        "right":       (src_w - crop_w, (src_h - crop_h) // 2),
-        "top-left":    (0, 0),
-        "top-right":   (src_w - crop_w, 0),
+        "center": ((src_w - crop_w) // 2, (src_h - crop_h) // 2),
+        "top": ((src_w - crop_w) // 2, 0),
+        "bottom": ((src_w - crop_w) // 2, src_h - crop_h),
+        "left": (0, (src_h - crop_h) // 2),
+        "right": (src_w - crop_w, (src_h - crop_h) // 2),
+        "top-left": (0, 0),
+        "top-right": (src_w - crop_w, 0),
         "bottom-left": (0, src_h - crop_h),
-        "bottom-right":(src_w - crop_w, src_h - crop_h),
+        "bottom-right": (src_w - crop_w, src_h - crop_h),
     }
     return presets.get(focus, presets["center"])
 
@@ -463,6 +510,7 @@ def saliency_box(img, target_ar: float) -> Optional[Tuple[int, int, int, int]]:
     gray = small.convert("L")
     edges = gray.filter(ImageFilter.FIND_EDGES)
     import math
+
     cell = max(8, sw // 10)
     max_score = -1.0
     best = (0, 0)
@@ -503,6 +551,7 @@ def _get_face_detector():
     try:
         import cv2  # type: ignore
         from cv2.data import haarcascades  # type: ignore
+
         path = os.path.join(haarcascades, "haarcascade_frontalface_default.xml")
         _FACE_DETECTOR = cv2.CascadeClassifier(path)
         if _FACE_DETECTOR.empty():
@@ -533,6 +582,7 @@ def face_box_path(img) -> Optional[Tuple[int, int, int, int]]:
     try:
         import cv2  # type: ignore
         import numpy as np  # type: ignore
+
         arr = np.array(img.convert("RGB"))
         gray = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
         short_side = max(1, min(img.size))
@@ -563,9 +613,9 @@ def _apply_ops(img, params: Dict[str, Any]):
         img = img.filter(ImageFilter.GaussianBlur(radius=blur / 10))
     sharpen = params.get("sharpen")
     if sharpen:
-        img = img.filter(ImageFilter.UnsharpMask(
-            radius=2, percent=int(sharpen), threshold=3
-        ))
+        img = img.filter(
+            ImageFilter.UnsharpMask(radius=2, percent=int(sharpen), threshold=3)
+        )
     if params.get("grayscale"):
         img = img.convert("L").convert("RGB")
     for k, enhancer in (
@@ -632,6 +682,7 @@ def generate(source: Path, target: Path, params: Dict[str, Any]) -> None:
 
     Pillow is required; raises ``ImageError`` if Pillow is missing.
     """
+
     try:
         from PIL import Image  # type: ignore
     except ImportError as exc:
@@ -652,6 +703,7 @@ def generate(source: Path, target: Path, params: Dict[str, Any]) -> None:
         w = int(params.get("w", 0) * dpr) if params.get("w") else 0
         h = int(params.get("h", 0) * dpr) if params.get("h") else 0
 
+
         # Resize scale ratio (alternative to w/h).
         ratio = params.get("resize")
         if ratio and not w and not h:
@@ -661,11 +713,13 @@ def generate(source: Path, target: Path, params: Dict[str, Any]) -> None:
         # Aspect-ratio crop
         ar = params.get("ar", "auto")
         target_ar = ASPECT_PRESETS.get(ar)
+
         if w and h and ar == "auto":
             target_ar = (w, h)
         if target_ar:
-            img = _apply_aspect(img, target_ar, params.get("fit", "cover"),
-                                params.get("focus", "auto"))
+            img = _apply_aspect(
+                img, target_ar, params.get("fit", "cover"), params.get("focus", "auto")
+            )
             # The AR crop produced the right ratio; now honor either one or
             # both explicit dimensions.
             if w or h:
@@ -686,22 +740,11 @@ def generate(source: Path, target: Path, params: Dict[str, Any]) -> None:
         _save(img, target, fmt, int(quality), params.get("meta", "none"))
 
 
-async def generate_async(source: Path, target: Path,
-                          params: Dict[str, Any]) -> None:
-    """Async wrapper. Uses an asyncio.Lock keyed by target path so we don't
-    double-generate the same derivative."""
-    key = str(target)
-    lock = _get_lock(key)
-    async with lock:
-        if target.exists():
-            return
-        loop = asyncio.get_running_loop()
-        await loop.run_in_executor(None, generate, source, target, params)
-
 
 # ---------------------------------------------------------------------------
 # Invalidation
 # ---------------------------------------------------------------------------
+
 
 def invalidate(source: Path) -> None:
     """Remove derivatives derived from ``source`` by deleting the
@@ -734,13 +777,23 @@ _MIME_MAP = {
     "png": "image/png",
 }
 
+
 def _accept_webp(request: Request) -> bool:
     accept = request.headers.get("accept", "")
     return "image/webp" in accept or "image/avif" in accept
 
 
-def register_routes(app, static_dir: Path, route_prefix: str = "/__moosey/img",
-                    max_bytes: int = 50_000_000) -> None:
+import json
+from .crypto import encode, decode
+from .lib.cache import cache
+
+
+def register_routes(
+    app,
+    static_dir: Path,
+    route_prefix: str = "/__moosey/img",
+    max_bytes: int = 50_000_000,
+) -> None:
     """Register the image pipeline route on ``app``.
 
     Parameters
@@ -756,102 +809,143 @@ def register_routes(app, static_dir: Path, route_prefix: str = "/__moosey/img",
         Maximum source file size in bytes (default 50 MB).
     """
 
-    @app.get(f"{route_prefix}/{{path:path}}")
-    async def _moosey_img(request: Request) -> Response:
-        rel = request.path_params["path"]
-        source = (static_dir / rel).resolve()
+    @app.get(f"{route_prefix}/{{hash_path:path}}")
+    async def _moosey_img(hash_path: str, request: Request, background_tasks: BackgroundTasks) -> Response:
+
+        encoded, fmt = hash_path.split(".")
+        target = (static_dir / ".moosey" / hash_path).resolve()
 
         # Path-traversal check: source must live under static_dir.
         try:
-            source.relative_to(static_dir.resolve())
+            target.relative_to(static_dir.resolve())
         except ValueError:
             return JSONResponse({"detail": "forbidden"}, status_code=403)
 
-        if not source.is_file():
-            return JSONResponse({"detail": "not found"}, status_code=404)
+        if target.is_file() :
+            # return immediately
+            return FileResponse(
+                str(target),
+                media_type=_MIME_MAP.get(fmt, "application/octet-stream"),
+                headers={
+                    "Cache-Control": "public, max-age=31536000, immutable",
+                },
+            )
 
-        if source.stat().st_size > max_bytes:
-            return JSONResponse({"detail": "too large"}, status_code=413)
+        # decode
+        config = getattr(request.app.state, "config", {})
+        crypto_key = config.crypto.key
 
-        # Parse + validate params.
         try:
-            params = parse_params(dict(request.query_params))
-        except ImageError as exc:
+
+            json_str = decode(encoded, key=crypto_key    )
+            file_data = json.loads(json_str)
+
+            src = file_data.get("src")
+
+            if not src:
+                return JSONResponse({"detail": "not found"}, status_code=404)
+
+            # get original file
+            original_file = (static_dir / file_data.get("src").lstrip('/')).resolve()
+
+            if not original_file.is_file():
+                return JSONResponse({"detail": "not found"}, status_code=404)
+
+            # run bg process
+            background_tasks.add_task(_generate_image, source=original_file, target=target, params =file_data['params'])
+
+
+            # serve
+            return FileResponse(
+                str(original_file),
+                media_type=_MIME_MAP.get(fmt, "application/octet-stream"),
+                headers={
+                    "Cache-Control": "public, max-age=31536000, immutable",
+                },
+            )
+
+
+        except Exception as exc:
+            print(exc)
             return JSONResponse({"detail": str(exc)}, status_code=400)
 
-        # Auto fmt negotiation.
-        if params.get("fmt") == "auto":
-            params["fmt"] = "avif" if _accept_webp(request) and "avif" in request.headers.get("accept", "") else "webp"
-            if params["fmt"] not in ("webp", "avif"):
-                params["fmt"] = "jpg"
-            if params["fmt"] == "avif":
-                # Pillow AVIF support varies; fall back to webp if needed.
-                try:
-                    from PIL import features  # type: ignore
-                    if not features.check("avif"):
-                        params["fmt"] = "webp"
-                except Exception:
-                    params["fmt"] = "webp"
 
-        target = derive_path(source, params)
 
-        if not target.exists():
-            try:
-                await generate_async(source, target, params)
-            except ImageError as exc:
-                return JSONResponse({"detail": str(exc)}, status_code=503)
-            except Exception as exc:
-                log.exception("image generation failed")
-                return JSONResponse({"detail": "generation error"},
-                                    status_code=500)
 
-        fmt = params.get("fmt", "webp")
-        return FileResponse(
-            str(target),
-            media_type=_MIME_MAP.get(fmt, "application/octet-stream"),
-            headers={
-                "Cache-Control": "public, max-age=31536000, immutable",
-            },
-        )
+async def _generate_image(source, target,params ):
+    from filelock import FileLock, Timeout
 
+    # print(source, target,params)
+
+    try:
+        lock = FileLock(target, timeout=20)
+
+        with lock:
+            # process
+            generate(source, target, params)
+
+    except Timeout:
+        print(f"Could not acquire lock within {timeout} seconds")
+
+    except ImageError as exc:
+        print(exc)
+
+    
 
 # ---------------------------------------------------------------------------
 # Filter-side helpers (used by filters.py)
 # ---------------------------------------------------------------------------
 
-def image_url_filter(src: str, _route_prefix: str = "/__moosey/img/",
-                     **params) -> str:
+
+
+@cache(ttl=3600 * 24 * 30, maxsize=10000)
+def image_url_filter(
+    src: str, crypto_key=str, _route_prefix: str = "/__moosey/img/", **params
+) -> str:
     """Build a ``/__moosey/img/...?…`` URL from a static path + kwargs."""
+
     clean = src.lstrip("/")
     # Strip leading "static/" if present so paths like "/static/x.jpg" or
     # "static/x.jpg" resolve correctly against static_dir.
     if clean.startswith("static/"):
-        clean = clean[len("static/"):]
+        clean = clean[len("static/") :]
     prefix = _route_prefix.rstrip("/") + "/"
+
     if not params:
-        return f"{prefix}{clean}"
+        return src
+
     try:
         canon = parse_params(params)
     except ImageError:
-        return f"{prefix}{clean}?{urlencode(params, doseq=True)}"
+        return src
 
-    print('>>>>>',_route_prefix,  canon)
-    qs = urlencode(canon, doseq=True)
-    return f"{prefix}{clean}?{qs}"
+    data = dict(src=src, params=params)
+
+    encoded = encode(json.dumps(data),     key=crypto_key    )
+    url_path = f"{prefix}{encoded}.{canon.get('fmt', 'jpg')}"
+
+    # print(canon.get('fmt', 'jpg'))
+    return url_path
 
 
-def responsive_image_html(src: str, widths=(400, 800, 1200, 1600),
-                          sizes: str = "100vw", loading: str = "lazy",
-                          decoding: str = "async",
-                          _route_prefix: str = "/__moosey/img/",
-                          **shared) -> str:
+def responsive_image_html(
+    src: str,
+    widths=(400, 800, 1200, 1600),
+    sizes: str = "100vw",
+    loading: str = "lazy",
+    decoding: str = "async",
+    _route_prefix: str = "/__moosey/img/",
+    **shared,
+) -> str:
     """Render a complete ``<img src=… srcset=… sizes=… loading=… decoding=…>``."""
     srcset_parts = []
     for w in widths:
         url = image_url_filter(src, _route_prefix=_route_prefix, w=w, **shared)
         srcset_parts.append(f"{url} {w}w")
     srcset = ", ".join(srcset_parts)
-    src_default = image_url_filter(src, _route_prefix=_route_prefix, w=widths[0], **shared)
+    src_default = image_url_filter(
+        src, _route_prefix=_route_prefix, w=widths[0], **shared
+    )
     # Try to find an aspect hint for width/height detection.
     ar = shared.get("ar")
     width_attr = height_attr = ""
@@ -865,9 +959,11 @@ def responsive_image_html(src: str, widths=(400, 800, 1200, 1600),
                 height_attr = f' height="{int(widths[-1] / ratio)}"'
         except Exception:
             pass
-    return (f'<img src="{src_default}" srcset="{srcset}" sizes="{sizes}"'
-            f'{width_attr}{height_attr} loading="{loading}"'
-            f' decoding="{decoding}">')
+    return (
+        f'<img src="{src_default}" srcset="{srcset}" sizes="{sizes}"'
+        f'{width_attr}{height_attr} loading="{loading}"'
+        f' decoding="{decoding}">'
+    )
 
 
 def image_dimensions_impl(src: str, static_dir: Optional[Path] = None) -> str:
@@ -892,8 +988,9 @@ def image_dimensions_impl(src: str, static_dir: Optional[Path] = None) -> str:
         return ""
 
 
-def dominant_color_impl(src: str, default: str = "#0b172a",
-                         static_dir: Optional[Path] = None) -> str:
+def dominant_color_impl(
+    src: str, default: str = "#0b172a", static_dir: Optional[Path] = None
+) -> str:
     """Return the dominant hex color of the image, or ``default`` on error."""
     if not src:
         return default
@@ -917,9 +1014,10 @@ def dominant_color_impl(src: str, default: str = "#0b172a",
 
 # CDN adapters (Tier 3). Provider-specific URL transforms. No file IO.
 
-def image_cdn_impl(src: str, *, provider: str = "cloudflare",
-                    base_url: Optional[str] = None,
-                    **params) -> str:
+
+def image_cdn_impl(
+    src: str, *, provider: str = "cloudflare", base_url: Optional[str] = None, **params
+) -> str:
     if not base_url:
         return src
     src = src.lstrip("/")
@@ -929,12 +1027,18 @@ def image_cdn_impl(src: str, *, provider: str = "cloudflare",
         # Cloudflare Image Resizing uses /cdn-cgi/image/<options>/<path>
         opts = []
         for k, v in params.items():
-            if k in ("w", "width"): opts.append(f"width={v}")
-            elif k in ("h", "height"): opts.append(f"height={v}")
-            elif k in ("fmt", "format"): opts.append(f"format={v}")
-            elif k in ("q", "quality"): opts.append(f"quality={v}")
-            elif k == "fit": opts.append(f"fit={v}")
-            elif k == "grayscale": opts.append("gravity=auto")
+            if k in ("w", "width"):
+                opts.append(f"width={v}")
+            elif k in ("h", "height"):
+                opts.append(f"height={v}")
+            elif k in ("fmt", "format"):
+                opts.append(f"format={v}")
+            elif k in ("q", "quality"):
+                opts.append(f"quality={v}")
+            elif k == "fit":
+                opts.append(f"fit={v}")
+            elif k == "grayscale":
+                opts.append("gravity=auto")
         opts_str = ",".join(opts) if opts else "auto"
         return f"{base}/cdn-cgi/image/{opts_str}/{src}"
 
@@ -942,12 +1046,21 @@ def image_cdn_impl(src: str, *, provider: str = "cloudflare",
         # cloudinary:/<cloud_name>/image/upload/<transformations>/<path>
         parts = []
         for k, v in params.items():
-            kk = {"w": "w", "h": "h", "fmt": "f", "q": "q",
-                  "fit": "c", "ar": "ar", "dpr": "dpr"}.get(k, k)
+            kk = {
+                "w": "w",
+                "h": "h",
+                "fmt": "f",
+                "q": "q",
+                "fit": "c",
+                "ar": "ar",
+                "dpr": "dpr",
+            }.get(k, k)
             if kk == "c":
                 v = {"cover": "fill", "contain": "fit", "scale-down": "scale"}.get(v, v)
-            if k == "grayscale": parts.append("e_grayscale")
-            else: parts.append(f"{kk}_{v}")
+            if k == "grayscale":
+                parts.append("e_grayscale")
+            else:
+                parts.append(f"{kk}_{v}")
         transform = ",".join(parts) if parts else "f_auto"
         return f"{base}/image/upload/{transform}/{src}"
 
@@ -955,10 +1068,12 @@ def image_cdn_impl(src: str, *, provider: str = "cloudflare",
         # imgix: signed-preserving simple query-string. base_url should already
         # include the host prefix.
         from urllib.parse import urlencode as _ue
+
         d = {}
         for k, v in params.items():
             kk = {"w": "w", "h": "h", "fmt": "fmt", "q": "q"}.get(k, k)
-            if k == "fmt": v = v
+            if k == "fmt":
+                v = v
             d[kk] = v
         return f"{base}/{src}?{_ue(d, doseq=True)}"
 

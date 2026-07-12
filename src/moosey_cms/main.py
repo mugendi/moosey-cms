@@ -83,17 +83,18 @@ class ConnectionManager:
                 self.disconnect(connection)
 
 
-from .models import CMSConfig, Dirs, SiteData
+from .models import CMSConfig as PydanticCMSConfig, Dirs, SiteData
+from .config import load_config
 
 
 def init_cms(
     app,
-    host: str,
-    port: int,
-    dirs: Dirs,
-    mode: str,
-    site_data: SiteData = {},
-    reload_delay: float = 0,
+    host: str = None,
+    port: int = None,
+    dirs: Dirs = None,
+    mode: str = None,
+    site_data: SiteData = None,
+    reload_delay: float = None,
     admin=None,
 ):
     """
@@ -102,7 +103,9 @@ def init_cms(
     Args:
         app:          Your FastAPI application instance.
         host:         Server host (used for hot-reload script injection).
+                      If None, loads from .moosey-cms.yaml.
         port:         Server port.
+                      If None, loads from .moosey-cms.yaml.
         dirs:         Dictionary containing ``content`` and ``templates`` Paths.
         mode:         ``"development"`` (enables hot reload / no cache) or
                       ``"production"``.
@@ -118,8 +121,44 @@ def init_cms(
                       (subdirectory within templates/ for admin templates).
     """
 
+    # Load config from .moosey-cms.yaml
+    file_config = load_config()
+
+    # Override with Python args (only if explicitly provided)
+    if host is None:
+        host = file_config.server.host
+    if port is None:
+        port = file_config.server.port
+    if reload_delay is None:
+        reload_delay = file_config.server.reload_delay
+
+    # Validate crypto key is present
+    if not file_config.crypto.key:
+        raise ValueError(
+            "Crypto key is required. Generate one with: moosey-cms init"
+        )
+
+    # Apply config to app.state
+    app.state.config = file_config
+
+    # Default dirs and mode if not provided
+    if dirs is None:
+        dirs = {"content": "content", "templates": "templates"}
+    if mode is None:
+        mode = os.environ.get("MOOSEY_MODE", "development")
+    if site_data is None:
+        site_data = {}
+
+    # Merge site_name from config into site_data
+    if file_config.site.name and "name" not in site_data:
+        site_data["name"] = file_config.site.name
+
+    # Merge admin_prefix from config
+    if admin is None and file_config.site.admin_prefix:
+        admin = {"prefix": file_config.site.admin_prefix}
+
     # validate dirs inputs
-    config = CMSConfig(
+    config = PydanticCMSConfig(
         host=host,
         port=port,
         dirs=dirs,

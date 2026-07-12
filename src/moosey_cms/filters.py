@@ -996,6 +996,12 @@ def image(context, src, widths=None, sizes="100vw",
     With ``widths``    → returns a full ``<img srcset sizes>`` HTML tag.
     """
     request = context.get("request")
+
+    # app.state.config 
+    config = getattr(request.app.state, 'config', {})
+    crypto_key = config.crypto.key
+    # print('key', crypto_key)
+
     route = (getattr(request.app.state, "moosey_image_route_prefix", None)
              if request else None) or "/__moosey/img/"
     if widths:
@@ -1003,7 +1009,7 @@ def image(context, src, widths=None, sizes="100vw",
             src, _route_prefix=route, widths=widths, sizes=sizes,
             loading=loading, decoding=decoding, **params
         )
-    return _image_url_filter(src, _route_prefix=route, **params)
+    return _image_url_filter(src, crypto_key=crypto_key,  _route_prefix=route, **params)
 
 
 @pass_context
