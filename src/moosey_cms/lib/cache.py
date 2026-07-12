@@ -12,10 +12,6 @@ import inspect
 import time
 import pickle
 from typing import Any
-from cachetools import TTLCache, cached
-
-
-
 def _pickle_dumps(v: Any) -> bytes:
     return pickle.dumps(v)
 
@@ -26,19 +22,47 @@ def _pickle_loads(v: bytes) -> Any:
 # ── global store tracking ─────────────────────────────────────────────────────
 
 _local_stores = []
+_redis_prefixes = set()
 
 
 def _register_local_store(store):
     _local_stores.append(store)
 
 
+def _register_redis_prefix(prefix):
+    _redis_prefixes.add(prefix)
+
+
+def _clear_redis_cache():
+    if not _redis_prefixes or config.cache.backend != "redis":
+        return
+
+    import redis
+
+    client = redis.from_url(config.cache.redis_url)
+    try:
+        for prefix in _redis_prefixes:
+            batch = []
+            for key in client.scan_iter(match=f"{prefix}*"):
+                batch.append(key)
+                if len(batch) >= 500:
+                    client.delete(*batch)
+                    batch.clear()
+            if batch:
+                client.delete(*batch)
+    finally:
+        close = getattr(client, "close", None)
+        if close is not None:
+            close()
+
+
 def clear_cache():
-    """Clear all local cache stores."""
+    """Clear all local stores and registered Redis cache namespaces."""
     for store in _local_stores:
         store.clear()
+    _clear_redis_cache()
 
 
-@cached(TTLCache(maxsize=100, ttl=5))
 def clear_cache_on_file_change(file_path, event_type):
     clear_cache()
 
@@ -183,6 +207,7 @@ def cache(maxsize=1000, ttl=config.cache.ttl, key_prefix="moosey-cache:"):
         is_async = asyncio.iscoroutinefunction(func)
 
         if use_redis:
+            _register_redis_prefix(key_prefix)
             if is_async:
                 from redis import asyncio as redis_lib
             else:

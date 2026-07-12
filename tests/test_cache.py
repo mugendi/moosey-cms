@@ -27,6 +27,9 @@ class SyncRedis:
         prefix = pattern.removesuffix("*")
         return [key for key in self.values if key.startswith(prefix)]
 
+    def scan_iter(self, match):
+        yield from self.keys(match)
+
 
 class AsyncRedis(SyncRedis):
     async def get(self, key):
@@ -120,3 +123,38 @@ def test_async_store_awaits_result_from_wrapped_client_method():
         assert await store.aget("answer") == 42
 
     asyncio.run(run())
+
+
+def test_clear_cache_invalidates_registered_redis_namespace(monkeypatch):
+    configure_redis(monkeypatch)
+    client = SyncRedis()
+    monkeypatch.setattr(redis, "from_url", lambda _url: client)
+    calls = 0
+
+    @cache_module.cache(key_prefix="invalidation-test:")
+    def cached_value():
+        nonlocal calls
+        calls += 1
+        return calls
+
+    assert cached_value() == 1
+    assert cached_value() == 1
+
+    cache_module.clear_cache()
+
+    assert not any(key.startswith("invalidation-test:") for key in client.values)
+    assert cached_value() == 2
+
+
+def test_file_changes_are_never_suppressed(monkeypatch):
+    clears = 0
+
+    def record_clear():
+        nonlocal clears
+        clears += 1
+
+    monkeypatch.setattr(cache_module, "clear_cache", record_clear)
+    cache_module.clear_cache_on_file_change("page.md", "modified")
+    cache_module.clear_cache_on_file_change("page.md", "modified")
+
+    assert clears == 2
