@@ -261,16 +261,28 @@ server:
 
 site:
   name: "My Site"
-  admin_prefix: "admin"
+  admin:
+    prefix: "admin/content"
+    templates: "admin"
 
 crypto:
   key: "your-generated-key-here"
+
+cache:
+  backend: "memory"       # "memory" or "redis"
+  ttl: 2592000            # 30 days in seconds
+  maxsize: 10000          # max entries (memory only)
+  redis_url: "redis://localhost:6379/0"  # only used when backend="redis"
 ```
 
 **How it works:**
 - `init_cms()` automatically loads `.moosey-cms.yaml` from your project root
 - Python arguments passed to `init_cms()` override YAML values
 - The `crypto.key` is **required** - the CMS will not start without it
+
+**Cache backends:**
+- **`memory`** (default): In-process LRU cache. Fastest, resets on restart.
+- **`redis`**: Shared cache across workers/processes. Requires a running Redis server. The Redis client is auto-created from `redis_url`.
 
 **Advanced configuration (uncomment in your config file):**
 ```yaml
