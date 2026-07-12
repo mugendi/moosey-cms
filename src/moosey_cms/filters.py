@@ -20,6 +20,7 @@ import bleach
 import minify_html as _html_minifier
 from bs4 import BeautifulSoup
 
+from .lib.cache import cache
 from .seo import seo_tags
 
 log = logging.getLogger(__name__)
@@ -729,6 +730,7 @@ _DEFAULT_ALLOWED_PROTOCOLS = ["http", "https", "mailto", "tel"]
 _DEFAULT_ALLOWED_STYLES: list = []
 
 
+@cache(maxsize=5000)
 def sanitize(html, tags=None, attrs=None, protocols=None,
              styles=None, strip=True, strip_comments=True):
     """

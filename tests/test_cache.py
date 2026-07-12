@@ -13,7 +13,7 @@ class SyncRedis:
     def get(self, key):
         return self.values.get(key)
 
-    def set(self, key, value):
+    def set(self, key, value, **_kwargs):
         self.values[key] = value
 
     def setex(self, key, _ttl, value):
@@ -35,7 +35,7 @@ class AsyncRedis(SyncRedis):
     async def get(self, key):
         return self.values.get(key)
 
-    async def set(self, key, value):
+    async def set(self, key, value, **_kwargs):
         self.values[key] = value
 
     async def setex(self, key, _ttl, value):

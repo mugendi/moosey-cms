@@ -305,11 +305,13 @@ def _sitemap_metadata(page: Dict[str, Any], config: Dict[str, Any]) -> Dict[str,
     }
 
 
-async def sitemap_response(request: Request, content_dir: Path, mode: str) -> Response:
-    site_data = request.app.state.site_data
-    config = get_feature_config(site_data, "sitemap")
-    base_url = get_site_url(request, site_data)
-
+@cache(maxsize=500)
+def _build_sitemap_xml(
+    content_dir: Path,
+    mode: str,
+    config: Dict[str, Any],
+    base_url: str,
+) -> bytes:
     pages = get_content_index(
         content_dir=content_dir,
         mode=mode,
@@ -353,7 +355,14 @@ async def sitemap_response(request: Request, content_dir: Path, mode: str) -> Re
         if sitemap_meta.get("priority") is not None:
             ET.SubElement(url_el, "priority").text = str(sitemap_meta["priority"])
 
-    xml = ET.tostring(root, encoding="utf-8", xml_declaration=True)
+    return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+
+async def sitemap_response(request: Request, content_dir: Path, mode: str) -> Response:
+    site_data = request.app.state.site_data
+    config = get_feature_config(site_data, "sitemap")
+    base_url = get_site_url(request, site_data)
+    xml = _build_sitemap_xml(content_dir, mode, config, base_url)
     return Response(content=xml, media_type="application/xml")
 
 
@@ -421,12 +430,16 @@ def _filter_feed_pages(pages: List[Dict[str, Any]], config: Dict[str, Any]) -> L
     return filtered[:limit]
 
 
-async def feed_response(request: Request, content_dir: Path, mode: str) -> Response:
-    site_data = request.app.state.site_data
-    config = get_feature_config(site_data, "feed")
-    base_url = get_site_url(request, site_data)
-    site_name = site_data.get("name") or "Moosey CMS Site"
-
+@cache(maxsize=500)
+def _build_feed_xml(
+    content_dir: Path,
+    mode: str,
+    config: Dict[str, Any],
+    base_url: str,
+    site_name: str,
+    site_description: str,
+    site_author: Any,
+) -> bytes:
     pages = get_content_index(
         content_dir=content_dir,
         mode=mode,
@@ -444,7 +457,7 @@ async def feed_response(request: Request, content_dir: Path, mode: str) -> Respo
     ET.SubElement(channel, "title").text = str(config.get("title") or f"{site_name} Feed")
     ET.SubElement(channel, "link").text = absolute_url(config.get("link", "/"), base_url)
     ET.SubElement(channel, "description").text = str(
-        config.get("description") or site_data.get("description") or ""
+        config.get("description") or site_description or ""
     )
     ET.SubElement(channel, "generator").text = "Moosey CMS"
 
@@ -467,7 +480,7 @@ async def feed_response(request: Request, content_dir: Path, mode: str) -> Respo
             description = page["html"]
         ET.SubElement(item, "description").text = str(description)
 
-        author = metadata.get("author") or site_data.get("author")
+        author = metadata.get("author") or site_author
         if author:
             ET.SubElement(item, "author").text = str(author)
 
@@ -478,7 +491,22 @@ async def feed_response(request: Request, content_dir: Path, mode: str) -> Respo
         for tag in metadata.get("tags", []) or []:
             ET.SubElement(item, "category").text = str(tag)
 
-    xml = ET.tostring(rss, encoding="utf-8", xml_declaration=True)
+    return ET.tostring(rss, encoding="utf-8", xml_declaration=True)
+
+
+async def feed_response(request: Request, content_dir: Path, mode: str) -> Response:
+    site_data = request.app.state.site_data
+    config = get_feature_config(site_data, "feed")
+    base_url = get_site_url(request, site_data)
+    xml = _build_feed_xml(
+        content_dir,
+        mode,
+        config,
+        base_url,
+        str(site_data.get("name") or "Moosey CMS Site"),
+        str(site_data.get("description") or ""),
+        site_data.get("author"),
+    )
     return Response(content=xml, media_type="application/rss+xml")
 
 

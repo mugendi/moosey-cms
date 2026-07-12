@@ -118,11 +118,11 @@ class RedisStore:
     def _full_key(self, key: str) -> str:
         return f"{self.prefix}{key}"
 
-    async def _async_call(self, method, *args):
+    async def _async_call(self, method, *args, **kwargs):
         if self._is_async:
-            result = method(*args)
+            result = method(*args, **kwargs)
         else:
-            result = await asyncio.to_thread(method, *args)
+            result = await asyncio.to_thread(method, *args, **kwargs)
 
         # Some clients expose regular wrapper methods which return awaitables,
         # so coroutine-function inspection alone is not reliable.
@@ -139,7 +139,7 @@ class RedisStore:
         raw = self._dumps(value)
         fk = self._full_key(key)
         if ttl_seconds:
-            self.client.setex(fk, int(ttl_seconds), raw)
+            self.client.set(fk, raw, ex=int(ttl_seconds))
         else:
             self.client.set(fk, raw)
 
@@ -160,7 +160,7 @@ class RedisStore:
         raw = self._dumps(value)
         fk = self._full_key(key)
         if ttl_seconds:
-            await self._async_call(self.client.setex, fk, int(ttl_seconds), raw)
+            await self._async_call(self.client.set, fk, raw, ex=int(ttl_seconds))
         else:
             await self._async_call(self.client.set, fk, raw)
 
