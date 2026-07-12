@@ -7,7 +7,7 @@ from typing import Any
 from ruamel.yaml import YAML
 
 logger = logging.getLogger(__name__)
-BUILTIN_REGISTRY = Path(__file__).with_name("frontmatter_fields.yaml")
+BUILTIN_REGISTRY = Path(__file__).with_name("fields.yaml")
 OVERRIDE_PATH = Path(".moosey") / "frontmatter_fields.yaml"
 
 def _read_yaml(path: Path) -> dict[str, Any]:

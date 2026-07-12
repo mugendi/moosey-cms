@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from moosey_cms.frontmatter_fields import load_frontmatter_fields
+from moosey_cms.frontmatter import load_frontmatter_fields
 
 
 def test_builtin_registry_contains_runtime_fields(tmp_path):

@@ -834,6 +834,8 @@ def image_url_filter(src: str, _route_prefix: str = "/__moosey/img/",
         canon = parse_params(params)
     except ImageError:
         return f"{prefix}{clean}?{urlencode(params, doseq=True)}"
+
+    print('>>>>>',_route_prefix,  canon)
     qs = urlencode(canon, doseq=True)
     return f"{prefix}{clean}?{qs}"
 

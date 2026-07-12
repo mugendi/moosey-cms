@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 from starlette.responses import HTMLResponse
 
 from .helpers import get_secure_target, parse_markdown_file
-from .frontmatter_fields import load_frontmatter_fields
+from .frontmatter import load_frontmatter_fields
 from .yaml_handler import build_markdown, split_frontmatter
 
 
