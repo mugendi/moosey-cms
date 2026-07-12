@@ -20,7 +20,7 @@ from urllib.parse import urlencode
 
 from .models import Dirs
 from .md import parse_markdown
-from .cache import cache, cache_fn
+from .lib.cache import cache
 
 from .seo import seo_tags
 from . import filters
@@ -30,8 +30,6 @@ _safe_env = SandboxedEnvironment(
     trim_blocks=True, lstrip_blocks=True, enable_async=True
 )
 
-cache_debug = True
-
 
 def validate_model(MyModel, data):
     if not isinstance(data, MyModel):
@@ -39,7 +37,7 @@ def validate_model(MyModel, data):
     return data
 
 
-@cache_fn(debug=cache_debug)
+@cache(ttl=3600 * 24 * 30, maxsize=10000)
 def template_exists(templates, name: str) -> bool:
     try:
         templates.get_template(name)
@@ -53,7 +51,7 @@ def template_exists(templates, name: str) -> bool:
         raise
 
 
-@cache_fn(debug=cache_debug)
+@cache(ttl=3600 * 24 * 30, maxsize=10000)
 def get_secure_target(user_path: str, relative_to_path: Path) -> Path:
     """
     Safely resolves a user-provided path against the relative_to_path.
@@ -87,7 +85,7 @@ def get_secure_target(user_path: str, relative_to_path: Path) -> Path:
     return resolved_path
 
 
-@cache_fn(debug=cache_debug)
+@cache(ttl=3600 * 24 * 30, maxsize=10000)
 def find_best_template(
     templates,
     path_str: str,
@@ -146,7 +144,7 @@ def find_best_template(
     return "page.html"
 
 
-@cache_fn(debug=cache_debug)
+@cache(ttl=3600 * 24 * 30, maxsize=10000)
 def parse_markdown_file(file):
     data = frontmatter.load(file)
     stats = file.stat()
@@ -178,7 +176,7 @@ def ensure_sandbox_filters(main_templates):
 
 
 # template_render_content only in sandbox mode
-@cache_fn(debug=cache_debug)
+@cache(ttl=3600 * 24 * 30, maxsize=10000)
 async def template_render_content(templates, content, data, safe=True):
     if not content:
         return ""
@@ -200,7 +198,7 @@ async def template_render_content(templates, content, data, safe=True):
         return content
 
 
-@cache_fn(debug=cache_debug)
+@cache(ttl=3600 * 24 * 30, maxsize=10000)
 def get_directory_navigation(
     physical_folder: Path,
     current_url: str = "/",
@@ -340,7 +338,7 @@ def get_directory_navigation(
     return items
 
 
-@cache_fn(debug=cache_debug)
+@cache(ttl=3600 * 24 * 30, maxsize=10000)
 def get_breadcrumbs(url_path: str) -> List[Dict[str, str]]:
     parts = [p for p in url_path.strip("/").split("/") if p]
     crumbs = [{"name": "Home", "url": "/"}]

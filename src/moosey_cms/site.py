@@ -22,7 +22,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import PlainTextResponse, Response
 from slugify import slugify
 
-from .cache import cache_fn
+from .lib.cache import cache
 from .helpers import build_lock_params_url
 from .md import parse_markdown
 
@@ -216,7 +216,7 @@ def _iter_markdown_files(content_dir: Path):
         yield file
 
 
-@cache_fn(debug=False)
+@cache(ttl=3600 * 24 * 30, maxsize=10000)
 def get_content_index(
     content_dir: Path,
     mode: str = "production",

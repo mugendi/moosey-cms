@@ -37,6 +37,9 @@ from urllib.parse import urlencode
 
 from fastapi import Request, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse, Response
+import json
+from .lib.crypto import encode, decode
+from .lib.cache import cache
 
 log = logging.getLogger("moosey_cms.images")
 
@@ -783,9 +786,7 @@ def _accept_webp(request: Request) -> bool:
     return "image/webp" in accept or "image/avif" in accept
 
 
-import json
-from .crypto import encode, decode
-from .lib.cache import cache
+
 
 
 def register_routes(
@@ -897,7 +898,7 @@ async def _generate_image(source, target,params ):
 # ---------------------------------------------------------------------------
 
 
-
+# don't run this each time.....
 @cache(ttl=3600 * 24 * 30, maxsize=10000)
 def image_url_filter(
     src: str, crypto_key=str, _route_prefix: str = "/__moosey/img/", **params

@@ -11,6 +11,7 @@ from moosey_cms.config import (
     ServerConfig,
     SiteConfig,
     CryptoConfig,
+    CacheConfig,
     load_config,
     save_config,
 )
@@ -24,8 +25,12 @@ def test_default_config():
     assert config.server.port == 8000
     assert config.server.reload_delay == 0.25
     assert config.site.name == "My Site"
-    assert config.site.admin_prefix == "admin"
+    assert config.site.admin.prefix == "admin/content"
     assert config.crypto.key == ""
+    assert config.cache.backend == "memory"
+    assert config.cache.ttl == 2592000  # 30 days
+    assert config.cache.maxsize == 10000
+    assert config.cache.redis_url == "redis://localhost:6379/0"
     assert config.image_cdn is None
     assert config.image_processing is None
     assert config.sanitize is None
@@ -37,12 +42,16 @@ def test_custom_config():
         server=ServerConfig(host="127.0.0.1", port=3000),
         site=SiteConfig(name="Custom Site"),
         crypto=CryptoConfig(key="test-key-123"),
+        cache=CacheConfig(backend="redis", ttl=3600, redis_url="redis://localhost:6379/1"),
     )
 
     assert config.server.host == "127.0.0.1"
     assert config.server.port == 3000
     assert config.site.name == "Custom Site"
     assert config.crypto.key == "test-key-123"
+    assert config.cache.backend == "redis"
+    assert config.cache.ttl == 3600
+    assert config.cache.redis_url == "redis://localhost:6379/1"
 
 
 def test_save_and_load_config(tmp_path):
@@ -53,6 +62,7 @@ def test_save_and_load_config(tmp_path):
         server=ServerConfig(host="192.168.1.1", port=9000),
         site=SiteConfig(name="Test Site"),
         crypto=CryptoConfig(key="my-secret-key"),
+        cache=CacheConfig(backend="redis", ttl=7200, redis_url="redis://localhost:6379/2"),
     )
 
     save_config(config, config_path)
@@ -64,6 +74,9 @@ def test_save_and_load_config(tmp_path):
     assert loaded.server.port == 9000
     assert loaded.site.name == "Test Site"
     assert loaded.crypto.key == "my-secret-key"
+    assert loaded.cache.backend == "redis"
+    assert loaded.cache.ttl == 7200
+    assert loaded.cache.redis_url == "redis://localhost:6379/2"
 
 
 def test_load_config_nonexistent():
@@ -102,7 +115,7 @@ def test_load_config_with_advanced(tmp_path):
 
     data = {
         "server": {"host": "0.0.0.0", "port": 8000, "reload_delay": 0.25},
-        "site": {"name": "My Site", "admin_prefix": "admin"},
+        "site": {"name": "My Site", "admin": {"prefix": "admin/content", "templates": "admin"}},
         "crypto": {"key": "test-key"},
         "image_cdn": {"provider": "imgix", "base_url": "https://img.example.com"},
     }

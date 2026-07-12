@@ -33,6 +33,42 @@ class _Args:
             setattr(self, k, v)
 
 
+def _mock_question(value):
+    return type("MockQuestion", (), {"ask": lambda self: value})()
+
+
+def _init_prompts(site="My Site", host="0.0.0.0", port="8000", reload_delay="0.25",
+                   admin_prefix="admin/content", admin_templates="admin",
+                   cache_backend="memory", cache_ttl="2592000"):
+    """Return (text_side_effect, select_side_effect) for cmd_init prompts."""
+    text_side_effect = [
+        _mock_question(site),
+        _mock_question(host),
+        _mock_question(port),
+        _mock_question(reload_delay),
+        _mock_question(admin_prefix),
+        _mock_question(admin_templates),
+        _mock_question(cache_ttl),
+    ]
+    return text_side_effect, cache_backend
+
+
+def _config_prompts(site="Test Site", host="127.0.0.1", port="3000", reload_delay="0.5",
+                     admin_prefix="admin/content", admin_templates="admin",
+                     cache_backend="memory", cache_ttl="2592000"):
+    """Return (text_side_effect, select_side_effect) for cmd_config prompts."""
+    text_side_effect = [
+        _mock_question(site),
+        _mock_question(host),
+        _mock_question(port),
+        _mock_question(reload_delay),
+        _mock_question(admin_prefix),
+        _mock_question(admin_templates),
+        _mock_question(cache_ttl),
+    ]
+    return text_side_effect, cache_backend
+
+
 # ---------------------------------------------------------------------------
 # get_bundled_templates_dir / get_example_dir
 # ---------------------------------------------------------------------------
@@ -67,16 +103,12 @@ class TestHelpers:
 # ---------------------------------------------------------------------------
 
 class TestCmdInit:
+    @patch("questionary.select")
     @patch("questionary.text")
-    def test_copies_example_to_target(self, mock_text, tmp_path):
-        # Mock questionary prompts with correct values
-        mock_text.side_effect = [
-            type("MockQuestion", (), {"ask": lambda self: "My Site"})(),  # site_name
-            type("MockQuestion", (), {"ask": lambda self: "0.0.0.0"})(),  # host
-            type("MockQuestion", (), {"ask": lambda self: "8000"})(),  # port
-            type("MockQuestion", (), {"ask": lambda self: "0.25"})(),  # reload_delay
-            type("MockQuestion", (), {"ask": lambda self: "admin"})(),  # admin_prefix
-        ]
+    def test_copies_example_to_target(self, mock_text, mock_select, tmp_path):
+        text_ef, sel_val = _init_prompts()
+        mock_text.side_effect = text_ef
+        mock_select.return_value.ask.return_value = sel_val
 
         dst = tmp_path / "my-site"
         cmd_init(_Args(path=str(dst), force=False))
@@ -87,16 +119,12 @@ class TestCmdInit:
         assert (dst / "templates").is_dir()
         assert (dst / ".moosey-cms.yaml").is_file()
 
+    @patch("questionary.select")
     @patch("questionary.text")
-    def test_patches_main_py_mode(self, mock_text, tmp_path):
-        # Mock questionary prompts with correct values
-        mock_text.side_effect = [
-            type("MockQuestion", (), {"ask": lambda self: "My Site"})(),  # site_name
-            type("MockQuestion", (), {"ask": lambda self: "0.0.0.0"})(),  # host
-            type("MockQuestion", (), {"ask": lambda self: "8000"})(),  # port
-            type("MockQuestion", (), {"ask": lambda self: "0.25"})(),  # reload_delay
-            type("MockQuestion", (), {"ask": lambda self: "admin"})(),  # admin_prefix
-        ]
+    def test_patches_main_py_mode(self, mock_text, mock_select, tmp_path):
+        text_ef, sel_val = _init_prompts()
+        mock_text.side_effect = text_ef
+        mock_select.return_value.ask.return_value = sel_val
 
         dst = tmp_path / "my-site"
         cmd_init(_Args(path=str(dst), force=False))
@@ -105,66 +133,50 @@ class TestCmdInit:
         content = main_py.read_text()
         assert "uvicorn.run" in content
 
+    @patch("questionary.select")
     @patch("questionary.text")
-    def test_copies_advanced_dir(self, mock_text, tmp_path):
-        # Mock questionary prompts with correct values
-        mock_text.side_effect = [
-            type("MockQuestion", (), {"ask": lambda self: "My Site"})(),  # site_name
-            type("MockQuestion", (), {"ask": lambda self: "0.0.0.0"})(),  # host
-            type("MockQuestion", (), {"ask": lambda self: "8000"})(),  # port
-            type("MockQuestion", (), {"ask": lambda self: "0.25"})(),  # reload_delay
-            type("MockQuestion", (), {"ask": lambda self: "admin"})(),  # admin_prefix
-        ]
+    def test_copies_advanced_dir(self, mock_text, mock_select, tmp_path):
+        text_ef, sel_val = _init_prompts()
+        mock_text.side_effect = text_ef
+        mock_select.return_value.ask.return_value = sel_val
 
         dst = tmp_path / "my-site"
         cmd_init(_Args(path=str(dst), force=False))
 
         assert (dst / "advanced").is_dir()
 
+    @patch("questionary.select")
     @patch("questionary.text")
-    def test_copies_assets_dir(self, mock_text, tmp_path):
-        # Mock questionary prompts with correct values
-        mock_text.side_effect = [
-            type("MockQuestion", (), {"ask": lambda self: "My Site"})(),  # site_name
-            type("MockQuestion", (), {"ask": lambda self: "0.0.0.0"})(),  # host
-            type("MockQuestion", (), {"ask": lambda self: "8000"})(),  # port
-            type("MockQuestion", (), {"ask": lambda self: "0.25"})(),  # reload_delay
-            type("MockQuestion", (), {"ask": lambda self: "admin"})(),  # admin_prefix
-        ]
+    def test_copies_assets_dir(self, mock_text, mock_select, tmp_path):
+        text_ef, sel_val = _init_prompts()
+        mock_text.side_effect = text_ef
+        mock_select.return_value.ask.return_value = sel_val
 
         dst = tmp_path / "my-site"
         cmd_init(_Args(path=str(dst), force=False))
 
         assert (dst / "assets").is_dir()
 
+    @patch("questionary.select")
     @patch("questionary.text")
-    def test_idempotent_with_force(self, mock_text, tmp_path):
-        # Mock questionary prompts with correct values
-        mock_text.side_effect = [
-            type("MockQuestion", (), {"ask": lambda self: "My Site"})(),  # site_name
-            type("MockQuestion", (), {"ask": lambda self: "0.0.0.0"})(),  # host
-            type("MockQuestion", (), {"ask": lambda self: "8000"})(),  # port
-            type("MockQuestion", (), {"ask": lambda self: "0.25"})(),  # reload_delay
-            type("MockQuestion", (), {"ask": lambda self: "admin"})(),  # admin_prefix
-        ] * 2  # Duplicate for second call
+    def test_idempotent_with_force(self, mock_text, mock_select, tmp_path):
+        text_ef, sel_val = _init_prompts()
+        mock_text.side_effect = text_ef * 2
+        mock_select.return_value.ask.return_value = sel_val
 
         dst = tmp_path / "my-site"
         cmd_init(_Args(path=str(dst), force=False))
-        cmd_init(_Args(path=str(dst), force=True))  # should not fail
+        cmd_init(_Args(path=str(dst), force=True))
 
         assert dst.is_dir()
         assert (dst / "main.py").is_file()
 
+    @patch("questionary.select")
     @patch("questionary.text")
-    def test_fails_without_force_on_nonempty_dir(self, mock_text, tmp_path):
-        # Mock questionary prompts with correct values
-        mock_text.side_effect = [
-            type("MockQuestion", (), {"ask": lambda self: "My Site"})(),  # site_name
-            type("MockQuestion", (), {"ask": lambda self: "0.0.0.0"})(),  # host
-            type("MockQuestion", (), {"ask": lambda self: "8000"})(),  # port
-            type("MockQuestion", (), {"ask": lambda self: "0.25"})(),  # reload_delay
-            type("MockQuestion", (), {"ask": lambda self: "admin"})(),  # admin_prefix
-        ]
+    def test_fails_without_force_on_nonempty_dir(self, mock_text, mock_select, tmp_path):
+        text_ef, sel_val = _init_prompts()
+        mock_text.side_effect = text_ef
+        mock_select.return_value.ask.return_value = sel_val
 
         dst = tmp_path / "my-site"
         dst.mkdir()
@@ -173,16 +185,12 @@ class TestCmdInit:
         with pytest.raises(SystemExit):
             cmd_init(_Args(path=str(dst), force=False))
 
+    @patch("questionary.select")
     @patch("questionary.text")
-    def test_skips_pycache(self, mock_text, tmp_path):
-        # Mock questionary prompts with correct values
-        mock_text.side_effect = [
-            type("MockQuestion", (), {"ask": lambda self: "My Site"})(),  # site_name
-            type("MockQuestion", (), {"ask": lambda self: "0.0.0.0"})(),  # host
-            type("MockQuestion", (), {"ask": lambda self: "8000"})(),  # port
-            type("MockQuestion", (), {"ask": lambda self: "0.25"})(),  # reload_delay
-            type("MockQuestion", (), {"ask": lambda self: "admin"})(),  # admin_prefix
-        ]
+    def test_skips_pycache(self, mock_text, mock_select, tmp_path):
+        text_ef, sel_val = _init_prompts()
+        mock_text.side_effect = text_ef
+        mock_select.return_value.ask.return_value = sel_val
 
         dst = tmp_path / "my-site"
         cmd_init(_Args(path=str(dst), force=False))
@@ -196,18 +204,13 @@ class TestCmdInit:
 # ---------------------------------------------------------------------------
 
 class TestCmdConfig:
+    @patch("questionary.select")
     @patch("questionary.text")
-    def test_creates_config_file(self, mock_text, tmp_path, monkeypatch):
-        # Mock questionary prompts
-        mock_text.side_effect = [
-            type("MockQuestion", (), {"ask": lambda self: "Test Site"})(),  # site_name
-            type("MockQuestion", (), {"ask": lambda self: "127.0.0.1"})(),  # host
-            type("MockQuestion", (), {"ask": lambda self: "3000"})(),  # port
-            type("MockQuestion", (), {"ask": lambda self: "0.5"})(),  # reload_delay
-            type("MockQuestion", (), {"ask": lambda self: "admin"})(),  # admin_prefix
-        ]
+    def test_creates_config_file(self, mock_text, mock_select, tmp_path, monkeypatch):
+        text_ef, sel_val = _config_prompts()
+        mock_text.side_effect = text_ef
+        mock_select.return_value.ask.return_value = sel_val
 
-        # Change to tmp_path
         monkeypatch.chdir(tmp_path)
 
         cmd_config(_Args(force=False, generate_key=False))
@@ -215,18 +218,17 @@ class TestCmdConfig:
         config_path = tmp_path / ".moosey-cms.yaml"
         assert config_path.exists()
 
-        # Verify content
         from moosey_cms.config import load_config
         config = load_config(config_path)
         assert config.site.name == "Test Site"
         assert config.server.host == "127.0.0.1"
         assert config.server.port == 3000
-        assert config.crypto.key != ""  # Key was generated
+        assert config.crypto.key != ""
 
     @patch("questionary.confirm")
+    @patch("questionary.select")
     @patch("questionary.text")
-    def test_preserves_existing_key(self, mock_text, mock_confirm, tmp_path, monkeypatch):
-        # Create existing config
+    def test_preserves_existing_key(self, mock_text, mock_select, mock_confirm, tmp_path, monkeypatch):
         from moosey_cms.config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, save_config
         existing_config = CMSConfig(
             server=ServerConfig(host="0.0.0.0", port=8000),
@@ -235,87 +237,63 @@ class TestCmdConfig:
         )
         save_config(existing_config, tmp_path / ".moosey-cms.yaml")
 
-        # Mock confirm to allow overwrite
         mock_confirm.return_value.ask.return_value = True
 
-        # Mock questionary prompts
-        mock_text.side_effect = [
-            type("MockQuestion", (), {"ask": lambda self: "Updated Site"})(),  # site_name
-            type("MockQuestion", (), {"ask": lambda self: "0.0.0.0"})(),  # host
-            type("MockQuestion", (), {"ask": lambda self: "8000"})(),  # port
-            type("MockQuestion", (), {"ask": lambda self: "0.25"})(),  # reload_delay
-            type("MockQuestion", (), {"ask": lambda self: "admin"})(),  # admin_prefix
-        ]
+        text_ef, sel_val = _config_prompts(site="Updated Site")
+        mock_text.side_effect = text_ef
+        mock_select.return_value.ask.return_value = sel_val
 
-        # Change to tmp_path
         monkeypatch.chdir(tmp_path)
 
         cmd_config(_Args(force=False, generate_key=False))
 
-        # Verify key was preserved
         config = load_config(tmp_path / ".moosey-cms.yaml")
         assert config.crypto.key == "existing-key-123"
         assert config.site.name == "Updated Site"
 
+    @patch("questionary.select")
     @patch("questionary.text")
-    def test_generate_key_flag(self, mock_text, tmp_path, monkeypatch):
-        # Create existing config with a key
+    def test_generate_key_flag(self, mock_text, mock_select, tmp_path, monkeypatch):
         from moosey_cms.config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, save_config
         existing_config = CMSConfig(
             crypto=CryptoConfig(key="old-key-123"),
         )
         save_config(existing_config, tmp_path / ".moosey-cms.yaml")
 
-        # Mock questionary prompts
-        mock_text.side_effect = [
-            type("MockQuestion", (), {"ask": lambda self: "My Site"})(),  # site_name
-            type("MockQuestion", (), {"ask": lambda self: "0.0.0.0"})(),  # host
-            type("MockQuestion", (), {"ask": lambda self: "8000"})(),  # port
-            type("MockQuestion", (), {"ask": lambda self: "0.25"})(),  # reload_delay
-            type("MockQuestion", (), {"ask": lambda self: "admin"})(),  # admin_prefix
-        ]
+        text_ef, sel_val = _config_prompts()
+        mock_text.side_effect = text_ef
+        mock_select.return_value.ask.return_value = sel_val
 
-        # Change to tmp_path
         monkeypatch.chdir(tmp_path)
 
         cmd_config(_Args(force=True, generate_key=True))
 
-        # Verify key was regenerated
         config = load_config(tmp_path / ".moosey-cms.yaml")
         assert config.crypto.key != "old-key-123"
 
     @patch("questionary.confirm")
+    @patch("questionary.select")
     @patch("questionary.text")
-    def test_force_overwrites(self, mock_text, mock_confirm, tmp_path, monkeypatch):
-        # Create existing config
+    def test_force_overwrites(self, mock_text, mock_select, mock_confirm, tmp_path, monkeypatch):
         from moosey_cms.config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, save_config
         existing_config = CMSConfig(
             crypto=CryptoConfig(key="existing-key"),
         )
         save_config(existing_config, tmp_path / ".moosey-cms.yaml")
 
-        # Mock questionary prompts (no confirm needed with --force)
-        mock_text.side_effect = [
-            type("MockQuestion", (), {"ask": lambda self: "New Site"})(),  # site_name
-            type("MockQuestion", (), {"ask": lambda self: "0.0.0.0"})(),  # host
-            type("MockQuestion", (), {"ask": lambda self: "8000"})(),  # port
-            type("MockQuestion", (), {"ask": lambda self: "0.25"})(),  # reload_delay
-            type("MockQuestion", (), {"ask": lambda self: "admin"})(),  # admin_prefix
-        ]
+        text_ef, sel_val = _config_prompts(site="New Site")
+        mock_text.side_effect = text_ef
+        mock_select.return_value.ask.return_value = sel_val
 
-        # Change to tmp_path
         monkeypatch.chdir(tmp_path)
 
         cmd_config(_Args(force=True, generate_key=False))
 
-        # Verify config was updated
         config = load_config(tmp_path / ".moosey-cms.yaml")
         assert config.site.name == "New Site"
 
     @patch("questionary.confirm")
-    @patch("questionary.text")
-    def test_aborts_on_no_confirm(self, mock_text, mock_confirm, tmp_path, monkeypatch):
-        # Create existing config
+    def test_aborts_on_no_confirm(self, mock_confirm, tmp_path, monkeypatch):
         from moosey_cms.config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, save_config
         existing_config = CMSConfig(
             site=SiteConfig(name="Original Site"),
@@ -323,15 +301,12 @@ class TestCmdConfig:
         )
         save_config(existing_config, tmp_path / ".moosey-cms.yaml")
 
-        # Mock confirm to deny overwrite
         mock_confirm.return_value.ask.return_value = False
 
-        # Change to tmp_path
         monkeypatch.chdir(tmp_path)
 
         cmd_config(_Args(force=False, generate_key=False))
 
-        # Verify config was NOT updated
         config = load_config(tmp_path / ".moosey-cms.yaml")
         assert config.site.name == "Original Site"
 
@@ -373,7 +348,7 @@ class TestCmdAdmin:
         templates_dir.mkdir()
 
         cmd_admin(_Args(templates=str(templates_dir)))
-        cmd_admin(_Args(templates=str(templates_dir)))  # should not fail
+        cmd_admin(_Args(templates=str(templates_dir)))
 
         assert (templates_dir / "admin").is_dir()
 

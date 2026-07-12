@@ -20,7 +20,7 @@ from . import schemas
 from . import admin
 from . import images as images_module
 
-from .cache import clear_cache_on_file_change, clear_cache
+from .lib.cache import clear_cache_on_file_change, clear_cache
 from .file_watcher import start_watching
 from .hot_reload_script import inject_script_middleware
 
@@ -84,7 +84,7 @@ class ConnectionManager:
 
 
 from .models import CMSConfig as PydanticCMSConfig, Dirs, SiteData
-from .config import load_config
+from .lib.config import load_config
 
 
 def init_cms(
@@ -451,6 +451,7 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader, admin_config=None):
             html_content = Markup(html_content)
 
         except Exception as e:
+            print(e)
             print(f"Error rendering content: {e}")
             return await async_template_response(
                 templates, "404.html", {"request": request}, status_code=404

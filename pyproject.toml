@@ -40,6 +40,7 @@ dependencies = [
     "python-frontmatter>=1.1.0",
     "python-slugify>=8.0.4",
     "questionary>=2.1.1",
+    "redis>=8.0.1",
     "ruamel.yaml>=0.18.0",
     "uvicorn[standard]>=0.40.0",
     "watchdog>=6.0.0",
