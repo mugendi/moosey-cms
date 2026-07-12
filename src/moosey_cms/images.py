@@ -21,9 +21,8 @@ URL-driven, hit-once, file-watcher-invalidated image processing.
   derivative set when its source changes.
 - Pillow is an optional dep (``moosey-cms[images]``). Without it, the route
   returns 503 and serving filters degrade gracefully to the original URL.
-- Face detection is an opt-in extra (``moosey-cms[faces]``) using
-  ``opencv-python-headless``. Without it, ``focus=face`` falls back to
-  ``focus=auto`` with a one-time logged warning.
+- Face detection is an opt-in extra (``moosey-cms[faces]`` or ``[all]``) using
+  ``opencv-python-headless``. Without it, ``focus=face`` serves the original.
 """
 
 import asyncio
@@ -31,6 +30,7 @@ import logging
 import os
 import re
 import warnings
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 from urllib.parse import urlencode
@@ -45,6 +45,17 @@ log = logging.getLogger("moosey_cms.images")
 
 MAX_DIM = 4000
 CACHE_DIR = ".moosey"
+
+IMAGES_AVAILABLE = find_spec("PIL") is not None
+FACES_AVAILABLE = IMAGES_AVAILABLE and find_spec("cv2") is not None
+
+
+def _can_transform(params: Dict[str, Any]) -> bool:
+    """Return whether the installed optional dependencies support this request."""
+    if not IMAGES_AVAILABLE:
+        return False
+    return params.get("focus") != "face" or FACES_AVAILABLE
+
 
 # Aspect-ratio presets. ``auto`` keeps the source ratio. Both colon (`1:1`)
 # and x (`1x1`) notations are accepted; the canonical form stored in params
@@ -852,8 +863,17 @@ def register_routes(
             if not original_file.is_file():
                 return JSONResponse({"detail": "not found"}, status_code=404)
 
+            params = file_data.get("params") or {}
+            if not _can_transform(params):
+                return FileResponse(
+                    str(original_file),
+                    headers={"Cache-Control": "public, max-age=31536000, immutable"},
+                )
+
             # run bg process
-            background_tasks.add_task(_generate_image, source=original_file, target=target, params =file_data['params'])
+            background_tasks.add_task(
+                _generate_image, source=original_file, target=target, params=params
+            )
 
 
             # serve
@@ -874,6 +894,9 @@ def register_routes(
 
 
 async def _generate_image(source, target,params ):
+    if not _can_transform(params):
+        return
+
     from filelock import FileLock, Timeout
 
     # print(source, target,params)
@@ -918,6 +941,9 @@ def image_url_filter(
     try:
         canon = parse_params(params)
     except ImageError:
+        return src
+
+    if not _can_transform(canon):
         return src
 
     data = dict(src=src, params=params)
