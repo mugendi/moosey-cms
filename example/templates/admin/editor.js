@@ -70,7 +70,7 @@
     window.togglePreviewStyle = function () {
         if (!tuiEditor) return;
 
-        previewStyle = previewStyle === 'vertical' ? 'tab' : 'vertical';
+        previewStyle = previewStyle === 'tab' ? 'tab' : 'vertical';
         tuiEditor.changePreviewStyle(previewStyle);
 
         var toggle = document.getElementById('preview-style-toggle');
