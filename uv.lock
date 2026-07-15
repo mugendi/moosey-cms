@@ -590,7 +590,7 @@ wheels = [
 
 [[package]]
 name = "moosey-cms"
-version = "0.9.5"
+version = "0.9.7"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
