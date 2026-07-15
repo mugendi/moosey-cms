@@ -3,23 +3,89 @@
    Included in base.html; available to all admin templates.
    ================================================================ */
 
-/* -----------------------------------------------------------
-   toggleSidebar() — open / close the mobile sidebar drawer.
-   Works by toggling the translate class and overlay visibility.
-   ----------------------------------------------------------- */
-function toggleSidebar() {
+const sidebarBreakpoint = window.matchMedia('(min-width: 768px)');
+const sidebarStorageKey = 'moosey-admin-sidebar-collapsed';
+
+function updateSidebarToggle(expanded) {
+    const toggle = document.getElementById('sidebar-toggle');
+    if (!toggle) return;
+    toggle.setAttribute('aria-expanded', String(expanded));
+    toggle.setAttribute('aria-label', expanded ? 'Collapse sidebar' : 'Expand sidebar');
+}
+
+function setMobileSidebarOpen(open) {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     if (!sidebar) return;
 
-    const isOpen = !sidebar.classList.contains('-translate-x-full');
-    if (isOpen) {
-        sidebar.classList.add('-translate-x-full');
-        overlay && overlay.classList.add('hidden');
-    } else {
-        sidebar.classList.remove('-translate-x-full');
-        overlay && overlay.classList.remove('hidden');
+    sidebar.classList.toggle('-translate-x-full', !open);
+    overlay && overlay.classList.toggle('hidden', !open);
+    document.body.classList.toggle('overflow-hidden', open);
+    updateSidebarToggle(open);
+}
+
+function setDesktopSidebarCollapsed(collapsed, persist) {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+
+    sidebar.dataset.collapsed = String(collapsed);
+    sidebar.classList.toggle('md:w-20', collapsed);
+    sidebar.classList.toggle('md:w-64', !collapsed);
+    sidebar.querySelectorAll('[data-sidebar-label]').forEach(function (label) {
+        label.classList.toggle('md:hidden', collapsed);
+    });
+
+    const header = sidebar.querySelector('[data-sidebar-header]');
+    const nav = sidebar.querySelector('[data-sidebar-nav]');
+    header && header.classList.toggle('md:justify-center', collapsed);
+    header && header.classList.toggle('md:px-2', collapsed);
+    nav && nav.classList.toggle('md:px-2', collapsed);
+
+    updateSidebarToggle(!collapsed);
+    if (persist !== false) {
+        try {
+            localStorage.setItem(sidebarStorageKey, String(collapsed));
+        } catch (error) {
+            // Storage may be unavailable in privacy-restricted contexts.
+        }
     }
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+
+    if (sidebarBreakpoint.matches) {
+        setDesktopSidebarCollapsed(sidebar.dataset.collapsed !== 'true');
+    } else {
+        setMobileSidebarOpen(sidebar.classList.contains('-translate-x-full'));
+    }
+}
+
+function initializeSidebar() {
+    let collapsed = false;
+    try {
+        collapsed = localStorage.getItem(sidebarStorageKey) === 'true';
+    } catch (error) {
+        // Use the expanded default when storage is unavailable.
+    }
+
+    setDesktopSidebarCollapsed(collapsed, false);
+    if (!sidebarBreakpoint.matches) setMobileSidebarOpen(false);
+
+    const sidebar = document.getElementById('sidebar');
+    sidebar && sidebar.querySelectorAll('a').forEach(function (link) {
+        link.addEventListener('click', function () {
+            if (!sidebarBreakpoint.matches) setMobileSidebarOpen(false);
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initializeSidebar);
+if (sidebarBreakpoint.addEventListener) {
+    sidebarBreakpoint.addEventListener('change', initializeSidebar);
+} else {
+    sidebarBreakpoint.addListener(initializeSidebar);
 }
 
 /* -----------------------------------------------------------

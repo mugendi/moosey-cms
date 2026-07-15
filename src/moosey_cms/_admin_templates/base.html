@@ -54,85 +54,84 @@
 
     {% block head %}{% endblock %}
 </head>
-<body class="bg-moose-50 text-moose-900 min-h-screen flex">
-
-    <!-- ============================================================
-         Sidebar — fixed left navigation panel.
-         Collapses to a hamburger menu on mobile (< md breakpoint).
-         ============================================================ -->
+<body class="bg-moose-50 text-moose-900 min-h-screen flex overflow-x-hidden">
 
     {# Extract prefix for URL building #}
     {% set prefix = admin_config.prefix %}
 
     <!-- Mobile overlay backdrop -->
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+    <button id="sidebar-overlay" type="button"
+            class="fixed inset-0 bg-black/40 z-30 hidden md:hidden"
+            onclick="toggleSidebar()" aria-label="Close navigation"></button>
 
-    <!-- Sidebar -->
-    <aside id="sidebar" class="fixed md:sticky top-0 left-0 z-40 h-screen w-64 bg-moose-900 text-white flex flex-col transition-transform duration-200 -translate-x-full md:translate-x-0">
+    <!-- Responsive sidebar: off-canvas on mobile, expandable strip on desktop -->
+    <aside id="sidebar"
+           class="fixed md:sticky top-0 left-0 z-40 h-screen w-72 max-w-[85vw] md:w-64 bg-moose-900 text-white flex flex-col flex-shrink-0 transition-all duration-200 -translate-x-full md:translate-x-0"
+           aria-label="Admin navigation" data-collapsed="false">
 
-        {# ── Sidebar header / brand ── #}
-        <div class="flex items-center justify-between px-4 py-4 border-b border-moose-800">
-            <a href="/{{ prefix }}/" class="text-lg font-bold tracking-tight hover:text-moose-200 transition-colors">
-                🦌 Moosey CMS
+        <div data-sidebar-header class="flex items-center justify-between gap-2 px-4 py-4 border-b border-moose-800 min-h-16">
+            <a href="/{{ prefix }}/" class="flex items-center gap-2 min-w-0 font-bold tracking-tight hover:text-moose-200 transition-colors" title="Moosey CMS">
+                <span class="text-lg flex-shrink-0" aria-hidden="true">🦌</span>
+                <span data-sidebar-label class="text-lg whitespace-nowrap">Moosey CMS</span>
             </a>
-            <button onclick="toggleSidebar()" class="md:hidden text-moose-400 hover:text-white" aria-label="Close sidebar">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            <button type="button" onclick="toggleSidebar()"
+                    class="md:hidden text-moose-400 hover:text-white p-2 rounded-lg"
+                    aria-label="Close sidebar" aria-controls="sidebar">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
 
-        {# ── Navigation links ── #}
         <nav class="flex-1 overflow-y-auto py-3">
-            <ul class="space-y-1 px-3">
-
-                {# Dashboard link #}
+            <ul data-sidebar-nav class="space-y-1 px-3">
                 {% block nav_dashboard %}
                 <li>
-                    <a href="/{{ prefix }}/"
+                    <a href="/{{ prefix }}/" title="Dashboard"
                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
                               {% if active_page == 'dashboard' %}bg-moose-800 text-white{% else %}text-moose-300 hover:bg-moose-800 hover:text-white{% endif %} transition-colors">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1"/></svg>
-                        Dashboard
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1"/></svg>
+                        <span data-sidebar-label class="whitespace-nowrap">Dashboard</span>
                     </a>
                 </li>
                 {% endblock %}
 
-                {# Content / Browse link #}
                 {% block nav_content %}
                 <li>
-                    <a href="/{{ prefix }}/browse/"
+                    <a href="/{{ prefix }}/browse/" title="Content"
                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
                               {% if active_page == 'list' %}bg-moose-800 text-white{% else %}text-moose-300 hover:bg-moose-800 hover:text-white{% endif %} transition-colors">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-                        Content
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                        <span data-sidebar-label class="whitespace-nowrap">Content</span>
                     </a>
                 </li>
                 {% endblock %}
             </ul>
         </nav>
 
-        {# ── Sidebar footer ── #}
-        <div class="px-4 py-3 border-t border-moose-800 text-xs text-moose-500">
-            mode: {{ mode | default('development') }}
+        <div data-sidebar-footer class="px-4 py-3 border-t border-moose-800 text-xs text-moose-500">
+            <span data-sidebar-label class="whitespace-nowrap">mode: {{ mode | default('development') }}</span>
         </div>
     </aside>
 
-    <!-- ============================================================
-         Main content area
-         ============================================================ -->
-    <div class="flex-1 flex flex-col min-h-screen">
+    <!-- Main content area -->
+    <div class="flex-1 min-w-0 flex flex-col min-h-screen">
+        <header class="sticky top-0 z-20 min-h-16 bg-white border-b border-moose-200 px-3 md:px-4 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+                <button id="sidebar-toggle" type="button" onclick="toggleSidebar()"
+                        class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-moose-600 hover:text-moose-900 hover:bg-moose-100 transition-colors"
+                        aria-label="Toggle sidebar" aria-controls="sidebar" aria-expanded="true">
+                    <svg class="w-6 h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+                <span class="font-semibold text-sm truncate">Moosey CMS Admin</span>
+            </div>
 
-        {# ── Top bar (mobile) ── #}
-        <header class="sticky top-0 z-20 bg-white border-b border-moose-200 px-4 py-3 flex items-center gap-3 md:hidden">
-            <button onclick="toggleSidebar()" class="text-moose-600 hover:text-moose-900" aria-label="Open sidebar">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-            </button>
-            <span class="font-semibold text-sm">Moosey CMS</span>
+            <a href="/" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-moose-600 hover:text-moose-900 hover:bg-moose-100 transition-colors" title="Go to website">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 11.5L12 4l9 7.5M5 10v10h14V10M9 20v-6h6v6"/></svg>
+                <span class="hidden sm:inline">Home</span>
+            </a>
         </header>
 
-        {# ── Flash message container ── #}
         <div id="flash-container" class="fixed top-4 right-4 z-50 space-y-2" aria-live="polite" aria-atomic="false"></div>
 
-        {# ── Page content block ── #}
         <main class="flex-1 p-4 md:p-8">
             {% block content %}{% endblock %}
         </main>

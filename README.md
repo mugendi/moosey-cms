@@ -133,6 +133,17 @@ pytest tests/test_schemas.py::TestSchemaArticle
 pytest -v tests/test_schemas.py
 ```
 
+### Building Admin CSS
+
+The committed admin stylesheet is generated from `src/moosey_cms/_styles/admin.css`. Tailwind scans the packaged admin templates and JavaScript, so new utility classes are included automatically.
+
+```bash
+npm install
+npm run build:admin-css
+```
+
+Use `npm run watch:admin-css` while editing the admin UI.
+
 ---
 
 ## ⚡ Quick Start
@@ -215,7 +226,7 @@ moosey-cms admin --templates ./templates --static ./static
 
 This creates:
 - `templates/admin/` with the default editor and base layout templates
-- `static/admin/` with pre-built Tailwind CSS and admin JavaScript
+- `static/admin/` with generated Tailwind CSS and admin JavaScript
 
 **3. Template structure:**
 
@@ -231,7 +242,7 @@ templates/
 
 static/
 ├── admin/
-│   ├── admin.css      # Pre-built Tailwind CSS with CSS custom properties
+│   ├── admin.css      # Generated Tailwind CSS with CSS custom properties
 │   ├── admin.js       # Admin JavaScript
 │   └── editor.js      # Editor JavaScript
 └── ...

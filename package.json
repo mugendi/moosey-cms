@@ -1,0 +1,12 @@
+{
+  "name": "moosey-cms-assets",
+  "private": true,
+  "scripts": {
+    "build:admin-css": "tailwindcss -i ./src/moosey_cms/_styles/admin.css -o ./src/moosey_cms/_static/admin/admin.css --minify",
+    "watch:admin-css": "npm run build:admin-css -- --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "tailwindcss": "^4.1.0"
+  }
+}

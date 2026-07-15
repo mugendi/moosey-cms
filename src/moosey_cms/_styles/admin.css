@@ -1,0 +1,52 @@
+/*
+ * Source for the generated admin stylesheet.
+ * Run `npm run build:admin-css` after changing admin templates or scripts.
+ */
+@import "tailwindcss" source(none);
+
+@source "../_admin_templates";
+@source "../_static/admin";
+
+:root {
+  --admin-ink: #0f172a;
+  --admin-surface: #ffffff;
+
+  --moose-50: #ffffff;
+  --moose-100: #f8fafc;
+  --moose-200: #e2e8f0;
+  --moose-300: #cbd5e1;
+  --moose-400: #94a3b8;
+  --moose-500: #64748b;
+  --moose-600: #334155;
+  --moose-700: #0f172a;
+  --moose-800: #0f172a;
+  --moose-900: #0f172a;
+  --moose-950: #0f172a;
+
+  --red-600: #dc2626;
+  --red-700: #b91c1c;
+}
+
+@theme inline {
+  --color-moose-50: var(--moose-50);
+  --color-moose-100: var(--moose-100);
+  --color-moose-200: var(--moose-200);
+  --color-moose-300: var(--moose-300);
+  --color-moose-400: var(--moose-400);
+  --color-moose-500: var(--moose-500);
+  --color-moose-600: var(--moose-600);
+  --color-moose-700: var(--moose-700);
+  --color-moose-800: var(--moose-800);
+  --color-moose-900: var(--moose-900);
+  --color-moose-950: var(--moose-950);
+
+  --color-red-600: var(--red-600);
+  --color-red-700: var(--red-700);
+}
+
+@layer base {
+  body {
+    background-color: var(--moose-50);
+    color: var(--moose-900);
+  }
+}

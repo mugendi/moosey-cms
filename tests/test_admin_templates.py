@@ -189,6 +189,20 @@ class TestAdminDashboardTemplate:
         assert resp.status_code == 200
         assert "Dashboard" in resp.text or "dashboard" in resp.text.lower()
 
+    def test_dashboard_spacing_utility_is_built(self):
+        """Tailwind must scan the admin sources and generate dashboard spacing."""
+        project_root = Path(__file__).parent.parent
+        input_css = (project_root / "src" / "moosey_cms" / "_styles" / "admin.css").read_text()
+        admin_css = (
+            project_root / "src" / "moosey_cms" / "_static" / "admin" / "admin.css"
+        ).read_text()
+        package_json = (project_root / "package.json").read_text()
+
+        assert '@source "../_admin_templates"' in input_css
+        assert '"build:admin-css"' in package_json
+        assert "/*! tailwindcss" in admin_css
+        assert ".space-y-8" in admin_css
+
 
 class TestAdminListTemplate:
     def test_list_renders(self, client):
