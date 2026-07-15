@@ -36,10 +36,10 @@ moosey-cms dev
 
 ## `moosey-cms admin`
 
-Copy bundled admin templates (dashboard, file browser, editor) into your project's templates directory.
+Copy bundled admin templates and static files into your project.
 
 ```bash
-moosey-cms admin --templates ./templates
+moosey-cms admin --templates ./templates --static ./static
 ```
 
 ### Options
@@ -47,6 +47,7 @@ moosey-cms admin --templates ./templates
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--templates` | `./templates` | Path to your project's templates directory |
+| `--static` | `./static` | Path to your project's static directory |
 
 ### What it does
 
@@ -57,6 +58,11 @@ moosey-cms admin --templates ./templates
    - `list.html` — file/directory browser
    - `editor.html` — tabbed markdown + metadata editor (TUI Editor + Guifier)
    - `admin.js` — shared JavaScript utilities
+3. Creates an `admin/` subdirectory inside your static directory
+4. Copies the bundled admin static files into it:
+   - `admin.css` — pre-built Tailwind CSS with CSS custom properties
+   - `admin.js` — admin JavaScript (editor initialization, etc.)
+   - `editor.js` — editor JavaScript (TUI Editor setup)
 
 ### After running
 
@@ -70,6 +76,7 @@ init_cms(
     dirs={
         "content": BASE_DIR / "content",
         "templates": BASE_DIR / "templates",
+        "static": BASE_DIR / "static",
     },
     mode=os.environ.get("MOOSEY_MODE", "development"),
     site_data={...},
@@ -78,6 +85,26 @@ init_cms(
 ```
 
 Then visit `/admin/content/` in your browser.
+
+### Customizing the admin appearance
+
+The admin CSS uses Tailwind CSS with CSS custom properties for theming. Edit `static/admin/admin.css` to customize colors:
+
+```css
+:root {
+    --moose-50: #eff6ff;
+    --moose-100: #dbeafe;
+    --moose-200: #bfdbfe;
+    --moose-300: #93c5fd;
+    --moose-400: #60a5fa;
+    --moose-500: #3b82f6;
+    --moose-600: #2563eb;
+    --moose-700: #1d4ed8;
+    --moose-800: #1e40af;
+    --moose-900: #1e3a8a;
+    --moose-950: #172554;
+}
+```
 
 ### Customizing templates
 

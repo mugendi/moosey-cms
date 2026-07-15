@@ -96,8 +96,8 @@ moosey-cms init ./my-site
 # Initialize or update config for existing project
 moosey-cms config
 
-# Install admin templates into your project
-moosey-cms admin --templates ./templates
+# Install admin templates and static files into your project
+moosey-cms admin --templates ./templates --static ./static
 
 # Run dev server (hot-reload)
 moosey-cms dev
@@ -206,14 +206,16 @@ init_cms(
 )
 ```
 
-**2. Install admin templates:**
+**2. Install admin templates and static files:**
 
 ```bash
-# Install admin templates into your project
-moosey-cms admin --templates ./templates
+# Install admin templates and static files into your project
+moosey-cms admin --templates ./templates --static ./static
 ```
 
-This creates `templates/admin/` with the default editor and base layout templates.
+This creates:
+- `templates/admin/` with the default editor and base layout templates
+- `static/admin/` with pre-built Tailwind CSS and admin JavaScript
 
 **3. Template structure:**
 
@@ -225,6 +227,13 @@ templates/
 │   └── admin.js       # Shared admin utilities
 ├── layout/
 │   └── base.html      # Public site layout
+└── ...
+
+static/
+├── admin/
+│   ├── admin.css      # Pre-built Tailwind CSS with CSS custom properties
+│   ├── admin.js       # Admin JavaScript
+│   └── editor.js      # Editor JavaScript
 └── ...
 ```
 
