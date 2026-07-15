@@ -635,6 +635,11 @@ images = [
     { name = "pillow" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "moosey-cms" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.15.0" },
@@ -669,6 +674,9 @@ requires-dist = [
     { name = "watchdog", specifier = ">=6.0.0" },
 ]
 provides-extras = ["images", "faces", "cdn", "all", "dev"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "moosey-cms", editable = "." }]
 
 [[package]]
 name = "numpy"

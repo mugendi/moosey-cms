@@ -71,6 +71,14 @@ moosey-cms = "moosey_cms.cli:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[dependency-groups]
+dev = [
+    "moosey-cms",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/moosey_cms"]
 artifacts = ["src/moosey_cms/_admin_templates/**"]
+
+[tool.uv.sources]
+moosey-cms = { workspace = true }
