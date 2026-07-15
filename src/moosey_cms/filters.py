@@ -989,6 +989,28 @@ def image_cdn_ctx(context, src, **params):
     return _image_cdn_impl(src, provider=provider, base_url=base_url, **params)
 
 
+from pathlib import Path
+def get_relative_path(source: str, target: str) -> str:
+    """
+    Get relative path from source to target.
+    
+    Args:
+        source: Base directory path
+        target: Target file/directory path
+    
+    Returns:
+        Relative path string
+    """
+    source_path = Path(source).resolve()
+    target_path = Path(target)
+    
+    # Calculate relative path
+    relative = target_path.relative_to(source_path)
+    
+    return str(relative)
+
+
+
 @pass_context
 def image(context, src, widths=None, sizes="100vw",
           loading="lazy", decoding="async", **params):
@@ -999,6 +1021,12 @@ def image(context, src, widths=None, sizes="100vw",
     """
     request = context.get("request")
 
+    # method
+    normalize_static_path=request.app.state.normalize_static_path
+
+    normalized_src = normalize_static_path(src)  
+
+
     # app.state.config 
     config = getattr(request.app.state, 'config', {})
     crypto_key = config.crypto.key
@@ -1008,10 +1036,10 @@ def image(context, src, widths=None, sizes="100vw",
              if request else None) or "/__moosey/img/"
     if widths:
         return _responsive_image_html(
-            src, _route_prefix=route, widths=widths, sizes=sizes,
+            normalized_src, _route_prefix=route, widths=widths, sizes=sizes,
             loading=loading, decoding=decoding, **params
         )
-    return _image_url_filter(src, crypto_key=crypto_key,  _route_prefix=route, **params)
+    return _image_url_filter(normalized_src, crypto_key=crypto_key,  _route_prefix=route, **params)
 
 
 @pass_context

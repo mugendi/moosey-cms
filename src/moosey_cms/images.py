@@ -797,9 +797,6 @@ def _accept_webp(request: Request) -> bool:
     return "image/webp" in accept or "image/avif" in accept
 
 
-
-
-
 def register_routes(
     app,
     static_dir: Path,
@@ -821,6 +818,7 @@ def register_routes(
         Maximum source file size in bytes (default 50 MB).
     """
 
+ 
     @app.get(f"{route_prefix}/{{hash_path:path}}")
     async def _moosey_img(hash_path: str, request: Request, background_tasks: BackgroundTasks) -> Response:
 
@@ -851,6 +849,8 @@ def register_routes(
 
             json_str = decode(encoded, key=crypto_key    )
             file_data = json.loads(json_str)
+
+            print(file_data)
 
             src = file_data.get("src")
 
@@ -933,6 +933,7 @@ def image_url_filter(
     # "static/x.jpg" resolve correctly against static_dir.
     if clean.startswith("static/"):
         clean = clean[len("static/") :]
+        
     prefix = _route_prefix.rstrip("/") + "/"
 
     if not params:

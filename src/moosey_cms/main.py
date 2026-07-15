@@ -217,6 +217,13 @@ def init_cms(
         else:
             static_dir = static_cfg
             image_route = "/__moosey/img"
+
+        if static_dir:
+            from .lib.path import make_asset_normalizer
+            app.state.normalize_static_path = make_asset_normalizer(str(static_dir))
+            
+       
+
         app.state.moosey_static_dir = Path(static_dir).resolve()
         app.state.moosey_image_route_prefix = image_route.rstrip("/") + "/"
         # Register the on-disk image pipeline route.
