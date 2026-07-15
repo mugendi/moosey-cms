@@ -319,16 +319,20 @@ class TestCmdAdmin:
     def test_creates_admin_directory(self, tmp_path):
         templates_dir = tmp_path / "templates"
         templates_dir.mkdir()
+        static_dir = tmp_path / "static"
+        static_dir.mkdir()
 
-        cmd_admin(_Args(templates=str(templates_dir)))
+        cmd_admin(_Args(templates=str(templates_dir), static=str(static_dir)))
 
         assert (templates_dir / "admin").is_dir()
 
     def test_copies_all_bundled_files(self, tmp_path):
         templates_dir = tmp_path / "templates"
         templates_dir.mkdir()
+        static_dir = tmp_path / "static"
+        static_dir.mkdir()
 
-        cmd_admin(_Args(templates=str(templates_dir)))
+        cmd_admin(_Args(templates=str(templates_dir), static=str(static_dir)))
 
         admin_dir = templates_dir / "admin"
         expected = [f.name for f in BUNDLED.iterdir() if f.is_file()]
@@ -338,29 +342,62 @@ class TestCmdAdmin:
 
     def test_creates_templates_dir_if_missing(self, tmp_path):
         templates_dir = tmp_path / "does-not-exist"
+        static_dir = tmp_path / "static"
+        static_dir.mkdir()
 
-        cmd_admin(_Args(templates=str(templates_dir)))
+        cmd_admin(_Args(templates=str(templates_dir), static=str(static_dir)))
 
         assert (templates_dir / "admin").is_dir()
 
     def test_idempotent(self, tmp_path):
         templates_dir = tmp_path / "templates"
         templates_dir.mkdir()
+        static_dir = tmp_path / "static"
+        static_dir.mkdir()
 
-        cmd_admin(_Args(templates=str(templates_dir)))
-        cmd_admin(_Args(templates=str(templates_dir)))
+        cmd_admin(_Args(templates=str(templates_dir), static=str(static_dir)))
+        cmd_admin(_Args(templates=str(templates_dir), static=str(static_dir)))
 
         assert (templates_dir / "admin").is_dir()
 
     def test_copied_files_are_readable(self, tmp_path):
         templates_dir = tmp_path / "templates"
         templates_dir.mkdir()
+        static_dir = tmp_path / "static"
+        static_dir.mkdir()
 
-        cmd_admin(_Args(templates=str(templates_dir)))
+        cmd_admin(_Args(templates=str(templates_dir), static=str(static_dir)))
 
         for f in (templates_dir / "admin").iterdir():
             if f.is_file():
                 content = f.read_text(encoding="utf-8")
+                assert len(content) > 0
+
+    def test_copies_static_files(self, tmp_path):
+        templates_dir = tmp_path / "templates"
+        templates_dir.mkdir()
+        static_dir = tmp_path / "static"
+        static_dir.mkdir()
+
+        cmd_admin(_Args(templates=str(templates_dir), static=str(static_dir)))
+
+        admin_static_dir = static_dir / "admin"
+        assert admin_static_dir.is_dir()
+        assert (admin_static_dir / "admin.css").exists()
+        assert (admin_static_dir / "admin.js").exists()
+        assert (admin_static_dir / "editor.js").exists()
+
+    def test_static_files_are_readable(self, tmp_path):
+        templates_dir = tmp_path / "templates"
+        templates_dir.mkdir()
+        static_dir = tmp_path / "static"
+        static_dir.mkdir()
+
+        cmd_admin(_Args(templates=str(templates_dir), static=str(static_dir)))
+
+        for f in (static_dir / "admin").iterdir():
+            if f.is_file():
+                content = f.read_bytes()
                 assert len(content) > 0
 
 

@@ -35,6 +35,11 @@ def get_bundled_templates_dir() -> Path:
     return Path(__file__).resolve().parent / "_admin_templates"
 
 
+def get_bundled_static_dir() -> Path:
+    """Return the bundled admin static files directory."""
+    return Path(__file__).resolve().parent / "_static" / "admin"
+
+
 def _find_main_py() -> Path:
     """Locate main.py in the current working directory."""
     p = Path.cwd() / "main.py"
@@ -257,7 +262,8 @@ def cmd_config(args: argparse.Namespace) -> None:
 
 
 def cmd_admin(args: argparse.Namespace) -> None:
-    """Copy bundled admin templates into the project."""
+    """Copy bundled admin templates and static files into the project."""
+    # Copy HTML templates
     src = get_bundled_templates_dir()
     if not src.is_dir():
         print(f"Error: bundled templates directory not found at {src}", file=sys.stderr)
@@ -272,14 +278,25 @@ def cmd_admin(args: argparse.Namespace) -> None:
             shutil.copy2(f, dst / f.name)
             print(f"  Created: {dst / f.name}")
 
+    # Copy static files (optional - for CSS customization)
+    static_src = get_bundled_static_dir()
+    if static_src.is_dir():
+        static_dst = Path(args.static).resolve() / "admin"
+        static_dst.mkdir(parents=True, exist_ok=True)
+
+        for f in sorted(static_src.iterdir()):
+            if f.is_file():
+                shutil.copy2(f, static_dst / f.name)
+                print(f"  Created: {static_dst / f.name}")
+
     print()
-    print("Admin templates installed successfully.")
+    print("Admin installed successfully.")
     print()
     print("Add this config to your init_cms() call:")
     print()
     print('    admin={"prefix": "admin/content", "templates": "admin"}')
     print()
-    print("Customize the templates in your project's templates/admin/ directory.")
+    print("To customize admin colors, edit static/admin/admin.css")
     print("Then visit /admin/content/ in your browser.")
 
 
@@ -346,11 +363,16 @@ def main() -> None:
     )
 
     # -- admin --
-    admin_p = sub.add_parser("admin", help="Copy admin templates into your project")
+    admin_p = sub.add_parser("admin", help="Copy admin templates and static files")
     admin_p.add_argument(
         "--templates",
         default="./templates",
         help="Path to your project's templates directory (default: ./templates)",
+    )
+    admin_p.add_argument(
+        "--static",
+        default="./static",
+        help="Path to your project's static directory (default: ./static)",
     )
 
     # -- dev --
