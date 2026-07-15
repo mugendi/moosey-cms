@@ -284,6 +284,10 @@ site:
   admin:
     prefix: "admin/content"
     templates: "admin"
+    brand_name: "Moosey CMS"
+    title: "Moosey CMS Admin"
+    home_label: "Home"
+    home_url: "/"
 
 crypto:
   key: "your-generated-key-here"
@@ -298,6 +302,8 @@ cache:
 **How it works:**
 - `init_cms()` automatically loads `.moosey-cms.yaml` from your project root
 - Python arguments passed to `init_cms()` override YAML values
+- `moosey-cms init` and `moosey-cms config` use the same setup prompts and
+  generate the admin branding and home-link settings
 - The `crypto.key` is **required** - the CMS will not start without it
 
 **Cache backends:**

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+{% set admin_brand = admin_config.brand_name | default('CMS', true) %}
+{% set admin_title = admin_config.title | default('CMS Admin', true) %}
+{% set admin_home_label = admin_config.home_label | default('Home', true) %}
+{% set admin_home_url = admin_config.home_url | default('/', true) %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Admin{% endblock %} — Moosey CMS</title>
+    <title>{% block title %}{{ admin_title }}{% endblock %} — {{ admin_brand }}</title>
 
     <!-- ============================================================
          Moosey Admin — Pre-built CSS with custom theme.
@@ -54,7 +58,8 @@
 
     {% block head %}{% endblock %}
 </head>
-<body class="bg-moose-50 text-moose-900 min-h-screen flex overflow-x-hidden">
+<body class="bg-moose-50 text-moose-900 min-h-screen flex overflow-x-hidden"
+      data-admin-brand="{{ admin_brand }}">
 
     {# Extract prefix for URL building #}
     {% set prefix = admin_config.prefix %}
@@ -70,9 +75,9 @@
            aria-label="Admin navigation" data-collapsed="false">
 
         <div data-sidebar-header class="flex items-center justify-between gap-2 px-4 py-4 border-b border-moose-800 min-h-16">
-            <a href="/{{ prefix }}/" class="flex items-center gap-2 min-w-0 font-bold tracking-tight hover:text-moose-200 transition-colors" title="Moosey CMS">
+            <a href="/{{ prefix }}/" class="flex items-center gap-2 min-w-0 font-bold tracking-tight hover:text-moose-200 transition-colors" title="{{ admin_brand }}">
                 <span class="text-lg flex-shrink-0" aria-hidden="true">🦌</span>
-                <span data-sidebar-label class="text-lg whitespace-nowrap">Moosey CMS</span>
+                <span data-sidebar-label class="text-lg whitespace-nowrap">{{ admin_brand }}</span>
             </a>
             <button type="button" onclick="toggleSidebar()"
                     class="md:hidden text-moose-400 hover:text-white p-2 rounded-lg"
@@ -121,12 +126,12 @@
                         aria-label="Toggle sidebar" aria-controls="sidebar" aria-expanded="true">
                     <svg class="w-6 h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
-                <span class="font-semibold text-sm truncate">Moosey CMS Admin</span>
+                <span class="font-semibold text-sm truncate">{{ admin_title }}</span>
             </div>
 
-            <a href="/" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-moose-600 hover:text-moose-900 hover:bg-moose-100 transition-colors" title="Go to website">
+            <a href="{{ admin_home_url }}" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-moose-600 hover:text-moose-900 hover:bg-moose-100 transition-colors" title="{{ admin_home_label }}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 11.5L12 4l9 7.5M5 10v10h14V10M9 20v-6h6v6"/></svg>
-                <span class="hidden sm:inline">Home</span>
+                <span class="hidden sm:inline">{{ admin_home_label }}</span>
             </a>
         </header>
 

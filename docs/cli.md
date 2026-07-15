@@ -26,6 +26,8 @@ moosey-cms init ./my-site
    - `assets/` — static assets
 2. Patches `main.py` to read `MOOSEY_MODE` from environment (instead of hardcoded `"development"`)
 3. Skips `__pycache__` directories
+4. Uses the shared setup workflow to generate `.moosey-cms.yaml`, including
+   the admin brand name, admin title, home-link label, and home-link URL
 
 ### After running
 
@@ -33,6 +35,19 @@ moosey-cms init ./my-site
 cd my-site
 moosey-cms dev
 ```
+
+## `moosey-cms config`
+
+Create or update `.moosey-cms.yaml` in an existing project. This command uses
+the same prompts and configuration builder as `moosey-cms init`, preserving
+the crypto key and advanced settings unless explicitly replaced.
+
+```bash
+moosey-cms config
+```
+
+Use `--force` to skip the overwrite confirmation or `--generate-key` to
+rotate the crypto key.
 
 ## `moosey-cms admin`
 

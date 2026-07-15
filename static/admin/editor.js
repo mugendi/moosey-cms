@@ -2,7 +2,7 @@
     var prefix   = '{{ admin_config.prefix }}';
     var filePath = '{{ file_path | default("") }}';
     var isNew    = !filePath;
-    var frontmatterRegistry = {{ frontmatter_fields | tojson }};
+    
 
     var tuiEditor = null;      /* TUI Editor instance */
     var guifierInstance = null; /* Guifier instance */

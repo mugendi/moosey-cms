@@ -63,7 +63,14 @@ def client(content_dir, templates_dir):
         router,
         dirs={"content": content_dir},
         mode="development",
-        admin_config={"prefix": "admin", "templates": "admin"},
+        admin_config={
+            "prefix": "admin",
+            "templates": "admin",
+            "brand_name": "Test CMS",
+            "title": "Test CMS Admin",
+            "home_label": "Website",
+            "home_url": "/",
+        },
     )
     app.include_router(router)
     return TestClient(app)
@@ -180,6 +187,36 @@ class TestAdminEditorTemplate:
         assert 'id="save-spinner"' in resp.text
         # JavaScript is now loaded as external file
         assert 'src="/__moosey/static/admin/editor.js"' in resp.text
+
+
+class TestAdminLayout:
+    def test_layout_has_responsive_sidebar_and_home_link(self, client):
+        resp = client.get(f"/{PREFIX}/")
+        assert resp.status_code == 200
+        assert 'id="sidebar-toggle"' in resp.text
+        assert 'aria-controls="sidebar"' in resp.text
+        assert 'id="sidebar-overlay"' in resp.text
+        assert 'data-sidebar-label' in resp.text
+        assert 'href="/"' in resp.text
+        assert "Test CMS Admin" in resp.text
+        assert "Test CMS" in resp.text
+        assert ">Website</span>" in resp.text
+        assert 'data-admin-brand="Test CMS"' in resp.text
+
+    def test_sidebar_script_supports_persistent_desktop_collapse(self):
+        project_root = Path(__file__).parent.parent
+        static_js = (
+            project_root / "src" / "moosey_cms" / "_static" / "admin" / "admin.js"
+        ).read_text()
+        template_js = (
+            project_root / "src" / "moosey_cms" / "_admin_templates" / "admin.js"
+        ).read_text()
+
+        assert static_js == template_js
+        assert "moosey-admin-sidebar-collapsed" in static_js
+        assert "sidebarBreakpoint.matches" in static_js
+        assert "'md:w-20'" in static_js
+        assert "setMobileSidebarOpen" in static_js
 
 
 class TestAdminDashboardTemplate:

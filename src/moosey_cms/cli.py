@@ -17,7 +17,16 @@ from pathlib import Path
 
 import questionary
 
-from .lib.config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, CacheConfig, save_config
+from .lib.config import (
+    AdminConfig,
+    CMSConfig,
+    CacheConfig,
+    CryptoConfig,
+    ServerConfig,
+    SiteConfig,
+    load_config,
+    save_config,
+)
 from .lib.crypto import generate_key
 
 # ---------------------------------------------------------------------------
@@ -70,28 +79,100 @@ def _patch_main_mode(main_path: Path) -> None:
     main_path.write_text(text, encoding="utf-8")
 
 
+def _prompt_for_config(
+    existing: CMSConfig, *, generate_crypto_key: bool = False
+) -> CMSConfig:
+    """Collect interactive project settings for init and config commands."""
+    admin = existing.site.admin
+
+    site_name = questionary.text("Site name:", default=existing.site.name).ask()
+    host = questionary.text("Host:", default=existing.server.host).ask()
+    port = questionary.text("Port:", default=str(existing.server.port)).ask()
+    reload_delay = questionary.text(
+        "Reload delay (seconds):", default=str(existing.server.reload_delay)
+    ).ask()
+    admin_prefix = questionary.text("Admin prefix:", default=admin.prefix).ask()
+    admin_templates = questionary.text(
+        "Admin templates:", default=admin.templates
+    ).ask()
+    brand_name = questionary.text(
+        "Admin brand name:", default=admin.brand_name
+    ).ask()
+    admin_title = questionary.text("Admin title:", default=admin.title).ask()
+    home_label = questionary.text(
+        "Admin home-link label:", default=admin.home_label
+    ).ask()
+    home_url = questionary.text(
+        "Admin home-link URL:", default=admin.home_url
+    ).ask()
+
+    print("\nCache configuration:\n")
+    cache_backend = questionary.select(
+        "Cache backend:",
+        choices=["memory", "redis"],
+        default=existing.cache.backend,
+    ).ask()
+    cache_ttl = questionary.text(
+        "Cache TTL (seconds):", default=str(existing.cache.ttl)
+    ).ask()
+    redis_url = existing.cache.redis_url
+    if cache_backend == "redis":
+        redis_url = questionary.text(
+            "Redis URL:", default=existing.cache.redis_url
+        ).ask()
+
+    crypto_key = existing.crypto.key
+    if generate_crypto_key or not crypto_key:
+        crypto_key = generate_key()
+
+    return CMSConfig(
+        server=ServerConfig(
+            host=host,
+            port=int(port),
+            reload_delay=float(reload_delay),
+        ),
+        site=SiteConfig(
+            name=site_name,
+            admin=AdminConfig(
+                prefix=admin_prefix,
+                templates=admin_templates,
+                brand_name=brand_name,
+                title=admin_title,
+                home_label=home_label,
+                home_url=home_url,
+            ),
+        ),
+        crypto=CryptoConfig(key=crypto_key),
+        cache=CacheConfig(
+            backend=cache_backend,
+            ttl=int(cache_ttl),
+            maxsize=existing.cache.maxsize,
+            redis_url=redis_url,
+        ),
+        image_cdn=existing.image_cdn,
+        image_processing=existing.image_processing,
+        sanitize=existing.sanitize,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Commands
 # ---------------------------------------------------------------------------
 
 
 def cmd_init(args: argparse.Namespace) -> None:
-    """Copy the entire example app to the target directory."""
-    import questionary
-
+    """Copy the example app and generate its project configuration."""
     src = get_example_dir()
     if not src.is_dir():
         print(f"Error: bundled example directory not found at {src}", file=sys.stderr)
         sys.exit(1)
 
     dst = Path(args.path).resolve()
-
     if dst.exists() and any(dst.iterdir()):
         if not args.force:
             print(f"Error: {dst} already exists and is not empty.", file=sys.stderr)
             print("Use --force to overwrite.", file=sys.stderr)
             sys.exit(1)
-        # Remove __pycache__ dirs before copying
         for cache in dst.rglob("__pycache__"):
             shutil.rmtree(cache)
 
@@ -102,66 +183,21 @@ def cmd_init(args: argparse.Namespace) -> None:
         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
     )
 
-    # Prompt user for config values
     print("\nLet's configure your Moosey CMS site.\n")
+    config = _prompt_for_config(CMSConfig(), generate_crypto_key=True)
 
-    site_name = questionary.text("Site name:", default="My Site").ask()
-    host = questionary.text("Host:", default="0.0.0.0").ask()
-    port = questionary.text("Port:", default="8210").ask()
-    reload_delay = questionary.text("Reload delay (seconds):", default="0.25").ask()
-    admin_prefix = questionary.text("Admin prefix:", default="admin/content").ask()
-    admin_templates = questionary.text("Admin templates:", default="admin").ask()
-
-    # Cache configuration
-    print("\nCache configuration:\n")
-    cache_backend = questionary.select(
-        "Cache backend:",
-        choices=["memory", "redis"],
-        default="memory"
-    ).ask()
-
-    cache_ttl = questionary.text(
-        "Cache TTL (seconds):",
-        default="2592000"
-    ).ask()
-
-    redis_url = None
-    if cache_backend == "redis":
-        redis_url = questionary.text(
-            "Redis URL:",
-            default="redis://localhost:6379/0"
-        ).ask()
-
-    # Generate crypto key
-    crypto_key = generate_key()
-
-    # Create config
-    config = CMSConfig(
-        server=ServerConfig(
-            host=host,
-            port=int(port),
-            reload_delay=float(reload_delay),
-        ),
-        site=SiteConfig(
-            name=site_name,
-            admin={"prefix": admin_prefix, "templates": admin_templates},
-        ),
-        crypto=CryptoConfig(key=crypto_key),
-        cache=CacheConfig(
-            backend=cache_backend,
-            ttl=int(cache_ttl),
-            redis_url=redis_url or "redis://localhost:6379/0",
-        ),
-    )
-
-    # Save config file
     config_path = dst / ".moosey-cms.yaml"
     save_config(config, config_path)
     print(f"\nCreated config: {config_path}")
 
-    # Generate minimal main.py
     main_py = dst / "main.py"
-    main_py.write_text(MAIN_PY_TEMPLATE.format(host=host, port=port), encoding="utf-8")
+    main_py.write_text(
+        MAIN_PY_TEMPLATE.format(
+            host=config.server.host,
+            port=config.server.port,
+        ),
+        encoding="utf-8",
+    )
     print(f"Created main.py: {main_py}")
 
     print(f"\nProject scaffolded to: {dst}")
@@ -170,8 +206,7 @@ def cmd_init(args: argparse.Namespace) -> None:
     print(f"  cd {dst.name}")
     print("  moosey-cms dev")
     print()
-    print("Visit http://localhost:8210")
-
+    print(f"Visit http://localhost:{config.server.port}")
 
 MAIN_PY_TEMPLATE = """import uvicorn
 from moosey_cms import app
@@ -183,11 +218,8 @@ if __name__ == "__main__":
 
 def cmd_config(args: argparse.Namespace) -> None:
     """Initialize or update config for an existing project."""
-    from .lib.config import load_config
-
     config_path = Path.cwd() / ".moosey-cms.yaml"
 
-    # Check if config exists
     if config_path.exists() and not args.force:
         overwrite = questionary.confirm(
             "Config file already exists. Overwrite?", default=False
@@ -196,70 +228,18 @@ def cmd_config(args: argparse.Namespace) -> None:
             print("Aborted.")
             return
 
-    # Load existing config to preserve crypto key
     existing = load_config(config_path)
-
-    # Prompt user for config values
     print("\nConfigure your Moosey CMS site.\n")
-
-    site_name = questionary.text("Site name:", default=existing.site.name).ask()
-    host = questionary.text("Host:", default=existing.server.host).ask()
-    port = questionary.text("Port:", default=str(existing.server.port)).ask()
-    reload_delay = questionary.text(
-        "Reload delay (seconds):", default=str(existing.server.reload_delay)
-    ).ask()
-    admin_data = existing.site.admin if isinstance(existing.site.admin, dict) else {"prefix": existing.site.admin.prefix, "templates": existing.site.admin.templates}
-    admin_prefix = questionary.text("Admin prefix:", default=admin_data.get("prefix", "admin/content")).ask()
-    admin_templates = questionary.text("Admin templates:", default=admin_data.get("templates", "admin")).ask()
-
-    # Cache configuration
-    print("\nCache configuration:\n")
-    cache_backend = questionary.select(
-        "Cache backend:",
-        choices=["memory", "redis"],
-        default=existing.cache.backend
-    ).ask()
-
-    cache_ttl = questionary.text(
-        "Cache TTL (seconds):",
-        default=str(existing.cache.ttl)
-    ).ask()
-
-    redis_url = None
-    if cache_backend == "redis":
-        redis_url = questionary.text(
-            "Redis URL:",
-            default=existing.cache.redis_url
-        ).ask()
-
-    # Handle crypto key
-    if args.generate_key or not existing.crypto.key:
-        crypto_key = generate_key()
-        print("Generated new crypto key.")
-    else:
-        crypto_key = existing.crypto.key
-
-    # Create config
-    config = CMSConfig(
-        server=ServerConfig(
-            host=host, port=int(port), reload_delay=float(reload_delay)
-        ),
-        site=SiteConfig(
-            name=site_name,
-            admin={"prefix": admin_prefix, "templates": admin_templates},
-        ),
-        crypto=CryptoConfig(key=crypto_key),
-        cache=CacheConfig(
-            backend=cache_backend,
-            ttl=int(cache_ttl),
-            redis_url=redis_url or "redis://localhost:6379/0",
-        ),
+    config = _prompt_for_config(
+        existing,
+        generate_crypto_key=args.generate_key,
     )
 
-    # Save config
+    if args.generate_key:
+        print("Generated new crypto key.")
+
     save_config(config, config_path)
     print(f"\nSaved config: {config_path}")
-
 
 def cmd_admin(args: argparse.Namespace) -> None:
     """Copy bundled admin templates and static files into the project."""

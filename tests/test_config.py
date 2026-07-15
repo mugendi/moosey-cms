@@ -7,6 +7,7 @@ from pathlib import Path
 import yaml
 
 from moosey_cms.lib.config import (
+    AdminConfig,
     CMSConfig,
     ServerConfig,
     SiteConfig,
@@ -26,6 +27,9 @@ def test_default_config():
     assert config.server.reload_delay == 0.25
     assert config.site.name == "My Site"
     assert config.site.admin.prefix == "admin/content"
+    assert config.site.admin.brand_name == "Moosey CMS"
+    assert config.site.admin.title == "Moosey CMS Admin"
+    assert config.site.admin.home_url == "/"
     assert config.crypto.key == ""
     assert config.cache.backend == "memory"
     assert config.cache.ttl == 2592000  # 30 days
@@ -60,7 +64,15 @@ def test_save_and_load_config(tmp_path):
 
     config = CMSConfig(
         server=ServerConfig(host="192.168.1.1", port=9000),
-        site=SiteConfig(name="Test Site"),
+        site=SiteConfig(
+            name="Test Site",
+            admin=AdminConfig(
+                brand_name="Acme CMS",
+                title="Acme Admin",
+                home_label="Website",
+                home_url="/",
+            ),
+        ),
         crypto=CryptoConfig(key="my-secret-key"),
         cache=CacheConfig(backend="redis", ttl=7200, redis_url="redis://localhost:6379/2"),
     )
@@ -73,6 +85,9 @@ def test_save_and_load_config(tmp_path):
     assert loaded.server.host == "192.168.1.1"
     assert loaded.server.port == 9000
     assert loaded.site.name == "Test Site"
+    assert loaded.site.admin.brand_name == "Acme CMS"
+    assert loaded.site.admin.title == "Acme Admin"
+    assert loaded.site.admin.home_label == "Website"
     assert loaded.crypto.key == "my-secret-key"
     assert loaded.cache.backend == "redis"
     assert loaded.cache.ttl == 7200

@@ -199,7 +199,7 @@ Guifier ships as an ES module only — must use type="module" to import. #}
         <div class="relative flex items-center justify-between gap-3 border-b border-moose-200 bg-moose-50 px-4 py-3">
           <div>
             <p class="text-sm font-semibold text-moose-900">Frontmatter</p>
-            <p class="text-xs text-moose-500">Add fields currently supported by Moosey CMS.</p>
+                            <p class="text-xs text-moose-500">Add fields currently supported by {{ admin_config.brand_name | default('the CMS', true) }}.</p>
           </div>
           <button id="metadata-field-toggle" type="button" onclick="toggleMetadataFieldMenu()" aria-expanded="false" class="rounded-lg bg-moose-700 px-3 py-2 text-sm font-medium text-white hover:bg-moose-800">Add metadata</button>
           <div id="metadata-field-menu" class="absolute right-4 top-16 z-30 hidden w-[min(28rem,calc(100vw-3rem))] overflow-hidden rounded-xl border border-moose-200 bg-white shadow-2xl">
@@ -328,5 +328,8 @@ Guifier ships as an ES module only — must use type="module" to import. #}
   </div>
 </div>
 {% endif %} {% endblock %} {% block scripts %}
+<script>
+  var frontmatterRegistry = {{ frontmatter_fields | tojson }};
+</script>
 <script src="/__moosey/static/admin/editor.js"></script>
 {% endblock %}

@@ -85,7 +85,7 @@ class ConnectionManager:
 
 
 from .models import CMSConfig as PydanticCMSConfig, Dirs, SiteData
-from .lib.config import load_config
+from .lib.config import admin_config_dict, load_config
 
 
 def init_cms(
@@ -154,9 +154,13 @@ def init_cms(
     if file_config.site.name and "name" not in site_data:
         site_data["name"] = file_config.site.name
 
-    # Merge admin_prefix from config
-    if admin is None and file_config.site.admin_prefix:
-        admin = {"prefix": file_config.site.admin_prefix}
+    # Merge file-based admin settings with explicit Python overrides.
+    file_admin = admin_config_dict(file_config.site.admin)
+    if admin is None:
+        admin = file_admin
+    else:
+        file_admin.update(admin)
+        admin = file_admin
 
     # validate dirs inputs
     config = PydanticCMSConfig(
@@ -528,5 +532,4 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader, admin_config=None):
     app.include_router(router, prefix="")
 
     return router
-
 

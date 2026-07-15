@@ -62,16 +62,28 @@ function toggleSidebar() {
     }
 }
 
-function initializeSidebar() {
-    let collapsed = false;
+function getStoredSidebarCollapsed() {
     try {
-        collapsed = localStorage.getItem(sidebarStorageKey) === 'true';
+        return localStorage.getItem(sidebarStorageKey) === 'true';
     } catch (error) {
-        // Use the expanded default when storage is unavailable.
+        return false;
     }
+}
 
-    setDesktopSidebarCollapsed(collapsed, false);
-    if (!sidebarBreakpoint.matches) setMobileSidebarOpen(false);
+function syncSidebarToBreakpoint() {
+    const overlay = document.getElementById('sidebar-overlay');
+    document.body.classList.remove('overflow-hidden');
+    overlay && overlay.classList.add('hidden');
+
+    if (sidebarBreakpoint.matches) {
+        setDesktopSidebarCollapsed(getStoredSidebarCollapsed(), false);
+    } else {
+        setMobileSidebarOpen(false);
+    }
+}
+
+function initializeSidebar() {
+    syncSidebarToBreakpoint();
 
     const sidebar = document.getElementById('sidebar');
     sidebar && sidebar.querySelectorAll('a').forEach(function (link) {
@@ -83,11 +95,10 @@ function initializeSidebar() {
 
 document.addEventListener('DOMContentLoaded', initializeSidebar);
 if (sidebarBreakpoint.addEventListener) {
-    sidebarBreakpoint.addEventListener('change', initializeSidebar);
+    sidebarBreakpoint.addEventListener('change', syncSidebarToBreakpoint);
 } else {
-    sidebarBreakpoint.addListener(initializeSidebar);
+    sidebarBreakpoint.addListener(syncSidebarToBreakpoint);
 }
-
 /* -----------------------------------------------------------
    showFlash(message, type, duration) — display a toast-style
    notification in the flash container.
@@ -106,7 +117,10 @@ function showFlash(message, type, duration, action) {
         success: { title: 'Success', icon: '✓' },
         error:   { title: 'Error', icon: '!' },
         warning: { title: 'Warning', icon: '!' },
-        info:    { title: 'Moosey CMS', icon: 'i' },
+        info:    {
+            title: document.body.dataset.adminBrand || 'CMS',
+            icon: 'i',
+        },
     };
     const meta = growlMeta[type] || growlMeta.info;
 
@@ -169,6 +183,7 @@ function showFlash(message, type, duration, action) {
    ----------------------------------------------------------- */
 document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
+    if (!sidebarBreakpoint.matches) setMobileSidebarOpen(false);
     document.querySelectorAll('.modal-overlay').forEach(function (m) {
         m.classList.add('hidden');
     });

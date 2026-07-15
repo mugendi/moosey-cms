@@ -39,6 +39,8 @@ def _mock_question(value):
 
 def _init_prompts(site="My Site", host="0.0.0.0", port="8000", reload_delay="0.25",
                    admin_prefix="admin/content", admin_templates="admin",
+                   brand_name="Acme CMS", admin_title="Acme Admin",
+                   home_label="View site", home_url="/",
                    cache_backend="memory", cache_ttl="2592000"):
     """Return (text_side_effect, select_side_effect) for cmd_init prompts."""
     text_side_effect = [
@@ -48,6 +50,10 @@ def _init_prompts(site="My Site", host="0.0.0.0", port="8000", reload_delay="0.2
         _mock_question(reload_delay),
         _mock_question(admin_prefix),
         _mock_question(admin_templates),
+        _mock_question(brand_name),
+        _mock_question(admin_title),
+        _mock_question(home_label),
+        _mock_question(home_url),
         _mock_question(cache_ttl),
     ]
     return text_side_effect, cache_backend
@@ -55,6 +61,8 @@ def _init_prompts(site="My Site", host="0.0.0.0", port="8000", reload_delay="0.2
 
 def _config_prompts(site="Test Site", host="127.0.0.1", port="3000", reload_delay="0.5",
                      admin_prefix="admin/content", admin_templates="admin",
+                     brand_name="Test CMS", admin_title="Test Admin",
+                     home_label="Home", home_url="/",
                      cache_backend="memory", cache_ttl="2592000"):
     """Return (text_side_effect, select_side_effect) for cmd_config prompts."""
     text_side_effect = [
@@ -64,6 +72,10 @@ def _config_prompts(site="Test Site", host="127.0.0.1", port="3000", reload_dela
         _mock_question(reload_delay),
         _mock_question(admin_prefix),
         _mock_question(admin_templates),
+        _mock_question(brand_name),
+        _mock_question(admin_title),
+        _mock_question(home_label),
+        _mock_question(home_url),
         _mock_question(cache_ttl),
     ]
     return text_side_effect, cache_backend
@@ -118,6 +130,11 @@ class TestCmdInit:
         assert (dst / "content").is_dir()
         assert (dst / "templates").is_dir()
         assert (dst / ".moosey-cms.yaml").is_file()
+        config = load_config(dst / ".moosey-cms.yaml")
+        assert config.site.admin.brand_name == "Acme CMS"
+        assert config.site.admin.title == "Acme Admin"
+        assert config.site.admin.home_label == "View site"
+        assert config.site.admin.home_url == "/"
 
     @patch("questionary.select")
     @patch("questionary.text")
@@ -224,6 +241,8 @@ class TestCmdConfig:
         assert config.server.host == "127.0.0.1"
         assert config.server.port == 3000
         assert config.crypto.key != ""
+        assert config.site.admin.brand_name == "Test CMS"
+        assert config.site.admin.title == "Test Admin"
 
     @patch("questionary.confirm")
     @patch("questionary.select")
