@@ -6,22 +6,10 @@
     <title>{% block title %}Admin{% endblock %} — Moosey CMS</title>
 
     <!-- ============================================================
-         Tailwind CSS — CDN for development convenience.
-         WARNING: The CDN script is NOT recommended for production.
-         For production, build CSS with: https://tailwindcss.com/docs/installation
+         Moosey Admin — Pre-built CSS with custom theme.
+         Customize colors by overriding CSS variables in your own stylesheet.
          ============================================================ -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        moose: { 50:'#ffffff', 100:'#f8fafc', 200:'#e2e8f0', 300:'#cbd5e1', 400:'#94a3b8', 500:'#64748b', 600:'#334155', 700:'#0f172a', 800:'#0f172a', 900:'#0f172a', 950:'#0f172a' }
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="/__moosey/static/admin/admin.css">
     <style>
         :root { --admin-ink: #0f172a; --admin-surface: #ffffff; }
         #flash-container { pointer-events: none; }
@@ -151,10 +139,7 @@
     </div>
 
     <!-- Shared JS utilities -->
-    {# -- Shared Admin JavaScript (inlined via Jinja2 include) -- #}
-    <script>
-    {% include admin_config.templates ~ "/admin.js" %}
-    </script>
+    <script src="/__moosey/static/admin/admin.js"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

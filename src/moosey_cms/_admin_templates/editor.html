@@ -4,71 +4,67 @@ set active_page = 'editor' %} {% block head %} {# ── TUI Editor (toast-ui) �
 WYSIWYG/Markdown editor for content. #}
 <link
   rel="stylesheet"
-  href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"
+  href="/__moosey/static/vendor/toast-ui/editor.min.css"
 />
 <link
   rel="stylesheet"
-  href="https://uicdn.toast.com/chart/latest/toastui-chart.min.css"
+  href="/__moosey/static/vendor/toast-ui/chart.min.css"
 />
 <link
   rel="stylesheet"
-  href="https://uicdn.toast.com/tui-color-picker/latest/tui-color-picker.min.css"
+  href="/__moosey/static/vendor/toast-ui/color-picker.min.css"
 />
 <link
   rel="stylesheet"
-  href="https://uicdn.toast.com/editor-plugin-color-syntax/latest/toastui-editor-plugin-color-syntax.min.css"
+  href="/__moosey/static/vendor/toast-ui/plugins/color-syntax.min.css"
 />
 <script
-  src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"
+  src="/__moosey/static/vendor/toast-ui/editor-all.min.js"
   defer
 ></script>
 <script
-  src="https://uicdn.toast.com/chart/latest/toastui-chart.min.js"
+  src="/__moosey/static/vendor/toast-ui/chart.min.js"
   defer
 ></script>
 <script
-  src="https://uicdn.toast.com/tui-color-picker/latest/tui-color-picker.min.js"
+  src="/__moosey/static/vendor/toast-ui/color-picker.min.js"
   defer
 ></script>
 <script
-  src="https://uicdn.toast.com/editor-plugin-chart/latest/toastui-editor-plugin-chart.min.js"
+  src="/__moosey/static/vendor/toast-ui/plugins/chart.min.js"
   defer
 ></script>
 <script
-  src="https://uicdn.toast.com/editor-plugin-code-syntax-highlight/latest/toastui-editor-plugin-code-syntax-highlight-all.min.js"
+  src="/__moosey/static/vendor/toast-ui/plugins/code-syntax-highlight-all.min.js"
   defer
 ></script>
 <script
-  src="https://uicdn.toast.com/editor-plugin-color-syntax/latest/toastui-editor-plugin-color-syntax.min.js"
+  src="/__moosey/static/vendor/toast-ui/plugins/color-syntax.min.js"
   defer
 ></script>
 <script
-  src="https://uicdn.toast.com/editor-plugin-table-merged-cell/latest/toastui-editor-plugin-table-merged-cell.min.js"
+  src="/__moosey/static/vendor/toast-ui/plugins/table-merged-cell.min.js"
   defer
 ></script>
 <script
-  src="https://uicdn.toast.com/editor-plugin-uml/latest/toastui-editor-plugin-uml.min.js"
+  src="/__moosey/static/vendor/toast-ui/plugins/uml.min.js"
   defer
 ></script>
 
 {# ── Guifier — Visual JSON/YAML editor for frontmatter metadata. #} {# Note:
 Guifier ships as an ES module only — must use type="module" to import. #}
-<link
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/guifier@1.0.33/dist/Guifier.min.css"
-/>
 <script type="module">
-  import Guifier from "https://cdn.jsdelivr.net/npm/guifier@1.0.33/dist/Guifier.min.js";
+  import Guifier from "/__moosey/static/vendor/guifier/Guifier.min.js";
   window.Guifier = Guifier;
 </script>
 
 {# ── File Icons — file-type icons from Atom File-icons (port for browser). #}
 <link
   rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/@exuanbo/file-icons-js@latest/dist/css/file-icons-cdn.min.css"
+  href="/__moosey/static/vendor/file-icons/file-icons.min.css"
 />
 <script type="module">
-  import FileIcons from "https://cdn.jsdelivr.net/npm/@exuanbo/file-icons-js@latest/dist/js/file-icons.esm.min.js";
+  import FileIcons from "/__moosey/static/vendor/file-icons/file-icons.esm.min.js";
   window.FileIcons = FileIcons;
 </script>
 {% endblock %} {% block content %}
@@ -332,7 +328,5 @@ Guifier ships as an ES module only — must use type="module" to import. #}
   </div>
 </div>
 {% endif %} {% endblock %} {% block scripts %}
-<script>
-  {% include admin_config.templates ~ "/editor.js" %}
-</script>
+<script src="/__moosey/static/admin/editor.js"></script>
 {% endblock %}

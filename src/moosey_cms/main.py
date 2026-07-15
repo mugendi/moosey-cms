@@ -27,6 +27,7 @@ from .hot_reload_script import inject_script_middleware
 
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from jinja2.ext import Extension
@@ -316,6 +317,15 @@ def init_routes(app, dirs: Dirs, templates, mode, reloader, admin_config=None):
                     await websocket.receive_text()
             except WebSocketDisconnect:
                 reloader.disconnect(websocket)
+
+    # ------------------------------------------------------------------
+    # CMS internal static files (admin assets, vendor libraries).
+    # Served at /__moosey/static/ — always available, not user-configurable.
+    # ------------------------------------------------------------------
+    cms_static_dir = Path(__file__).resolve().parent / "_static"
+    if cms_static_dir.is_dir():
+        app.mount("/__moosey/static", StaticFiles(directory=str(cms_static_dir)),
+                  name="moosey-static")
 
     # ------------------------------------------------------------------
     # Admin content-editing API (registered BEFORE the catch-all so

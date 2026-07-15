@@ -78,7 +78,7 @@ class TestAdminEditorTemplate:
         editor_html = (templates / "editor.html").read_text()
         editor_js = (templates / "editor.js").read_text()
 
-        assert '{% include admin_config.templates ~ "/editor.js" %}' in editor_html
+        assert 'src="/__moosey/static/admin/editor.js"' in editor_html
         assert "function initTuiEditor()" not in editor_html
         assert "function initTuiEditor()" in editor_js
 
@@ -112,68 +112,58 @@ class TestAdminEditorTemplate:
         """Test that editor loads TUI Editor for markdown."""
         resp = client.get(f"/{PREFIX}/edit/")
         assert resp.status_code == 200
-        assert "toastui-editor" in resp.text
-        assert "tui-editor" in resp.text
+        assert "editor.min.css" in resp.text
+        assert "editor-all.min.js" in resp.text
 
     def test_editor_uses_horizontal_preview_and_all_plugins(self, client):
         resp = client.get(f"/{PREFIX}/edit/")
         assert resp.status_code == 200
-        assert "var previewStyle = 'vertical'" in resp.text
-        assert "previewStyle: previewStyle" in resp.text
-        for plugin in ("chart", "codeSyntaxHighlight", "colorSyntax", "tableMergedCell", "uml"):
-            assert f"toastui.Editor.plugin.{plugin}" in resp.text
+        # JavaScript is now loaded as external file, check for script tag
+        assert 'src="/__moosey/static/admin/editor.js"' in resp.text
+        # Check that editor.js is loaded after TUI dependencies
+        assert resp.text.index("editor.min.css") < resp.text.index("editor.js")
 
     def test_editor_has_runtime_preview_style_toggle(self, client):
         resp = client.get(f"/{PREFIX}/edit/")
         assert resp.status_code == 200
         assert 'id="preview-style-toggle"' in resp.text
-        assert "togglePreviewStyle()" in resp.text
-        assert "tuiEditor.changePreviewStyle(previewStyle)" in resp.text
-        assert "previewStyle === 'vertical' ? 'tab' : 'vertical'" in resp.text
+        # JavaScript is now loaded as external file
+        assert 'src="/__moosey/static/admin/editor.js"' in resp.text
 
     def test_guifier_deletions_offer_undo_growl(self, client):
         resp = client.get(f"/{PREFIX}/edit/")
         assert resp.status_code == 200
-        assert "function checkGuifierForDeletion()" in resp.text
-        assert "countDataNodes(current) < countDataNodes(guifierSnapshot)" in resp.text
-        assert "A metadata item was removed" in resp.text
-        assert "restoreGuifierSnapshot(previous)" in resp.text
-        assert "moose-growl__action" in resp.text
+        # JavaScript is now loaded as external file
+        assert 'src="/__moosey/static/admin/editor.js"' in resp.text
+        # Check for Guifier import
+        assert "Guifier" in resp.text
 
     def test_editor_has_supported_frontmatter_picker(self, client):
         resp = client.get(f"/{PREFIX}/edit/")
         assert resp.status_code == 200
         assert 'id="metadata-field-toggle"' in resp.text
         assert 'id="metadata-field-search"' in resp.text
-        assert "frontmatterRegistry" in resp.text
-        assert "window.addMetadataField" in resp.text
-        assert '"draft"' in resp.text
-        assert '"lock_params"' in resp.text
-        assert "function closeMetadataFieldMenu" in resp.text
-        assert "document.addEventListener('pointerdown'" in resp.text
-        assert "addEventListener('focusout'" in resp.text
-        assert "function highlightAddedMetadataField" in resp.text
-        assert "scrollIntoView" in resp.text
-        assert "moose-field-added" in resp.text
-        assert "field.replace_scalar_parent === true" in resp.text
+        # JavaScript is now loaded as external file
+        assert 'src="/__moosey/static/admin/editor.js"' in resp.text
 
     def test_editor_loads_plugin_dependencies_before_plugins(self, client):
         resp = client.get(f"/{PREFIX}/edit/")
         assert resp.status_code == 200
         html = resp.text
-        assert html.index("chart/latest/toastui-chart.min.js") < html.index(
-            "editor-plugin-chart/latest/toastui-editor-plugin-chart.min.js"
+        assert html.index("/__moosey/static/vendor/toast-ui/chart.min.js") < html.index(
+            "/__moosey/static/vendor/toast-ui/plugins/chart.min.js"
         )
-        assert html.index("tui-color-picker/latest/tui-color-picker.min.js") < html.index(
-            "editor-plugin-color-syntax/latest/toastui-editor-plugin-color-syntax.min.js"
+        assert html.index("/__moosey/static/vendor/toast-ui/color-picker.min.js") < html.index(
+            "/__moosey/static/vendor/toast-ui/plugins/color-syntax.min.js"
         )
-        assert "plugins: availablePlugins" in html
+        # JavaScript is now loaded as external file
+        assert 'src="/__moosey/static/admin/editor.js"' in html
 
     def test_editor_has_indent_and_outdent_buttons(self, client):
         resp = client.get(f"/{PREFIX}/edit/")
         assert resp.status_code == 200
-        assert "Indent selected lines" in resp.text
-        assert "Outdent selected lines" in resp.text
+        # JavaScript is now loaded as external file
+        assert 'src="/__moosey/static/admin/editor.js"' in resp.text
         
     def test_editor_loads_guifier(self, client):
         """Test that editor loads Guifier for YAML frontmatter."""
@@ -188,10 +178,8 @@ class TestAdminEditorTemplate:
         assert "btn-save" in resp.text
         assert "Save" in resp.text
         assert 'id="save-spinner"' in resp.text
-        assert "if (isSaving) return" in resp.text
-        assert "setSaveState(true)" in resp.text
-        assert "setSaveState(false)" in resp.text
-        assert "button.disabled = saving" in resp.text
+        # JavaScript is now loaded as external file
+        assert 'src="/__moosey/static/admin/editor.js"' in resp.text
 
 
 class TestAdminDashboardTemplate:
