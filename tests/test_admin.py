@@ -416,7 +416,7 @@ class TestBuildMarkdown:
 
     def test_roundtrip_preserves_comments(self, content_dir):
         """Read → edit → write preserves YAML comments."""
-        from moosey_cms.cache import clear_cache
+        from moosey_cms.lib.cache import clear_cache
 
         app = FastAPI()
         router = APIRouter()

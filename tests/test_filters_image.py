@@ -110,15 +110,28 @@ class TestImageCdnCtx:
 class TestImage:
     def test_no_widths_returns_url(self):
         with patch("moosey_cms.filters._image_url_filter", return_value="/__moosey/img/test.jpg?w=800") as mock:
-            req = Mock(app=Mock(state=Mock(moosey_image_route_prefix="/__moosey/img/")))
+            mock_normalize = Mock(return_value="/test.jpg")
+            mock_config = Mock()
+            mock_config.crypto.key = "test-key"
+            state = Mock(
+                moosey_image_route_prefix="/__moosey/img/",
+                normalize_static_path=mock_normalize,
+                config=mock_config,
+            )
+            req = Mock(app=Mock(state=state))
             context = {"request": req}
             result = image(context, "/test.jpg", w=800)
-            mock.assert_called_once_with("/test.jpg", _route_prefix="/__moosey/img/", w=800)
+            mock.assert_called_once_with("/test.jpg", crypto_key="test-key", _route_prefix="/__moosey/img/", w=800)
             assert result == "/__moosey/img/test.jpg?w=800"
 
     def test_with_widths_returns_tag(self):
         with patch("moosey_cms.filters._responsive_image_html", return_value='<img src="...">') as mock:
-            req = Mock(app=Mock(state=Mock(moosey_image_route_prefix="/__moosey/img/")))
+            mock_normalize = Mock(return_value="/test.jpg")
+            state = Mock(
+                moosey_image_route_prefix="/__moosey/img/",
+                normalize_static_path=mock_normalize,
+            )
+            req = Mock(app=Mock(state=state))
             context = {"request": req}
             result = image(context, "/test.jpg", widths=(400, 800))
             mock.assert_called_once_with(
@@ -131,7 +144,7 @@ class TestImage:
     def test_no_request_uses_default_route(self):
         with patch("moosey_cms.filters._image_url_filter", return_value="/__moosey/img/test.jpg") as mock:
             result = image({}, "/test.jpg")
-            mock.assert_called_once_with("/test.jpg", _route_prefix="/__moosey/img/")
+            mock.assert_called_once_with("/test.jpg", crypto_key="", _route_prefix="/__moosey/img/")
             assert result == "/__moosey/img/test.jpg"
 
 

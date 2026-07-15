@@ -15,7 +15,7 @@ from moosey_cms.cli import (
     get_bundled_templates_dir,
     get_example_dir,
 )
-from moosey_cms.config import load_config
+from moosey_cms.lib.config import load_config
 
 
 BUNDLED = get_bundled_templates_dir()
@@ -218,7 +218,7 @@ class TestCmdConfig:
         config_path = tmp_path / ".moosey-cms.yaml"
         assert config_path.exists()
 
-        from moosey_cms.config import load_config
+        from moosey_cms.lib.config import load_config
         config = load_config(config_path)
         assert config.site.name == "Test Site"
         assert config.server.host == "127.0.0.1"
@@ -229,7 +229,7 @@ class TestCmdConfig:
     @patch("questionary.select")
     @patch("questionary.text")
     def test_preserves_existing_key(self, mock_text, mock_select, mock_confirm, tmp_path, monkeypatch):
-        from moosey_cms.config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, save_config
+        from moosey_cms.lib.config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, save_config
         existing_config = CMSConfig(
             server=ServerConfig(host="0.0.0.0", port=8000),
             site=SiteConfig(name="Existing Site"),
@@ -254,7 +254,7 @@ class TestCmdConfig:
     @patch("questionary.select")
     @patch("questionary.text")
     def test_generate_key_flag(self, mock_text, mock_select, tmp_path, monkeypatch):
-        from moosey_cms.config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, save_config
+        from moosey_cms.lib.config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, save_config
         existing_config = CMSConfig(
             crypto=CryptoConfig(key="old-key-123"),
         )
@@ -275,7 +275,7 @@ class TestCmdConfig:
     @patch("questionary.select")
     @patch("questionary.text")
     def test_force_overwrites(self, mock_text, mock_select, mock_confirm, tmp_path, monkeypatch):
-        from moosey_cms.config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, save_config
+        from moosey_cms.lib.config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, save_config
         existing_config = CMSConfig(
             crypto=CryptoConfig(key="existing-key"),
         )
@@ -294,7 +294,7 @@ class TestCmdConfig:
 
     @patch("questionary.confirm")
     def test_aborts_on_no_confirm(self, mock_confirm, tmp_path, monkeypatch):
-        from moosey_cms.config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, save_config
+        from moosey_cms.lib.config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, save_config
         existing_config = CMSConfig(
             site=SiteConfig(name="Original Site"),
             crypto=CryptoConfig(key="existing-key"),

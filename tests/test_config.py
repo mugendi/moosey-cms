@@ -6,7 +6,7 @@ import pytest
 from pathlib import Path
 import yaml
 
-from moosey_cms.config import (
+from moosey_cms.lib.config import (
     CMSConfig,
     ServerConfig,
     SiteConfig,
@@ -22,7 +22,7 @@ def test_default_config():
     config = CMSConfig()
 
     assert config.server.host == "0.0.0.0"
-    assert config.server.port == 8000
+    assert config.server.port == 8210
     assert config.server.reload_delay == 0.25
     assert config.site.name == "My Site"
     assert config.site.admin.prefix == "admin/content"
@@ -84,7 +84,7 @@ def test_load_config_nonexistent():
     config = load_config(Path("/nonexistent/.moosey-cms.yaml"))
 
     assert config.server.host == "0.0.0.0"
-    assert config.server.port == 8000
+    assert config.server.port == 8210
     assert config.crypto.key == ""
 
 
