@@ -8,13 +8,9 @@ the same rules.
 
 from __future__ import annotations
 
-from datetime import date, datetime, time, timezone
-from email.utils import format_datetime
-from html import unescape
+from datetime import datetime, timezone
 from pathlib import Path
-import re
 from typing import Any, Dict, List, Optional
-from urllib.parse import urljoin
 from xml.etree import ElementTree as ET
 
 import frontmatter
@@ -23,17 +19,15 @@ from fastapi.responses import PlainTextResponse, Response
 from slugify import slugify
 
 from .lib.cache import cache
-from .helpers import build_lock_params_url
+from .lib.text import _coerce_datetime, format_rfc822_date, plain_text
+from .lib.urls import (
+    _as_dict,
+    absolute_url,
+    build_lock_params_url,
+    get_site_url,
+    get_web_config,
+)
 from .md import parse_markdown
-
-
-def _as_dict(value: Any) -> Dict[str, Any]:
-    return value if isinstance(value, dict) else {}
-
-
-def get_web_config(site_data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-    """Return the nested website-management config from site_data."""
-    return _as_dict(_as_dict(site_data).get("web"))
 
 
 def get_feature_config(
@@ -73,71 +67,6 @@ def feature_path(
     return path if path.startswith("/") else f"/{path}"
 
 
-def get_site_url(
-    request: Optional[Request] = None, site_data: Optional[Dict[str, Any]] = None
-) -> str:
-    """Resolve the public site URL from config, falling back to the request."""
-    data = _as_dict(site_data)
-    web = get_web_config(data)
-    configured = (
-        web.get("site_url")
-        or data.get("site_url")
-        or data.get("base_url")
-        or data.get("url")
-    )
-
-    if configured:
-        return str(configured).rstrip("/")
-    if request is not None:
-        return str(request.base_url).rstrip("/")
-    return ""
-
-
-def absolute_url(value: str, base_url: str) -> str:
-    """Resolve a relative site path against a base URL."""
-    if not value:
-        return ""
-
-    value = str(value)
-    if re.match(r"^[a-z][a-z0-9+.-]*:", value, re.IGNORECASE):
-        return value
-    if value.startswith("#"):
-        return value
-
-    return urljoin(base_url.rstrip("/") + "/", value.lstrip("/"))
-
-
-def plain_text(value: str) -> str:
-    """Convert HTML or Markdown-ish text into collapsed plain text."""
-    if not value:
-        return ""
-
-    text = re.sub(r"<!--[\s\S]*?-->", "", str(value))
-    text = re.sub(r"<[^>]+>", " ", text)
-    text = unescape(text)
-    return re.sub(r"\s+", " ", text).strip()
-
-
-def _coerce_datetime(value: Any) -> Optional[datetime]:
-    if isinstance(value, datetime):
-        return value
-    if isinstance(value, date):
-        return datetime.combine(value, time.min)
-    if isinstance(value, str):
-        raw = value.strip()
-        if not raw:
-            return None
-        try:
-            return datetime.fromisoformat(raw.replace("Z", "+00:00"))
-        except ValueError:
-            for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%d-%m-%Y", "%d/%m/%Y"):
-                try:
-                    return datetime.strptime(raw, fmt)
-                except ValueError:
-                    continue
-    return None
-
-
 def _date_info(metadata: Dict[str, Any], file: Path) -> Dict[str, Any]:
     raw_date = metadata.get("date")
     date_info = {**raw_date} if isinstance(raw_date, dict) else {}
@@ -172,15 +101,6 @@ def _page_datetime(page: Dict[str, Any], *keys: str) -> Optional[datetime]:
 def _format_sitemap_date(value: Any) -> Optional[str]:
     parsed = _coerce_datetime(value)
     return parsed.date().isoformat() if parsed else None
-
-
-def format_rfc822_date(value: Any) -> str:
-    parsed = _coerce_datetime(value)
-    if not parsed:
-        return ""
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return format_datetime(parsed, usegmt=True)
 
 
 def _url_for_file(file: Path, content_dir: Path) -> str:

@@ -17,8 +17,8 @@ from pathlib import Path
 
 import questionary
 
-from .config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, CacheConfig, save_config
-from .crypto import generate_key
+from .lib.config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, CacheConfig, save_config
+from .lib.crypto import generate_key
 
 # ---------------------------------------------------------------------------
 # Helpers

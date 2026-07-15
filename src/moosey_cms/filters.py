@@ -1021,16 +1021,14 @@ def image(context, src, widths=None, sizes="100vw",
     """
     request = context.get("request")
 
-    # method
-    normalize_static_path=request.app.state.normalize_static_path
-
-    normalized_src = normalize_static_path(src)  
-
-
-    # app.state.config 
-    config = getattr(request.app.state, 'config', {})
-    crypto_key = config.crypto.key
-    # print('key', crypto_key)
+    if request:
+        normalize_static_path = request.app.state.normalize_static_path
+        normalized_src = normalize_static_path(src)
+        config = getattr(request.app.state, 'config', {})
+        crypto_key = config.crypto.key
+    else:
+        normalized_src = src
+        crypto_key = ""
 
     route = (getattr(request.app.state, "moosey_image_route_prefix", None)
              if request else None) or "/__moosey/img/"
@@ -1039,7 +1037,7 @@ def image(context, src, widths=None, sizes="100vw",
             normalized_src, _route_prefix=route, widths=widths, sizes=sizes,
             loading=loading, decoding=decoding, **params
         )
-    return _image_url_filter(normalized_src, crypto_key=crypto_key,  _route_prefix=route, **params)
+    return _image_url_filter(normalized_src, crypto_key=crypto_key, _route_prefix=route, **params)
 
 
 @pass_context
