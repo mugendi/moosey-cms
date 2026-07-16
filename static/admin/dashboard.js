@@ -66,8 +66,8 @@
           return (
             '<a href="' +
             editUrl +
-            '" class="flex items-center justify-between px-5 py-3 hover:bg-moose-50 transition-colors">' +
-            "<div>" +
+            '" class="flex items-center justify-between px-5 py-3 hover:bg-moose-50 transition-colors even:bg-gray-50 ">' +
+            "<div >" +
             '<p class="text-sm font-medium text-moose-800">' +
             (e.title || e.name) +
             "</p>" +

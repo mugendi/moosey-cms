@@ -331,12 +331,13 @@
             >
             <span class="text-moose-300">/</span>
 
-            {% if parts and parts|length > 1%}
+            {% if parts and parts|length > 1 or file_path %}
             <a
               href="/{{ prefix }}/browse/"
               class="hover:text-moose-900 transition-colors"
-              >Content</a
             >
+              Content
+            </a>
 
             {%endif%}
 
@@ -379,5 +380,3 @@
     {% block scripts %}{% endblock %}
   </body>
 </html>
-
-

@@ -1,5 +1,11 @@
 {% extends admin_config.templates ~ "/base.html" %} {% block title %}Content
 Browser{% endblock %} {% set active_page = 'list' %} {% block content %}
+
+<style>
+  #entries-body tr:nth-child(even) {
+    background: #fafafa;
+  }
+</style>
 <div class="mx-auto space-y-6">
   {# ── Page header ── #}
   <div class="flex flex-wrap items-center justify-between gap-3">
@@ -55,10 +61,10 @@ Browser{% endblock %} {% set active_page = 'list' %} {% block content %}
 
   {# ── File / directory table ── #}
   <div class="bg-white rounded-xl border border-moose-200 overflow-hidden">
-    <table class="w-full text-sm">
+    <table class="w-full text-sm ">
       <thead>
         <tr
-          class="border-b border-moose-100 text-left text-xs font-medium text-moose-500 uppercase tracking-wider"
+          class="border-b border-moose-200 text-left text-xs font-medium text-moose-500 uppercase tracking-wider"
         >
           <th class="px-5 py-3">Name</th>
           <th class="px-5 py-3 w-24 text-right">Size</th>
@@ -68,7 +74,7 @@ Browser{% endblock %} {% set active_page = 'list' %} {% block content %}
       </thead>
       <tbody id="entries-body" class="divide-y divide-moose-50">
         <tr>
-          <td colspan="4" class="px-5 py-6 text-center text-moose-400">
+          <td colspan="4" class="px-5 py-6 text-center text-moose-400 ">
             Loading…
           </td>
         </tr>

@@ -54,6 +54,7 @@
   function renderEntries(entries) {
     var tbody = document.getElementById("entries-body");
     tbody.replaceChildren();
+    console.log({entries});
     if (!entries || entries.length === 0) {
       tbody.innerHTML =
         '<tr><td colspan="4" class="px-5 py-6 text-center text-moose-400">This directory is empty.</td></tr>';
