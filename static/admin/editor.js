@@ -93,6 +93,8 @@
     tuiEditor.changePreviewStyle(previewStyle);
 
     var label = document.getElementById("preview-style-label");
+    var splitIcon = document.getElementById("preview-style-split-icon");
+    var tabbedIcon = document.getElementById("preview-style-tabbed-icon");
     var isTabbed = previewStyle === "tab";
     if (toggle) {
       toggle.setAttribute("aria-pressed", String(isTabbed));
@@ -101,6 +103,8 @@
         : "Switch to tabbed preview";
     }
     if (label) label.textContent = isTabbed ? "Split View" : "Tabbed View";
+    if (splitIcon) splitIcon.classList.toggle("hidden", !isTabbed);
+    if (tabbedIcon) tabbedIcon.classList.toggle("hidden", isTabbed);
   };
 
   /* ================================================================
