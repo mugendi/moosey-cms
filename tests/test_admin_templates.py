@@ -251,3 +251,10 @@ class TestAdminListTemplate:
         resp = client.get(f"/{PREFIX}/browse/")
         assert resp.status_code == 200
         assert "index.md" in resp.text or "browse" in resp.text.lower()
+        assert 'id="new-file-directory"' in resp.text
+        assert 'aria-label="Markdown file name"' in resp.text
+        assert ">.md</span" in resp.text
+
+        nested = client.get(f"/{PREFIX}/browse/blog")
+        assert nested.status_code == 200
+        assert 'subpath: "blog"' in nested.text

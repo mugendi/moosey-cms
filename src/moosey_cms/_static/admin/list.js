@@ -13,8 +13,13 @@
   }
 
   window.openNewFileModal = function () {
-    document.getElementById("new-file-name").value = "";
+    var input = document.getElementById("new-file-name");
+    var directory = document.getElementById("new-file-directory");
+    input.value = "";
+    directory.textContent = subpath ? subpath + "/" : "/";
+    directory.title = directory.textContent;
     document.getElementById("new-file-modal").classList.remove("hidden");
+    input.focus();
   };
 
   window.openNewDirModal = function () {
@@ -114,6 +119,12 @@
   window.createFile = function () {
     var name = document.getElementById("new-file-name").value.trim();
     if (!name) return showFlash("Enter a file name", "error");
+    if (/[\\/]/.test(name))
+      return showFlash("Enter a file name without folders", "error");
+    name = name.replace(/(?:\.md)+$/i, "").trim();
+    if (!name || name === "." || name === "..")
+      return showFlash("Enter a valid file name", "error");
+    name += ".md";
     var path = subpath ? subpath + "/" + name : name;
     requestJson(
       "/" + prefix + "/file/" + path,
@@ -161,5 +172,12 @@
   }
 
   window.loadDirectory = loadDirectory;
+  document
+    .getElementById("new-file-name")
+    .addEventListener("keydown", function (event) {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      window.createFile();
+    });
   loadDirectory(subpath);
 })();
