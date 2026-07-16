@@ -81,10 +81,12 @@ Guifier ships as an ES module only — must use type="module" to import. #}
         {% endif %}
       </div>
       <div class="flex items-center gap-2">
+        <!-- TODO: Disable button until there has been an actual change in content/frontmatter -->
         <button
           id="btn-save"
           onclick="saveFile()"
-          class="inline-flex items-center gap-1.5 bg-moose-700 hover:bg-moose-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
+          disabled
+          class="inline-flex items-center gap-1.5 bg-moose-700 hover:bg-moose-800 disabled:bg-moose-200 disabled:text-moose-300 disabled:cursor-not-allowed text-white  text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
         >
           <svg
             id="save-icon"

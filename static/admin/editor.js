@@ -10,6 +10,8 @@
   var activeTab = "content"; /* Current active tab */
   var previewStyle = "tab"; /* Split-screen by default */
   var isSaving = false;
+  var savedBody = null;
+  var savedFrontmatter = null;
   var toggle = document.getElementById("preview-style-toggle");
 
   /* ================================================================
@@ -98,7 +100,7 @@
         ? "Switch to split preview"
         : "Switch to tabbed preview";
     }
-    if (label) label.textContent = isTabbed ? "Split" : "Tabbed";
+    if (label) label.textContent = isTabbed ? "Split View" : "Tabbed View";
   };
 
   /* ================================================================
@@ -639,6 +641,27 @@
     var metadata = readGuifierData();
     if (metadata === null) metadata = frontmatterData;
     if (metadataCount) metadataCount.textContent = Object.keys(metadata || {}).length;
+    updateSaveButton();
+  }
+
+  function serializedFrontmatter() {
+    return JSON.stringify(getFrontmatter() || {});
+  }
+
+  function rememberSavedState() {
+    savedBody = getEditorValue();
+    savedFrontmatter = serializedFrontmatter();
+    updateSaveButton();
+  }
+
+  function updateSaveButton() {
+    var button = document.getElementById("btn-save");
+    if (!button) return;
+    var changed =
+      savedBody !== null &&
+      (getEditorValue() !== savedBody ||
+        serializedFrontmatter() !== savedFrontmatter);
+    button.disabled = isSaving || !changed;
   }
 
   function setEditorValue(text) {
@@ -699,6 +722,7 @@
         setEditorValue(data.body || "");
         setFrontmatter(data.frontmatter || {});
         _frontmatterRaw = data.frontmatter_raw || null;
+        rememberSavedState();
       })
       .catch(function (err) {
         showFlash("Could not load file: " + err.message, "error");
@@ -715,7 +739,7 @@
     var icon = document.getElementById("save-icon");
     var spinner = document.getElementById("save-spinner");
     if (button) {
-      button.disabled = saving;
+      updateSaveButton();
       button.setAttribute("aria-busy", String(saving));
     }
     if (label) label.textContent = saving ? "Saving…" : "Save";
@@ -761,6 +785,7 @@
       })
       .then(function (result) {
         showFlash("Saved!", "success");
+        rememberSavedState();
         if (isNew && result.path) {
           /* Update URL so subsequent saves use PUT */
           filePath = result.path;
@@ -1010,6 +1035,10 @@
 
     if (tuiEditor) tuiEditor.on("change", updateStats);
     document.getElementById("fallback-editor").addEventListener("input", updateStats);
+    document.getElementById("panel-metadata").addEventListener("input", updateStats);
+    document.getElementById("panel-metadata").addEventListener("change", updateStats);
+
+    if (!filePath) rememberSavedState();
 
     if (filePath) {
       loadFile(filePath);
