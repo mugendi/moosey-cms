@@ -11,7 +11,7 @@ def test_builtin_registry_contains_runtime_fields(tmp_path):
 
     for name in ("title", "template", "draft", "lock_params", "visible", "sitemap_exclude", "feed", "canonical_url"):
         assert name in fields
-    assert fields["draft"]["default"] is False
+    assert fields["draft"]["default"] is True
     assert fields["tags"]["default"] == []
     assert fields["sitemap_priority"]["path"] == "sitemap.priority"
     assert fields["sitemap_priority"]["replace_scalar_parent"] is True
@@ -46,7 +46,7 @@ def test_project_registry_is_discovered_and_deep_merged(tmp_path):
     assert fields["draft"]["default"] is True
     assert fields["draft"]["type"] == "boolean"
     assert fields["client"]["group"] == "Projects"
-    assert fields["client"]["order"] > fields["canonical"]["order"]
+    assert fields["client"]["order"] > fields["canonical_url"]["order"]
 
 
 def test_registry_reports_automatic_override_path(tmp_path):

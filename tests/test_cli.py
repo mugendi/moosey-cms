@@ -12,6 +12,7 @@ from moosey_cms.cli import (
     cmd_admin,
     cmd_config,
     cmd_init,
+    get_bundled_static_dir,
     get_bundled_templates_dir,
     get_example_dir,
 )
@@ -97,7 +98,12 @@ class TestHelpers:
         assert "editor.html" in names
         assert "dashboard.html" in names
         assert "list.html" in names
-        assert "admin.js" in names
+
+        static_names = [
+            f.name for f in get_bundled_static_dir().iterdir() if f.is_file()
+        ]
+        assert "admin.js" in static_names
+        assert "editor.js" in static_names
 
     def test_example_dir_exists(self):
         assert EXAMPLE.is_dir()

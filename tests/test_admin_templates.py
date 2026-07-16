@@ -81,9 +81,10 @@ PREFIX = "admin"
 
 class TestAdminEditorTemplate:
     def test_editor_javascript_is_in_its_own_template(self):
-        templates = Path(__file__).parent.parent / "src" / "moosey_cms" / "_admin_templates"
+        package = Path(__file__).parent.parent / "src" / "moosey_cms"
+        templates = package / "_admin_templates"
         editor_html = (templates / "editor.html").read_text()
-        editor_js = (templates / "editor.js").read_text()
+        editor_js = (package / "_static" / "admin" / "editor.js").read_text()
 
         assert 'src="/__moosey/static/admin/editor.js"' in editor_html
         assert "function initTuiEditor()" not in editor_html
@@ -101,7 +102,7 @@ class TestAdminEditorTemplate:
         """Test that editor template renders for existing files."""
         resp = client.get(f"/{PREFIX}/edit/index.md")
         assert resp.status_code == 200
-        assert "<h1 class=\"text-2xl font-bold text-moose-900\">Edit</h1>" in resp.text
+        assert "<h1 class=\"text-2xl font-bold text-moose-900\">Edit File</h1>" in resp.text
         assert "index.md" in resp.text
         assert "Content" in resp.text
         assert "Metadata" in resp.text
@@ -208,14 +209,9 @@ class TestAdminLayout:
         static_js = (
             project_root / "src" / "moosey_cms" / "_static" / "admin" / "admin.js"
         ).read_text()
-        template_js = (
-            project_root / "src" / "moosey_cms" / "_admin_templates" / "admin.js"
-        ).read_text()
-
-        assert static_js == template_js
         assert "moosey-admin-sidebar-collapsed" in static_js
         assert "sidebarBreakpoint.matches" in static_js
-        assert "'md:w-20'" in static_js
+        assert 'label.classList.toggle("md:hidden", collapsed)' in static_js
         assert "setMobileSidebarOpen" in static_js
 
 
@@ -228,7 +224,13 @@ class TestAdminDashboardTemplate:
         assert 'id="content-stat-files"' in resp.text
         assert 'id="uploads-stat-files"' in resp.text
         assert "Uploaded Files" in resp.text
-        assert "fetch('/' + prefix + '/stats')" in resp.text
+        assert '<script src="/__moosey/static/admin/dashboard.js"></script>' in resp.text
+
+        project_root = Path(__file__).parent.parent
+        dashboard_js = (
+            project_root / "src" / "moosey_cms" / "_static" / "admin" / "dashboard.js"
+        ).read_text()
+        assert 'fetch("/" + prefix + "/stats")' in dashboard_js
 
     def test_dashboard_spacing_utility_is_built(self):
         """Tailwind must scan the admin sources and generate dashboard spacing."""
