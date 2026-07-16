@@ -28,7 +28,7 @@ fields:
     {
       label: Draft,
       type: boolean,
-      default: false,
+      default: true,
       group: Publishing,
       description: "Hide the page outside development mode and exclude it from normal indexes.",
     }
