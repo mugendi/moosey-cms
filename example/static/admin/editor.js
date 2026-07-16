@@ -154,37 +154,6 @@
           tuiEditor.focus();
         }
 
-        var indentIcon =
-          '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M9 12h12M9 18h12M3 9l3 3-3 3"/></svg>';
-        var outdentIcon =
-          '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M9 12h12M9 18h12M6 9l-3 3 3 3"/></svg>';
-
-        var toolbar = [
-          ["heading", "bold", "italic", "strike"],
-          ["hr", "quote"],
-          ["ul", "ol", "task"],
-          ["table", "link"],
-          ["code", "codeblock"],
-          [
-            makeToolbarButton(
-              "indent",
-              "Indent selected lines",
-              indentIcon,
-              function () {
-                changeLineIndent(false);
-              }
-            ),
-            makeToolbarButton(
-              "outdent",
-              "Outdent selected lines",
-              outdentIcon,
-              function () {
-                changeLineIndent(true);
-              }
-            ),
-          ],
-        ];
-
         // Add custom "Add File" button (only if static dir is configured)
         var fpModal = document.getElementById("file-picker-modal");
         if (fpModal) {
@@ -197,12 +166,31 @@
           fpBtn.addEventListener("click", function () {
             openFilePickerModal();
           });
-          toolbar[toolbar.length - 1].push({
-            name: "addFile",
-            tooltip: "Add file (image, PDF, video, etc.)",
-            el: fpBtn,
-          });
+          //   toolbar[toolbar.length - 1].push(
+          //     {
+          //     name: "addFile",
+          //     tooltip: "Add file (image, PDF, video, etc.)",
+          //     el: fpBtn,
+          //   }
+          // );
         }
+
+        var toolbar = [
+          ["heading", "bold", "italic", "strike"],
+          
+          ["ul", "ol", "task", "indent", "outdent"],
+          [
+            {
+              name: "addFile",
+              tooltip: "Add file (image, PDF, video, etc.)",
+              el: fpBtn,
+            },
+            "table",
+            "link",
+          ],
+          ["hr", "quote"],
+          ["code", "codeblock"],
+        ];
 
         var availablePlugins = [
           toastui.Editor.plugin.chart,
@@ -350,6 +338,18 @@
       target.classList.remove("moose-field-added");
     }, 1500);
   }
+
+  function fpLoadDirectory(subpath) {
+        var url = '/' + prefix + fpStaticRoute + (subpath ? '/' + subpath : '');
+        fetch(url)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                fpRenderGrid(data.entries);
+            })
+            .catch(function(err) {
+                showFlash('Could not load files: ' + err.message, 'error');
+            });
+    }
 
   window.addMetadataField = function (id) {
     var field = (frontmatterRegistry.fields || {})[id];
@@ -730,8 +730,7 @@
        File Picker
        ================================================================ */
   var fpCurrentPath = "";
-  var fpSelectedFile = null; // { name, path, url, mime_type }
-  var fpStaticRoute = '{{ admin_config._static_route | default("/static") }}';
+  var fpSelectedFile = null; 
 
   window.openFilePickerModal = function () {
     if (!document.getElementById("file-picker-modal")) return;

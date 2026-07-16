@@ -135,6 +135,8 @@
       }
     </style>
 
+    <script src="/__moosey/static/admin/admin.js"></script>
+
     {% block head %}{% endblock %}
   </head>
   <body
@@ -395,7 +397,7 @@
       var prefix = "{{ admin_config.prefix }}";
       var subpath = '{{ subpath | default("") }}';
     </script>
-    <script src="/__moosey/static/admin/admin.js"></script>
+    
     {% block scripts %}{% endblock %}
   </body>
 </html>

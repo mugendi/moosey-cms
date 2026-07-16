@@ -352,6 +352,7 @@ Guifier ships as an ES module only — must use type="module" to import. #}
   var frontmatterRegistry = {{ frontmatter_fields | tojson }};
   var prefix   = '{{ admin_config.prefix }}';
   var filePath = '{{ file_path | default("") }}';
+  var fpStaticRoute = '{{ admin_config._static_route | default("/static") }}';
 </script>
 <script src="/__moosey/static/admin/editor.js"></script>
 {% endblock %}
