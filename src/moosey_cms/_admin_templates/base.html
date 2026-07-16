@@ -161,17 +161,23 @@
     >
       <div
         data-sidebar-header
-        class="flex items-center justify-between gap-2 px-4 py-4 border-b border-moose-800 min-h-16"
+        class="flex items-center justify-between gap-2 px-4 py-4 border-b border-moose-600 min-h-16"
       >
         <a
           href="/{{ prefix }}/"
-          class="flex justify-center items-center gap-2 min-w-0 font-bold tracking-tight hover:text-moose-200 transition-colors"
+          class="flex  gap-4 items-center min-w-0 font-bold tracking-tight hover:text-moose-200 transition-colors w-full"
           title="{{ admin_brand }}"
         >
-          <span class="text-lg flex-shrink-0" aria-hidden="true">🦌</span>
-          <span data-sidebar-label class="text-lg whitespace-nowrap"
-            >{{ admin_brand }}</span
-          >
+          <!-- show moose icon if admin-branding is 'moosey'  -->
+          <span class="text-xl shrink-0 uppercase font-black p-2 border border-moose-600 rounded-lg" aria-hidden="true">
+            {% if 'moosey' in admin_brand.lower() %} 🦌 {%else%}
+            <!--  -->
+            {%for letter in admin_brand.split(' ') %}{{letter[0:1]}}{%endfor%}
+            {%endif%}
+          </span>
+          <span data-sidebar-label class="text-lg font-normal whitespace-nowrap">
+            {{ admin_brand }}
+          </span>
         </a>
         <button
           type="button"
@@ -204,7 +210,7 @@
             <a
               href="/{{ prefix }}/"
               title="Dashboard"
-              class="flex justify-center items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {% if active_page == 'dashboard' %}bg-moose-800 text-white{% else %}text-moose-300 hover:bg-moose-800 hover:text-white{% endif %} transition-colors"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {% if active_page == 'dashboard' %}bg-moose-800 text-white{% else %}text-moose-300 hover:bg-moose-800 hover:text-white{% endif %} transition-colors"
             >
               <svg
                 class="w-5 h-5 flex-shrink-0"
