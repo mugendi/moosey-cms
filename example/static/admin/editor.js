@@ -272,7 +272,13 @@
     return cloneData(field.default === undefined ? "" : field.default);
   }
 
-  function setMetadataPath(data, path, value, replaceScalarParent) {
+  function setMetadataPath(
+    data,
+    path,
+    value,
+    replaceScalarParent,
+    scalarParentKey
+  ) {
     var current = data;
     for (var i = 0; i < path.length - 1; i++) {
       if (current[path[i]] === undefined) current[path[i]] = {};
@@ -282,7 +288,16 @@
           typeof current[path[i]] !== "object" ||
           Array.isArray(current[path[i]]))
       ) {
+        var parentValue = current[path[i]];
         current[path[i]] = {};
+        if (
+          scalarParentKey &&
+          parentValue !== null &&
+          parentValue !== undefined &&
+          typeof parentValue !== "object"
+        ) {
+          current[path[i]][scalarParentKey] = parentValue;
+        }
       }
       if (
         !current[path[i]] ||
@@ -421,7 +436,8 @@
         data,
         path,
         metadataDefault(field),
-        field.replace_scalar_parent === true
+        field.replace_scalar_parent === true,
+        field.scalar_parent_key
       )
     ) {
       showFlash(

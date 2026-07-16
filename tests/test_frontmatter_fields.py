@@ -15,6 +15,10 @@ def test_builtin_registry_contains_runtime_fields(tmp_path):
     assert fields["tags"]["default"] == []
     assert fields["sitemap_priority"]["path"] == "sitemap.priority"
     assert fields["sitemap_priority"]["replace_scalar_parent"] is True
+    for name in ("published", "updated", "created"):
+        assert fields[name]["path"] == f"date.{name}"
+        assert fields[name]["replace_scalar_parent"] is True
+        assert fields[name]["scalar_parent_key"] == "published"
 
 
 def test_project_registry_is_discovered_and_deep_merged(tmp_path):
