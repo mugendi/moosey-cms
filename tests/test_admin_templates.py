@@ -225,6 +225,10 @@ class TestAdminDashboardTemplate:
         resp = client.get(f"/{PREFIX}/")
         assert resp.status_code == 200
         assert "Dashboard" in resp.text or "dashboard" in resp.text.lower()
+        assert 'id="content-stat-files"' in resp.text
+        assert 'id="uploads-stat-files"' in resp.text
+        assert "Uploaded Files" in resp.text
+        assert "fetch('/' + prefix + '/stats')" in resp.text
 
     def test_dashboard_spacing_utility_is_built(self):
         """Tailwind must scan the admin sources and generate dashboard spacing."""

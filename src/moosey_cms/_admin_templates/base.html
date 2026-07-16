@@ -1,149 +1,401 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-{% set admin_brand = admin_config.brand_name | default('CMS', true) %}
-{% set admin_title = admin_config.title | default('CMS Admin', true) %}
-{% set admin_home_label = admin_config.home_label | default('Home', true) %}
-{% set admin_home_url = admin_config.home_url | default('/', true) %}
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{{ admin_title }}{% endblock %} — {{ admin_brand }}</title>
+  {% set admin_brand = admin_config.brand_name | default('CMS', true) %} {% set
+  admin_title = admin_config.title | default('CMS Admin', true) %} {% set
+  admin_home_label = admin_config.home_label | default('Home', true) %} {% set
+  admin_home_url = admin_config.home_url | default('/', true) %}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      {% block title %}{{ admin_title }}{% endblock %} — {{ admin_brand }}
+    </title>
 
     <!-- ============================================================
          Moosey Admin — Pre-built CSS with custom theme.
          Customize colors by overriding CSS variables in your own stylesheet.
          ============================================================ -->
-    <link rel="stylesheet" href="/__moosey/static/admin/admin.css">
+    <link rel="stylesheet" href="/__moosey/static/admin/admin.css" />
     <style>
-        :root { --admin-ink: #0f172a; --admin-surface: #ffffff; }
-        #flash-container { pointer-events: none; }
-        .moose-growl {
-            pointer-events: auto; width: min(24rem, calc(100vw - 2rem));
-            display: grid; grid-template-columns: 2.5rem minmax(0, 1fr) auto;
-            gap: .75rem; align-items: center; padding: .75rem;
-            color: var(--admin-surface); background: rgba(15, 23, 42, .96);
-            border: 1px solid rgba(255, 255, 255, .14); border-radius: .9rem;
-            box-shadow: 0 18px 48px rgba(15, 23, 42, .28), 0 3px 12px rgba(15, 23, 42, .18);
-            backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-            animation: moose-growl-in .28s cubic-bezier(.2, .8, .2, 1) both;
+      :root {
+        --admin-ink: #0f172a;
+        --admin-surface: #ffffff;
+      }
+      #flash-container {
+        pointer-events: none;
+      }
+      .moose-growl {
+        pointer-events: auto;
+        width: min(24rem, calc(100vw - 2rem));
+        display: grid;
+        grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+        gap: 0.75rem;
+        align-items: center;
+        padding: 0.75rem;
+        color: var(--admin-surface);
+        background: rgba(15, 23, 42, 0.96);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 0.9rem;
+        box-shadow:
+          0 18px 48px rgba(15, 23, 42, 0.28),
+          0 3px 12px rgba(15, 23, 42, 0.18);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        animation: moose-growl-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      }
+      .moose-growl.is-leaving {
+        animation: moose-growl-out 0.22s ease both;
+      }
+      .moose-growl__icon {
+        display: grid;
+        place-items: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.7rem;
+        color: #0f172a;
+        background: #fff;
+        font-weight: 800;
+      }
+      .moose-growl__title {
+        margin: 0;
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+      .moose-growl__message {
+        margin: 0.12rem 0 0;
+        color: #e2e8f0;
+        font-size: 0.78rem;
+        line-height: 1.35;
+      }
+      .moose-growl__action {
+        margin-top: 0.55rem;
+        padding: 0.3rem 0.65rem;
+        color: #0f172a;
+        background: #fff;
+        border-radius: 0.45rem;
+        font-size: 0.72rem;
+        font-weight: 800;
+      }
+      .moose-growl__action:hover {
+        background: #e2e8f0;
+      }
+      .moose-growl__close {
+        color: #cbd5e1;
+        padding: 0.35rem;
+        font-size: 1rem;
+        line-height: 1;
+        border-radius: 0.4rem;
+      }
+      .moose-growl__close:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+      }
+      @keyframes moose-growl-in {
+        from {
+          opacity: 0;
+          transform: translate3d(1rem, -8px, 0) scale(0.98);
         }
-        .moose-growl.is-leaving { animation: moose-growl-out .22s ease both; }
-        .moose-growl__icon {
-            display: grid; place-items: center; width: 2.5rem; height: 2.5rem;
-            border-radius: .7rem; color: #0f172a; background: #fff; font-weight: 800;
+      }
+      @keyframes moose-growl-out {
+        to {
+          opacity: 0;
+          transform: translate3d(1rem, -6px, 0) scale(0.98);
         }
-        .moose-growl__title { margin: 0; font-size: .82rem; font-weight: 700; }
-        .moose-growl__message { margin: .12rem 0 0; color: #e2e8f0; font-size: .78rem; line-height: 1.35; }
-        .moose-growl__action {
-            margin-top: .55rem; padding: .3rem .65rem; color: #0f172a; background: #fff;
-            border-radius: .45rem; font-size: .72rem; font-weight: 800;
+      }
+      .moose-field-added {
+        border-radius: 0.65rem;
+        animation: moose-field-added 1.35s ease-out;
+      }
+      @keyframes moose-field-added {
+        0%,
+        35% {
+          background: rgba(15, 23, 42, 0.14);
+          box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.28);
         }
-        .moose-growl__action:hover { background: #e2e8f0; }
-        .moose-growl__close { color: #cbd5e1; padding: .35rem; font-size: 1rem; line-height: 1; border-radius: .4rem; }
-        .moose-growl__close:hover { color: #fff; background: rgba(255, 255, 255, .1); }
-        @keyframes moose-growl-in { from { opacity: 0; transform: translate3d(1rem, -8px, 0) scale(.98); } }
-        @keyframes moose-growl-out { to { opacity: 0; transform: translate3d(1rem, -6px, 0) scale(.98); } }
+        60% {
+          background: rgba(15, 23, 42, 0.04);
+          box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.12);
+        }
+        100% {
+          background: transparent;
+          box-shadow: 0 0 0 0 transparent;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .moose-growl,
+        .moose-growl.is-leaving {
+          animation: none;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
         .moose-field-added {
-            border-radius: .65rem;
-            animation: moose-field-added 1.35s ease-out;
+          animation-duration: 0.01ms;
+          box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.2);
         }
-        @keyframes moose-field-added {
-            0%, 35% { background: rgba(15, 23, 42, .14); box-shadow: 0 0 0 3px rgba(15, 23, 42, .28); }
-            60% { background: rgba(15, 23, 42, .04); box-shadow: 0 0 0 2px rgba(15, 23, 42, .12); }
-            100% { background: transparent; box-shadow: 0 0 0 0 transparent; }
-        }
-        @media (prefers-reduced-motion: reduce) { .moose-growl, .moose-growl.is-leaving { animation: none; } }
-        @media (prefers-reduced-motion: reduce) { .moose-field-added { animation-duration: .01ms; box-shadow: 0 0 0 2px rgba(15, 23, 42, .2); } }
+      }
     </style>
 
     {% block head %}{% endblock %}
-</head>
-<body class="bg-moose-50 text-moose-900 min-h-screen flex overflow-x-hidden"
-      data-admin-brand="{{ admin_brand }}">
-
-    {# Extract prefix for URL building #}
-    {% set prefix = admin_config.prefix %}
+  </head>
+  <body
+    class="bg-moose-50 text-moose-900 min-h-screen flex overflow-x-hidden"
+    data-admin-brand="{{ admin_brand }}"
+  >
+    {# Extract prefix for URL building #} {% set prefix = admin_config.prefix %}
 
     <!-- Mobile overlay backdrop -->
-    <button id="sidebar-overlay" type="button"
-            class="fixed inset-0 bg-black/40 z-30 hidden md:hidden"
-            onclick="toggleSidebar()" aria-label="Close navigation"></button>
+    <button
+      id="sidebar-overlay"
+      type="button"
+      class="fixed inset-0 bg-black/40 z-30 hidden md:hidden"
+      onclick="toggleSidebar()"
+      aria-label="Close navigation"
+    ></button>
 
     <!-- Responsive sidebar: off-canvas on mobile, expandable strip on desktop -->
-    <aside id="sidebar"
-           class="fixed md:sticky top-0 left-0 z-40 h-screen w-72 max-w-[85vw] md:w-64 bg-moose-900 text-white flex flex-col flex-shrink-0 transition-all duration-200 -translate-x-full md:translate-x-0"
-           aria-label="Admin navigation" data-collapsed="false">
+    <aside
+      id="sidebar"
+      class="fixed md:sticky top-0 left-0 z-40 h-screen w-72 max-w-[85vw] md:w-64 bg-moose-900 text-white flex flex-col flex-shrink-0 transition-all duration-200 -translate-x-full md:translate-x-0"
+      aria-label="Admin navigation"
+      data-collapsed="false"
+    >
+      <div
+        data-sidebar-header
+        class="flex items-center justify-between gap-2 px-4 py-4 border-b border-moose-800 min-h-16"
+      >
+        <a
+          href="/{{ prefix }}/"
+          class="flex items-center gap-2 min-w-0 font-bold tracking-tight hover:text-moose-200 transition-colors"
+          title="{{ admin_brand }}"
+        >
+          <span class="text-lg flex-shrink-0" aria-hidden="true">🦌</span>
+          <span data-sidebar-label class="text-lg whitespace-nowrap"
+            >{{ admin_brand }}</span
+          >
+        </a>
+        <button
+          type="button"
+          onclick="toggleSidebar()"
+          class="md:hidden text-moose-400 hover:text-white p-2 rounded-lg"
+          aria-label="Close sidebar"
+          aria-controls="sidebar"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
 
-        <div data-sidebar-header class="flex items-center justify-between gap-2 px-4 py-4 border-b border-moose-800 min-h-16">
-            <a href="/{{ prefix }}/" class="flex items-center gap-2 min-w-0 font-bold tracking-tight hover:text-moose-200 transition-colors" title="{{ admin_brand }}">
-                <span class="text-lg flex-shrink-0" aria-hidden="true">🦌</span>
-                <span data-sidebar-label class="text-lg whitespace-nowrap">{{ admin_brand }}</span>
+      <nav class="flex-1 overflow-y-auto py-3">
+        <ul data-sidebar-nav class="space-y-1 px-3">
+          {% block nav_dashboard %}
+          <li>
+            <a
+              href="/{{ prefix }}/"
+              title="Dashboard"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {% if active_page == 'dashboard' %}bg-moose-800 text-white{% else %}text-moose-300 hover:bg-moose-800 hover:text-white{% endif %} transition-colors"
+            >
+              <svg
+                class="w-5 h-5 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1"
+                />
+              </svg>
+              <span data-sidebar-label class="whitespace-nowrap"
+                >Dashboard</span
+              >
             </a>
-            <button type="button" onclick="toggleSidebar()"
-                    class="md:hidden text-moose-400 hover:text-white p-2 rounded-lg"
-                    aria-label="Close sidebar" aria-controls="sidebar">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-        </div>
+          </li>
+          {% endblock %} {% block nav_content %}
+          <li>
+            <a
+              href="/{{ prefix }}/browse/"
+              title="Content"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {% if active_page == 'list' %}bg-moose-800 text-white{% else %}text-moose-300 hover:bg-moose-800 hover:text-white{% endif %} transition-colors"
+            >
+              <svg
+                class="w-5 h-5 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                />
+              </svg>
+              <span data-sidebar-label class="whitespace-nowrap">Content</span>
+            </a>
+          </li>
+          {% endblock %}
+        </ul>
+      </nav>
 
-        <nav class="flex-1 overflow-y-auto py-3">
-            <ul data-sidebar-nav class="space-y-1 px-3">
-                {% block nav_dashboard %}
-                <li>
-                    <a href="/{{ prefix }}/" title="Dashboard"
-                       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
-                              {% if active_page == 'dashboard' %}bg-moose-800 text-white{% else %}text-moose-300 hover:bg-moose-800 hover:text-white{% endif %} transition-colors">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1"/></svg>
-                        <span data-sidebar-label class="whitespace-nowrap">Dashboard</span>
-                    </a>
-                </li>
-                {% endblock %}
-
-                {% block nav_content %}
-                <li>
-                    <a href="/{{ prefix }}/browse/" title="Content"
-                       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
-                              {% if active_page == 'list' %}bg-moose-800 text-white{% else %}text-moose-300 hover:bg-moose-800 hover:text-white{% endif %} transition-colors">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-                        <span data-sidebar-label class="whitespace-nowrap">Content</span>
-                    </a>
-                </li>
-                {% endblock %}
-            </ul>
-        </nav>
-
-        <div data-sidebar-footer class="px-4 py-3 border-t border-moose-800 text-xs text-moose-500">
-            <span data-sidebar-label class="whitespace-nowrap">mode: {{ mode | default('development') }}</span>
-        </div>
+      <div
+        data-sidebar-footer
+        class="px-4 py-3 border-t border-moose-800 text-xs text-moose-500"
+      >
+        <span data-sidebar-label class="whitespace-nowrap"
+          >mode: {{ mode | default('development') }}</span
+        >
+      </div>
     </aside>
 
     <!-- Main content area -->
     <div class="flex-1 min-w-0 flex flex-col min-h-screen">
-        <header class="sticky top-0 z-20 min-h-16 bg-white border-b border-moose-200 px-3 md:px-4 flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3 min-w-0">
-                <button id="sidebar-toggle" type="button" onclick="toggleSidebar()"
-                        class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-moose-600 hover:text-moose-900 hover:bg-moose-100 transition-colors"
-                        aria-label="Toggle sidebar" aria-controls="sidebar" aria-expanded="true">
-                    <svg class="w-6 h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                </button>
-                <span class="font-semibold text-sm truncate">{{ admin_title }}</span>
-            </div>
+      <header
+        class="sticky top-0 z-20 min-h-16 bg-white border-b border-moose-200 px-3 md:px-4 flex items-center justify-between gap-3"
+      >
+        <div class="flex items-center gap-3 min-w-0">
+          <button
+            id="sidebar-toggle"
+            type="button"
+            onclick="toggleSidebar()"
+            class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-moose-600 hover:text-moose-900 hover:bg-moose-100 transition-colors"
+            aria-label="Toggle sidebar"
+            aria-controls="sidebar"
+            aria-expanded="true"
+          >
+            <svg
+              class="w-6 h-6 md:w-5 md:h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
+          <span class="font-semibold text-sm truncate">{{ admin_title }}</span>
+        </div>
 
-            <a href="{{ admin_home_url }}" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-moose-600 hover:text-moose-900 hover:bg-moose-100 transition-colors" title="{{ admin_home_label }}">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 11.5L12 4l9 7.5M5 10v10h14V10M9 20v-6h6v6"/></svg>
-                <span class="hidden sm:inline">{{ admin_home_label }}</span>
-            </a>
-        </header>
+        <a
+          href="{{ admin_home_url }}"
+          class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-moose-600 hover:text-moose-900 hover:bg-moose-100 transition-colors"
+          title="{{ admin_home_label }}"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 11.5L12 4l9 7.5M5 10v10h14V10M9 20v-6h6v6"
+            />
+          </svg>
+          <span class="hidden sm:inline">{{ admin_home_label }}</span>
+        </a>
+      </header>
 
-        <div id="flash-container" class="fixed top-4 right-4 z-50 space-y-2" aria-live="polite" aria-atomic="false"></div>
+      <div
+        id="flash-container"
+        class="fixed top-4 right-4 z-50 space-y-2"
+        aria-live="polite"
+        aria-atomic="false"
+      ></div>
 
-        <main class="flex-1 p-4 md:p-8">
-            {% block content %}{% endblock %}
-        </main>
+      <main class="flex-1 p-4 md:p-8">
+        
+        {%if file_path%} 
+        <!--  -->
+        {%set breadcrumb_path =file_path.strip('/')%} 
+        <!-- else -->
+        {%elif route_path%}
+        {%set breadcrumb_path = route_path.strip('/') %}
+        <!--  -->
+        {%endif%}
+        
+        <!-- render conditionally -->
+        {% if
+        breadcrumb_path %} {% set parts = breadcrumb_path.split('/') %}
+        <div
+          id="nav-container"
+          class="text-sm text-moose-500 bg-moose-100 p-3 mb-4 flex gap-1"
+        >
+          <div >▷</div>
+          <nav class="flex items-center gap-1" aria-label="Breadcrumb">
+            <a
+              href="/{{ prefix }}/"
+              class="hover:text-moose-900 transition-colors"
+              >Dashboard</a
+            >
+            <span class="text-moose-300">/</span>
+
+            {% if parts and parts|length > 1%}
+            <a
+              href="/{{ prefix }}/browse/"
+              class="hover:text-moose-900 transition-colors"
+              >Content</a
+            >
+
+            {%endif%}
+
+            <!--  -->
+            {% for part in parts %}
+
+            <!--  -->
+            {%if part and part.lower() != 'browse' %}
+
+            <span class="text-moose-300">/</span>
+            {% if loop.last %}
+            <span class="text-moose-900 font-medium">{{ part }}</span>
+            {% else %}
+            <a
+              href="/{{ prefix }}/browse/{{ parts[:loop.index]|join('/') }}"
+              class="hover:text-moose-900 transition-colors"
+              >{{ part }}</a
+            >
+            {% endif %}
+            <!--  -->
+            {%endif %}
+            <!--  -->
+            {% endfor %}
+          </nav>
+        </div>
+        {% endif %}
+
+        <div class="">{% block content %}{% endblock %}</div>
+      </main>
     </div>
 
     <!-- Shared JS utilities -->
+    <script>
+      var prefix = "{{ admin_config.prefix }}";
+      var subpath = '{{ subpath | default("") }}';
+    </script>
     <script src="/__moosey/static/admin/admin.js"></script>
     {% block scripts %}{% endblock %}
-</body>
+  </body>
 </html>

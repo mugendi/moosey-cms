@@ -60,6 +60,7 @@ These routes use `Jinja2` templates located in your project's `templates/admin/`
 
 | Method | Route | Description |
 |--------|-------|-------------|
+| `GET` | `/{prefix}/stats` | Recursive metadata totals for content and uploaded files, reported separately |
 | `GET` | `/{prefix}/list` | List content root directory |
 | `GET` | `/{prefix}/list/{subpath}` | List a subdirectory |
 | `GET` | `/{prefix}/file/{file_path}` | Read a file (frontmatter + body) |
@@ -70,6 +71,7 @@ These routes use `Jinja2` templates located in your project's `templates/admin/`
 | `DELETE` | `/{prefix}/dir/{dir_path}` | Delete a directory |
 
 All JSON endpoints return structured responses and standard HTTP status codes.
+Dashboard statistics use filesystem metadata only; file contents are not read.
 
 See the [JSON API Reference](#json-api-reference) section below for detailed endpoint docs.
 

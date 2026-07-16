@@ -2,14 +2,8 @@
 file_path %}Edit: {{ file_path }}{% else %}New File{% endif %}{% endblock %} {%
 set active_page = 'editor' %} {% block head %} {# ── TUI Editor (toast-ui) —
 WYSIWYG/Markdown editor for content. #}
-<link
-  rel="stylesheet"
-  href="/__moosey/static/vendor/toast-ui/editor.min.css"
-/>
-<link
-  rel="stylesheet"
-  href="/__moosey/static/vendor/toast-ui/chart.min.css"
-/>
+<link rel="stylesheet" href="/__moosey/static/vendor/toast-ui/editor.min.css" />
+<link rel="stylesheet" href="/__moosey/static/vendor/toast-ui/chart.min.css" />
 <link
   rel="stylesheet"
   href="/__moosey/static/vendor/toast-ui/color-picker.min.css"
@@ -18,14 +12,8 @@ WYSIWYG/Markdown editor for content. #}
   rel="stylesheet"
   href="/__moosey/static/vendor/toast-ui/plugins/color-syntax.min.css"
 />
-<script
-  src="/__moosey/static/vendor/toast-ui/editor-all.min.js"
-  defer
-></script>
-<script
-  src="/__moosey/static/vendor/toast-ui/chart.min.js"
-  defer
-></script>
+<script src="/__moosey/static/vendor/toast-ui/editor-all.min.js" defer></script>
+<script src="/__moosey/static/vendor/toast-ui/chart.min.js" defer></script>
 <script
   src="/__moosey/static/vendor/toast-ui/color-picker.min.js"
   defer
@@ -67,148 +55,190 @@ Guifier ships as an ES module only — must use type="module" to import. #}
   import FileIcons from "/__moosey/static/vendor/file-icons/file-icons.esm.min.js";
   window.FileIcons = FileIcons;
 </script>
+<style>
+  .toastui-editor-defaultUI {
+    border: none;
+  }
+</style>
 {% endblock %} {% block content %}
-<div class="mx-auto space-y-4">
-  {# ── Page header with clickable breadcrumbs ── #}
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <div>
-      {% if file_path %}
-      <nav class="text-sm text-moose-500 mb-1" aria-label="Breadcrumb">
-        <a
-          href="/{{ prefix }}/browse/"
-          class="hover:text-moose-900 transition-colors"
-          >Content</a
-        >
-        {% set parts = file_path.split('/') %} {% for part in parts %}
-        <span class="text-moose-300">/</span>
-        {% if loop.last %}
-        <span class="text-moose-900 font-medium">{{ part }}</span>
+<div class="mx-auto">
+  <div
+    class="flex h-full min-h-80 w-full items-center justify-center bg-moose-100 text-moose-400"
+    id="content-loading"
+  >
+    <h2 class="text-lg">Loading Content...</h2>
+  </div>
+  <div class="hidden space-y-4" id="content-editor">
+    {# ── Page header with clickable breadcrumbs ── #}
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        {% if file_path %}
+        <h1 class="text-2xl font-bold text-moose-900">Edit File</h1>
         {% else %}
-        <a
-          href="/{{ prefix }}/browse/{{ parts[:loop.index]|join('/') }}"
-          class="hover:text-moose-900 transition-colors"
-          >{{ part }}</a
-        >
-        {% endif %} {% endfor %}
-      </nav>
-      <h1 class="text-2xl font-bold text-moose-900">Edit</h1>
-      {% else %}
-      <h1 class="text-2xl font-bold text-moose-900">New File</h1>
-      {% endif %}
-    </div>
-    <div class="flex items-center gap-2">
-      <button
-        id="btn-save"
-        onclick="saveFile()"
-        class="inline-flex items-center gap-1.5 bg-moose-700 hover:bg-moose-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
-      >
-        <svg
-          id="save-icon"
-          class="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
-        <svg id="save-spinner" class="hidden w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
-        <span id="save-label">Save</span>
-      </button>
-    </div>
-  </div>
-
-  {# ── File path input (for new files) ── #} {% if not file_path %}
-  <div>
-    <label
-      for="file-path-input"
-      class="block text-xs font-medium text-moose-500 mb-1"
-      >File path (e.g. blog/my-post.md)</label
-    >
-    <input
-      id="file-path-input"
-      type="text"
-      placeholder="blog/my-post.md"
-      class="w-full border border-moose-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-moose-500 focus:border-transparent"
-    />
-  </div>
-  {% endif %} {# ── Tabbed editor interface ── #}
-  <div class="bg-white rounded-xl border border-moose-200 overflow-hidden">
-    {# ── Tab navigation ── #}
-    <div class="flex items-center justify-between">
-      <div class="flex border-b border-moose-200">
-        <button
-          id="tab-content"
-          onclick="switchTab('content')"
-          class="tab-button active px-5 py-3 text-sm font-medium border-b-2 border-moose-700 text-moose-900 bg-moose-50"
-        >
-          Content
-        </button>
-        <button
-          id="tab-metadata"
-          onclick="switchTab('metadata')"
-          class="tab-button px-5 py-3 text-sm font-medium border-b-2 border-transparent text-moose-500 hover:text-moose-700 hover:bg-moose-50 transition-colors"
-        >
-          Metadata
-        </button>
+        <h1 class="text-2xl font-bold text-moose-900">New File</h1>
+        {% endif %}
       </div>
-
-      <div class="pr-2">
+      <div class="flex items-center gap-2">
         <button
-          id="preview-style-toggle"
-          type="button"
-          onclick="togglePreviewStyle()"
-          aria-pressed="false"
-          title="Switch to tabbed preview"
-          class="inline-flex items-center gap-1.5 bg-white hover:bg-moose-100 text-moose-700 border border-moose-300 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+          id="btn-save"
+          onclick="saveFile()"
+          class="inline-flex items-center gap-1.5 bg-moose-700 hover:bg-moose-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
         >
           <svg
+            id="save-icon"
             class="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            aria-hidden="true"
           >
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
               stroke-width="2"
-              d="M4 5h16v14H4zM12 5v14"
+              d="M5 13l4 4L19 7"
             />
           </svg>
-          <span id="preview-style-label">Split</span>
+          <svg
+            id="save-spinner"
+            class="hidden w-4 h-4 animate-spin"
+            fill="none"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+            ></path>
+          </svg>
+          <span id="save-label">Save</span>
         </button>
       </div>
     </div>
 
-    {# ── Tab content panels ── #}
-    <div id="panel-content" class="tab-panel">
-      <div id="tui-editor"></div>
-      <textarea
-        id="fallback-editor"
-        class="hidden w-full h-full p-4 text-sm font-mono text-moose-800 border-0 focus:outline-none resize-none"
-        placeholder="Write your markdown here…"
-      ></textarea>
+    {# ── File path input (for new files) ── #} {% if not file_path %}
+    <div>
+      <label
+        for="file-path-input"
+        class="block text-xs font-medium text-moose-500 mb-1"
+        >File path (e.g. blog/my-post.md)</label
+      >
+      <input
+        id="file-path-input"
+        type="text"
+        placeholder="blog/my-post.md"
+        class="w-full border border-moose-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-moose-500 focus:border-transparent"
+      />
     </div>
+    {% endif %} {# ── Tabbed editor interface ── #}
+    <div class="bg-white rounded-xl border border-moose-200 overflow-hidden">
+      {# ── Tab navigation ── #}
+      <div class="flex items-center justify-between w-full border-b  border-moose-200 ">
+        <div class="flex">
+          <button
+            id="tab-content"
+            onclick="switchTab('content')"
+            class="tab-button active px-5 py-3 text-sm font-medium border-b-2 border-moose-700 text-moose-900 bg-moose-50"
+          >
+            Content
+          </button>
+          <button
+            id="tab-metadata"
+            onclick="switchTab('metadata')"
+            class="tab-button px-5 py-3 text-sm font-medium border-b-2 border-transparent text-moose-500 hover:text-moose-700 hover:bg-moose-50 transition-colors"
+          >
+            Metadata
+          </button>
+        </div>
+
+        <div class="pr-2">
+          <button
+            id="preview-style-toggle"
+            type="button"
+            onclick="togglePreviewStyle()"
+            aria-pressed="false"
+            title="Switch to tabbed preview"
+            class="items-center gap-1.5 bg-white hover:bg-moose-100 text-moose-700 border border-moose-300 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors hidden cursor-pointer"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 5h16v14H4zM12 5v14"
+              />
+            </svg>
+            <span id="preview-style-label">Split</span>
+          </button>
+        </div>
+      </div>
+
+      {# ── Tab content panels ── #}
+      <div id="panel-content" class="tab-panel">
+        <div id="tui-editor"></div>
+        <textarea
+          id="fallback-editor"
+          class="hidden w-full h-full p-4 text-sm font-mono text-moose-800 border-0 focus:outline-none resize-none"
+          placeholder="Write your markdown here…"
+        ></textarea>
+      </div>
 
       <div id="panel-metadata" class="tab-panel hidden">
-        <div class="relative flex items-center justify-between gap-3 border-b border-moose-200 bg-moose-50 px-4 py-3">
+        <div
+          class="relative flex items-center justify-between gap-3 border-b border-moose-200 bg-moose-50 px-4 py-3"
+        >
           <div>
             <p class="text-sm font-semibold text-moose-900">Frontmatter</p>
-                            <p class="text-xs text-moose-500">Add fields currently supported by {{ admin_config.brand_name | default('the CMS', true) }}.</p>
+            <p class="text-xs text-moose-500">
+              Add fields currently supported by {{ admin_config.brand_name |
+              default('the CMS', true) }}.
+            </p>
           </div>
-          <button id="metadata-field-toggle" type="button" onclick="toggleMetadataFieldMenu()" aria-expanded="false" class="rounded-lg bg-moose-700 px-3 py-2 text-sm font-medium text-white hover:bg-moose-800">Add metadata</button>
-          <div id="metadata-field-menu" class="absolute right-4 top-16 z-30 hidden w-[min(28rem,calc(100vw-3rem))] overflow-hidden rounded-xl border border-moose-200 bg-white shadow-2xl">
-            <div class="border-b border-moose-200 p-3"><input id="metadata-field-search" type="search" placeholder="Search supported fields…" oninput="renderMetadataFieldMenu(this.value)" class="w-full rounded-lg border border-moose-300 px-3 py-2 text-sm focus:border-moose-700 focus:outline-none focus:ring-2 focus:ring-moose-200"></div>
-            <div id="metadata-field-list" class="max-h-80 overflow-y-auto p-2"></div>
+          <button
+            id="metadata-field-toggle"
+            type="button"
+            onclick="toggleMetadataFieldMenu()"
+            aria-expanded="false"
+            class="rounded-lg bg-moose-700 px-3 py-2 text-sm font-medium text-white hover:bg-moose-800"
+          >
+            Add metadata
+          </button>
+          <div
+            id="metadata-field-menu"
+            class="absolute right-4 top-16 z-30 hidden w-[min(28rem,calc(100vw-3rem))] overflow-hidden rounded-xl border border-moose-200 bg-white shadow-2xl"
+          >
+            <div class="border-b border-moose-200 p-3">
+              <input
+                id="metadata-field-search"
+                type="search"
+                placeholder="Search supported fields…"
+                oninput="renderMetadataFieldMenu(this.value)"
+                class="w-full rounded-lg border border-moose-300 px-3 py-2 text-sm focus:border-moose-700 focus:outline-none focus:ring-2 focus:ring-moose-200"
+              />
+            </div>
+            <div
+              id="metadata-field-list"
+              class="max-h-80 overflow-y-auto p-2"
+            ></div>
           </div>
         </div>
         <div id="guifier-container" class="p-4"></div>
       </div>
+    </div>
   </div>
 </div>
 {# ── File Picker Modal ── #} {% if admin_config._static_dir %}
@@ -243,16 +273,6 @@ Guifier ships as an ES module only — must use type="module" to import. #}
           />
         </svg>
       </button>
-    </div>
-
-    {# Breadcrumbs #}
-    <div
-      id="fp-breadcrumbs"
-      class="px-4 py-2 text-sm text-moose-600 border-b border-moose-100 bg-moose-50"
-    >
-      <span class="cursor-pointer hover:text-moose-900" onclick="fpNavigate('')"
-        >Root</span
-      >
     </div>
 
     {# Main content area: grid + preview #}
@@ -330,6 +350,8 @@ Guifier ships as an ES module only — must use type="module" to import. #}
 {% endif %} {% endblock %} {% block scripts %}
 <script>
   var frontmatterRegistry = {{ frontmatter_fields | tojson }};
+  var prefix   = '{{ admin_config.prefix }}';
+  var filePath = '{{ file_path | default("") }}';
 </script>
 <script src="/__moosey/static/admin/editor.js"></script>
 {% endblock %}

@@ -77,6 +77,28 @@ PREFIX = "admin"
 
 
 # ---------------------------------------------------------------------------
+# DASHBOARD STATISTICS
+# ---------------------------------------------------------------------------
+
+class TestDashboardStats:
+    def test_content_stats_are_recursive(self, client, content_dir):
+        response = client.get(f"/{PREFIX}/stats")
+        assert response.status_code == 200
+        stats = response.json()
+
+        assert stats["content"]["available"] is True
+        assert stats["content"]["file_count"] == 4
+        assert stats["content"]["directory_count"] == 1
+        assert stats["content"]["total_size"] == sum(
+            path.stat().st_size
+            for path in content_dir.rglob("*")
+            if path.is_file() and not path.name.startswith(".")
+        )
+        assert stats["content"]["modified"] is not None
+        assert stats["uploads"]["available"] is False
+
+
+# ---------------------------------------------------------------------------
 # LIST
 # ---------------------------------------------------------------------------
 
@@ -527,6 +549,24 @@ def static_client(content_dir, static_dir):
     )
     app.include_router(router)
     return TestClient(app)
+
+
+class TestDashboardStatsWithUploads:
+    def test_content_and_upload_stats_are_separate(
+        self, static_client, content_dir, static_dir
+    ):
+        response = static_client.get(f"/{PREFIX}/stats")
+        assert response.status_code == 200
+        stats = response.json()
+
+        assert stats["content"]["file_count"] == 4
+        assert stats["uploads"]["available"] is True
+        assert stats["uploads"]["file_count"] == 7
+        assert stats["uploads"]["directory_count"] == 1
+        assert stats["uploads"]["total_size"] == sum(
+            path.stat().st_size for path in static_dir.rglob("*") if path.is_file()
+        )
+        assert stats["uploads"]["modified"] is not None
 
 
 class TestStaticList:

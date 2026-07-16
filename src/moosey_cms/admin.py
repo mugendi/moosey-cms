@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 import frontmatter
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 from starlette.responses import HTMLResponse
 
 from .helpers import get_secure_target, parse_markdown_file
@@ -96,6 +97,21 @@ class StaticMkdirResponse(BaseModel):
     """Response for the static directory creation endpoint."""
     path: str
     status: str
+
+
+class DirectoryStats(BaseModel):
+    """Recursive metadata totals for one managed directory tree."""
+    available: bool = True
+    file_count: int = 0
+    directory_count: int = 0
+    total_size: int = 0
+    modified: Optional[str] = None
+
+
+class DashboardStatsResponse(BaseModel):
+    """Separate content and uploaded-file dashboard statistics."""
+    content: DirectoryStats
+    uploads: DirectoryStats
 
 
 # ---------------------------------------------------------------------------
@@ -191,6 +207,59 @@ def _static_entry(file_path: Path, static_dir: Path, static_route: str) -> Stati
         modified=modified,
         mime_type=mime_type,
         url=url,
+    )
+
+
+def _directory_stats(root: Optional[Path]) -> DirectoryStats:
+    """Collect recursive filesystem metadata without reading file contents."""
+    if root is None or not root.exists() or not root.is_dir():
+        return DirectoryStats(available=False)
+
+    file_count = 0
+    directory_count = 0
+    total_size = 0
+    latest_modified: Optional[float] = None
+
+    for current, directory_names, file_names in os.walk(root, followlinks=False):
+        current_path = Path(current)
+        directory_names[:] = [
+            name
+            for name in directory_names
+            if not name.startswith(".") and not (current_path / name).is_symlink()
+        ]
+        file_names = [name for name in file_names if not name.startswith(".")]
+
+        directory_count += len(directory_names)
+        for name in directory_names:
+            try:
+                modified = (current_path / name).stat().st_mtime
+            except OSError:
+                continue
+            latest_modified = max(latest_modified or modified, modified)
+
+ 
+        for name in file_names:
+            file_path = current_path / name
+            if file_path.is_symlink():
+                continue
+            try:
+                stat = file_path.stat()
+            except OSError:
+                continue
+            file_count += 1
+            total_size += stat.st_size
+            latest_modified = max(latest_modified or stat.st_mtime, stat.st_mtime)
+
+    modified = (
+        datetime.fromtimestamp(latest_modified).isoformat()
+        if latest_modified is not None
+        else None
+    )
+    return DirectoryStats(
+        file_count=file_count,
+        directory_count=directory_count,
+        total_size=total_size,
+        modified=modified,
     )
 
 
@@ -417,8 +486,12 @@ def register_admin_routes(
     @router.get(f"/{prefix}/browse/", include_in_schema=False)
     @router.get(f"/{prefix}/browse/{{subpath:path}}", include_in_schema=False)
     async def admin_browse_page(request: Request, subpath: str = ""):
+
+        route_path = request.url.path.strip('/').replace(prefix.strip('/'),'')
+        print('>>>>', request.url.path, route_path)
+
         return await _render_admin_template(request, f"{templates_subdir}/list.html", {
-            "admin_config": admin_config, "mode": mode, "subpath": subpath,
+            "admin_config": admin_config, "mode": mode, "subpath": subpath,'route_path':route_path
         })
 
     @router.get(f"/{prefix}/edit/", include_in_schema=False)
@@ -433,8 +506,18 @@ def register_admin_routes(
     # STATIC — file browsing, upload, and directory creation
     # ------------------------------------------------------------------
 
-    static_dir = admin_config.get("_static_dir")
+    static_dir_value = admin_config.get("_static_dir")
+    static_dir = Path(static_dir_value) if static_dir_value is not None else None
     static_route = admin_config.get("_static_route", "/static")
+
+    @router.get(f"/{prefix}/stats", response_model=DashboardStatsResponse)
+    async def admin_dashboard_stats() -> DashboardStatsResponse:
+        content_stats = await run_in_threadpool(_directory_stats, content_dir)
+        upload_stats = await run_in_threadpool(_directory_stats, static_dir)
+        return DashboardStatsResponse(
+            content=content_stats,
+            uploads=upload_stats,
+        )
 
     if static_dir is not None:
 
@@ -502,5 +585,3 @@ def register_admin_routes(
             target.mkdir(parents=True, exist_ok=False)
             rel = str(target.relative_to(static_dir)).replace("\\", "/")
             return StaticMkdirResponse(path=rel, status="created")
-
-
