@@ -87,6 +87,8 @@ These routes use `Jinja2` templates located in your project's `templates/admin/`
 | `DELETE` | `/{prefix}/file/{file_path}` | Delete a file |
 | `POST` | `/{prefix}/dir/{dir_path}` | Create a directory |
 | `DELETE` | `/{prefix}/dir/{dir_path}` | Delete a directory |
+| `GET` | `/{prefix}/file-history/{file_path}` | View Git commit history for a file |
+| `POST` | `/{prefix}/rollback/{file_path}` | Restore a file to a previous version |
 
 All JSON endpoints return structured responses and standard HTTP status codes.
 Dashboard statistics use filesystem metadata only; file contents are not read.
@@ -615,6 +617,74 @@ curl -X DELETE http://localhost:8000/admin/content/file/drafts/post.md
 # Delete the directory
 curl -X DELETE http://localhost:8000/admin/content/dir/drafts
 ```
+
+---
+
+### File History (Git Versioning)
+
+View the commit history for a specific file. Each commit represents a saved version.
+
+```
+GET /{prefix}/file-history/{file_path}
+```
+
+**Response:**
+
+```json
+{
+  "path": "blog/hello-world.md",
+  "history": [
+    {"version": 3, "hash": "a1b2c3d", "message": "content: update blog/hello-world.md (v3)", "date": "2026-07-15T10:30:00"},
+    {"version": 2, "hash": "e4f5g6h", "message": "content: update blog/hello-world.md (v2)", "date": "2026-07-14T09:00:00"},
+    {"version": 1, "hash": "i7j8k9l", "message": "content: create blog/hello-world.md (v1)", "date": "2026-07-13T08:00:00"}
+  ]
+}
+```
+
+**Example:**
+
+```bash
+curl http://localhost:8000/admin/content/file-history/blog/hello-world.md
+```
+
+---
+
+### Rollback (Git Versioning)
+
+Restore a file to a previous version by specifying the version number. The current content is committed before rollback, creating a safety net.
+
+```
+POST /{prefix}/rollback/{file_path}
+```
+
+**Request body:**
+
+```json
+{
+  "version": 2
+}
+```
+
+**Response:**
+
+```json
+{
+  "path": "blog/hello-world.md",
+  "status": "rolled_back",
+  "from_version": 3,
+  "to_version": 2
+}
+```
+
+**Example:**
+
+```bash
+curl -X POST http://localhost:8000/admin/content/rollback/blog/hello-world.md \
+  -H "Content-Type: application/json" \
+  -d '{"version": 2}'
+```
+
+**Note:** Rollback commits are never auto-pushed to the remote, even when `git.auto_push` is enabled.
 
 ---
 
