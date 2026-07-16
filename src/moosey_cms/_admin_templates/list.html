@@ -92,7 +92,8 @@ Browser{% endblock %} {% set active_page = 'list' %} {% block content %}
 >
   <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
     <h3 class="text-lg font-semibold text-moose-900">Create New File</h3>
-    <div
+    <label
+      for="new-file-name"
       class="flex w-full overflow-hidden rounded-lg border border-moose-300 bg-white text-sm focus-within:ring-2 focus-within:ring-moose-500 focus-within:border-transparent"
     >
       <span
@@ -111,7 +112,7 @@ Browser{% endblock %} {% set active_page = 'list' %} {% block content %}
       <span class="border-l border-moose-300 bg-moose-50 px-3 py-2 text-moose-500"
         >.md</span
       >
-    </div>
+    </label>
     <div class="flex justify-end gap-2">
       <button
         onclick="closeModal('new-file-modal')"
@@ -138,7 +139,8 @@ Browser{% endblock %} {% set active_page = 'list' %} {% block content %}
 >
   <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
     <h3 class="text-lg font-semibold text-moose-900">Create New Folder</h3>
-    <div
+    <label
+      for="new-dir-name"
       class="flex w-full overflow-hidden rounded-lg border border-moose-300 bg-white text-sm focus-within:ring-2 focus-within:ring-moose-500 focus-within:border-transparent"
     >
       <span
@@ -154,7 +156,7 @@ Browser{% endblock %} {% set active_page = 'list' %} {% block content %}
         spellcheck="false"
         class="min-w-0 flex-1 px-3 py-2 focus:outline-none"
       />
-    </div>
+    </label>
     <div class="flex justify-end gap-2">
       <button
         onclick="closeModal('new-dir-modal')"

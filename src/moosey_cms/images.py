@@ -850,8 +850,6 @@ def register_routes(
             json_str = decode(encoded, key=crypto_key    )
             file_data = json.loads(json_str)
 
-            print(file_data)
-
             src = file_data.get("src")
 
             if not src:
@@ -865,6 +863,8 @@ def register_routes(
 
             params = file_data.get("params") or {}
             if not _can_transform(params):
+                # 
+                # todo: We are serving original file before we can generate transformation that will be served in subsequent requests. As such we should serve it as a redirect and no cache
                 return FileResponse(
                     str(original_file),
                     headers={"Cache-Control": "public, max-age=31536000, immutable"},
