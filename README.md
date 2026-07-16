@@ -58,6 +58,7 @@ See the [admin dashboard and API guide](docs/admin.md), or explore the [/example
 *   **Rich Markdown:** Supports tables, emojis, task lists, and syntax highlighting out of the box.
 *   **Jinja2 Power:** Use Jinja2 logic directly inside your Markdown files (Securely Sandboxed).
 *   **Admin API:** Built-in REST API for programmatic content management (create, update, delete files and directories).
+*   **Git Versioning:** Every file edit is automatically committed to a local Git repository with a version number. View history and rollback from the admin UI.
 *   **Guided Frontmatter:** Add supported metadata in the editor and extend its registry through an automatically discovered [project override](docs/frontmatter.md).
 
 ## 🛠️ Features That Replace Paid Services
@@ -67,6 +68,7 @@ See the [admin dashboard and API guide](docs/admin.md), or explore the [/example
 | Responsive image generation, `srcset`, local transforms, and CDN URL support | Cloudinary, Imgix, ImageKit |
 | Open Graph, Twitter Cards, JSON-LD, canonical URLs, sitemaps, robots.txt, and RSS feeds | Yoast SEO Premium, Rank Math Pro, managed SEO tooling |
 | Markdown content management with a visual admin, structured metadata, file uploads, and a CRUD API | Contentful, Sanity, Ghost(Pro), hosted headless CMS platforms |
+| File versioning with automatic commit history, version tracking, and one-click rollback | Contentful revisions, headless CMS version history, Git-based CMS platforms |
 
 ---
 
@@ -296,6 +298,9 @@ cache:
   ttl: 2592000            # 30 days in seconds
   maxsize: 10000          # max entries (memory only)
   redis_url: "redis://localhost:6379/0"  # only used when backend="redis"
+
+git:
+  auto_push: false        # auto-push each commit to the remote after save
 ```
 
 **How it works:**
@@ -425,6 +430,7 @@ description: A short summary for SEO.
 | `sitemap` | `bool` or `dict` | Set `false` to exclude from `/sitemap.xml`, or provide `changefreq` / `priority`. |
 | `feed` / `rss` | `bool` | Set `false` to exclude a page from RSS feeds. |
 | `date.published` | `date` | Preferred publish date for sorting and RSS `pubDate`. |
+| `version` | `number` | Auto-incremented by git versioning on each save. Read-only — managed by the admin UI. |
 
 **Example:**
 ```yaml
@@ -540,7 +546,7 @@ Moosey CMS comes packed with a comprehensive library of Jinja2 filters to help y
 ### 🔧 SEO & Data
 | Filter | Usage | Output |
 | :--- | :--- | :--- |
-| `json_ld` | <code>{{ schema_article(...) &#124; json_ld &#124; safe }}</code> | Renders a Python dict as a `<script type="application/ld+json">` block. Schema builders (`schema_article`, `schema_breadcrumbs`, `schema_faqpage`, `schema_howto`, `schema_localbusiness`, `schema_product`, `schema_event`, `schema_organization`, `schema_website`, `schema_person`) are registered as Jinja globals - see [`docs/seo-advanced.md`](docs/seo-advanced.md). |
+| `json_ld` | <code>{{ schema_article(...) &#124; json_ld &#124; safe }}</code> | Renders a Python dict as a `<script type="application/ld+json">` block. Schema builders (`schema_article`, `schema_breadcrumbs`, `schema_faqpage`, `schema_howto`, `schema_localbusiness`, `schema_product`, `schema_event`, `schema_organization`, `schema_website`, `schema_person`) are registered as Jinja globals - see [`docs/seo.md`](docs/seo.md). |
 | `cache_bust` | <code>{{ '/static/site.css' &#124; cache_bust }}</code> | Appends `?v=<mtime>` so browsers re-fetch after every change. |
 | `pluralize` | <code>{{ 'review' &#124; pluralize(reviews_count) }}</code> | `1 review` / `2 reviews`. Custom: `pluralize(count, 'mice')`. |
 | `word_count` | <code>{{ body &#124; word_count }}</code> | Number of words (strips HTML if any). |
