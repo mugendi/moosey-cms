@@ -27,6 +27,15 @@ The built-in nested sitemap presets also replace a scalar `sitemap: false` with 
 
 ## Basic and rendering
 
+### `version`
+```yaml
+version: 1
+```
+Type: number  
+Suggested default: `1`
+
+Auto-incremented by the git versioning system each time the file is saved through the admin UI. This is a read-only field — do not set it manually. Use the file-history endpoint to view past versions and rollback to restore previous content.
+
 ### `title`
 ```yaml
 title: About Moosey
