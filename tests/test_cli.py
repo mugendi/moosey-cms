@@ -41,8 +41,9 @@ def _init_prompts(site="My Site", host="0.0.0.0", port="8000", reload_delay="0.2
                    admin_prefix="admin/content", admin_templates="admin",
                    brand_name="Acme CMS", admin_title="Acme Admin",
                    home_label="View site", home_url="/",
-                   cache_backend="memory", cache_ttl="2592000"):
-    """Return (text_side_effect, select_side_effect) for cmd_init prompts."""
+                   cache_backend="memory", cache_ttl="2592000",
+                   git_auto_push=False):
+    """Return (text_side_effect, select_side_effect, confirm_side_effect) for cmd_init prompts."""
     text_side_effect = [
         _mock_question(site),
         _mock_question(host),
@@ -56,15 +57,16 @@ def _init_prompts(site="My Site", host="0.0.0.0", port="8000", reload_delay="0.2
         _mock_question(home_url),
         _mock_question(cache_ttl),
     ]
-    return text_side_effect, cache_backend
+    return text_side_effect, cache_backend, git_auto_push
 
 
 def _config_prompts(site="Test Site", host="127.0.0.1", port="3000", reload_delay="0.5",
                      admin_prefix="admin/content", admin_templates="admin",
                      brand_name="Test CMS", admin_title="Test Admin",
                      home_label="Home", home_url="/",
-                     cache_backend="memory", cache_ttl="2592000"):
-    """Return (text_side_effect, select_side_effect) for cmd_config prompts."""
+                     cache_backend="memory", cache_ttl="2592000",
+                     git_auto_push=False):
+    """Return (text_side_effect, select_side_effect, confirm_side_effect) for cmd_config prompts."""
     text_side_effect = [
         _mock_question(site),
         _mock_question(host),
@@ -78,7 +80,7 @@ def _config_prompts(site="Test Site", host="127.0.0.1", port="3000", reload_dela
         _mock_question(home_url),
         _mock_question(cache_ttl),
     ]
-    return text_side_effect, cache_backend
+    return text_side_effect, cache_backend, git_auto_push
 
 
 # ---------------------------------------------------------------------------
@@ -115,12 +117,14 @@ class TestHelpers:
 # ---------------------------------------------------------------------------
 
 class TestCmdInit:
+    @patch("questionary.confirm")
     @patch("questionary.select")
     @patch("questionary.text")
-    def test_copies_example_to_target(self, mock_text, mock_select, tmp_path):
-        text_ef, sel_val = _init_prompts()
+    def test_copies_example_to_target(self, mock_text, mock_select, mock_confirm, tmp_path):
+        text_ef, sel_val, auto_push = _init_prompts()
         mock_text.side_effect = text_ef
         mock_select.return_value.ask.return_value = sel_val
+        mock_confirm.return_value.ask.return_value = auto_push
 
         dst = tmp_path / "my-site"
         cmd_init(_Args(path=str(dst), force=False))
@@ -136,12 +140,14 @@ class TestCmdInit:
         assert config.site.admin.home_label == "View site"
         assert config.site.admin.home_url == "/"
 
+    @patch("questionary.confirm")
     @patch("questionary.select")
     @patch("questionary.text")
-    def test_patches_main_py_mode(self, mock_text, mock_select, tmp_path):
-        text_ef, sel_val = _init_prompts()
+    def test_patches_main_py_mode(self, mock_text, mock_select, mock_confirm, tmp_path):
+        text_ef, sel_val, auto_push = _init_prompts()
         mock_text.side_effect = text_ef
         mock_select.return_value.ask.return_value = sel_val
+        mock_confirm.return_value.ask.return_value = auto_push
 
         dst = tmp_path / "my-site"
         cmd_init(_Args(path=str(dst), force=False))
@@ -150,36 +156,42 @@ class TestCmdInit:
         content = main_py.read_text()
         assert "uvicorn.run" in content
 
+    @patch("questionary.confirm")
     @patch("questionary.select")
     @patch("questionary.text")
-    def test_copies_advanced_dir(self, mock_text, mock_select, tmp_path):
-        text_ef, sel_val = _init_prompts()
+    def test_copies_advanced_dir(self, mock_text, mock_select, mock_confirm, tmp_path):
+        text_ef, sel_val, auto_push = _init_prompts()
         mock_text.side_effect = text_ef
         mock_select.return_value.ask.return_value = sel_val
+        mock_confirm.return_value.ask.return_value = auto_push
 
         dst = tmp_path / "my-site"
         cmd_init(_Args(path=str(dst), force=False))
 
         assert (dst / "advanced").is_dir()
 
+    @patch("questionary.confirm")
     @patch("questionary.select")
     @patch("questionary.text")
-    def test_copies_assets_dir(self, mock_text, mock_select, tmp_path):
-        text_ef, sel_val = _init_prompts()
+    def test_copies_assets_dir(self, mock_text, mock_select, mock_confirm, tmp_path):
+        text_ef, sel_val, auto_push = _init_prompts()
         mock_text.side_effect = text_ef
         mock_select.return_value.ask.return_value = sel_val
+        mock_confirm.return_value.ask.return_value = auto_push
 
         dst = tmp_path / "my-site"
         cmd_init(_Args(path=str(dst), force=False))
 
         assert (dst / "assets").is_dir()
 
+    @patch("questionary.confirm")
     @patch("questionary.select")
     @patch("questionary.text")
-    def test_idempotent_with_force(self, mock_text, mock_select, tmp_path):
-        text_ef, sel_val = _init_prompts()
+    def test_idempotent_with_force(self, mock_text, mock_select, mock_confirm, tmp_path):
+        text_ef, sel_val, auto_push = _init_prompts()
         mock_text.side_effect = text_ef * 2
         mock_select.return_value.ask.return_value = sel_val
+        mock_confirm.return_value.ask.return_value = auto_push
 
         dst = tmp_path / "my-site"
         cmd_init(_Args(path=str(dst), force=False))
@@ -188,12 +200,14 @@ class TestCmdInit:
         assert dst.is_dir()
         assert (dst / "main.py").is_file()
 
+    @patch("questionary.confirm")
     @patch("questionary.select")
     @patch("questionary.text")
-    def test_fails_without_force_on_nonempty_dir(self, mock_text, mock_select, tmp_path):
-        text_ef, sel_val = _init_prompts()
+    def test_fails_without_force_on_nonempty_dir(self, mock_text, mock_select, mock_confirm, tmp_path):
+        text_ef, sel_val, auto_push = _init_prompts()
         mock_text.side_effect = text_ef
         mock_select.return_value.ask.return_value = sel_val
+        mock_confirm.return_value.ask.return_value = auto_push
 
         dst = tmp_path / "my-site"
         dst.mkdir()
@@ -202,12 +216,14 @@ class TestCmdInit:
         with pytest.raises(SystemExit):
             cmd_init(_Args(path=str(dst), force=False))
 
+    @patch("questionary.confirm")
     @patch("questionary.select")
     @patch("questionary.text")
-    def test_skips_pycache(self, mock_text, mock_select, tmp_path):
-        text_ef, sel_val = _init_prompts()
+    def test_skips_pycache(self, mock_text, mock_select, mock_confirm, tmp_path):
+        text_ef, sel_val, auto_push = _init_prompts()
         mock_text.side_effect = text_ef
         mock_select.return_value.ask.return_value = sel_val
+        mock_confirm.return_value.ask.return_value = auto_push
 
         dst = tmp_path / "my-site"
         cmd_init(_Args(path=str(dst), force=False))
@@ -221,12 +237,14 @@ class TestCmdInit:
 # ---------------------------------------------------------------------------
 
 class TestCmdConfig:
+    @patch("questionary.confirm")
     @patch("questionary.select")
     @patch("questionary.text")
-    def test_creates_config_file(self, mock_text, mock_select, tmp_path, monkeypatch):
-        text_ef, sel_val = _config_prompts()
+    def test_creates_config_file(self, mock_text, mock_select, mock_confirm, tmp_path, monkeypatch):
+        text_ef, sel_val, auto_push = _config_prompts()
         mock_text.side_effect = text_ef
         mock_select.return_value.ask.return_value = sel_val
+        mock_confirm.return_value.ask.return_value = auto_push
 
         monkeypatch.chdir(tmp_path)
 
@@ -256,11 +274,10 @@ class TestCmdConfig:
         )
         save_config(existing_config, tmp_path / ".moosey-cms.yaml")
 
-        mock_confirm.return_value.ask.return_value = True
-
-        text_ef, sel_val = _config_prompts(site="Updated Site")
+        text_ef, sel_val, auto_push = _config_prompts(site="Updated Site")
         mock_text.side_effect = text_ef
         mock_select.return_value.ask.return_value = sel_val
+        mock_confirm.return_value.ask.return_value = [True, auto_push]
 
         monkeypatch.chdir(tmp_path)
 
@@ -270,18 +287,20 @@ class TestCmdConfig:
         assert config.crypto.key == "existing-key-123"
         assert config.site.name == "Updated Site"
 
+    @patch("questionary.confirm")
     @patch("questionary.select")
     @patch("questionary.text")
-    def test_generate_key_flag(self, mock_text, mock_select, tmp_path, monkeypatch):
+    def test_generate_key_flag(self, mock_text, mock_select, mock_confirm, tmp_path, monkeypatch):
         from moosey_cms.lib.config import CMSConfig, ServerConfig, SiteConfig, CryptoConfig, save_config
         existing_config = CMSConfig(
             crypto=CryptoConfig(key="old-key-123"),
         )
         save_config(existing_config, tmp_path / ".moosey-cms.yaml")
 
-        text_ef, sel_val = _config_prompts()
+        text_ef, sel_val, auto_push = _config_prompts()
         mock_text.side_effect = text_ef
         mock_select.return_value.ask.return_value = sel_val
+        mock_confirm.return_value.ask.return_value = auto_push
 
         monkeypatch.chdir(tmp_path)
 
@@ -300,9 +319,10 @@ class TestCmdConfig:
         )
         save_config(existing_config, tmp_path / ".moosey-cms.yaml")
 
-        text_ef, sel_val = _config_prompts(site="New Site")
+        text_ef, sel_val, auto_push = _config_prompts(site="New Site")
         mock_text.side_effect = text_ef
         mock_select.return_value.ask.return_value = sel_val
+        mock_confirm.return_value.ask.return_value = auto_push
 
         monkeypatch.chdir(tmp_path)
 

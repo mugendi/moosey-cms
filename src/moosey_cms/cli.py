@@ -22,6 +22,7 @@ from .lib.config import (
     CMSConfig,
     CacheConfig,
     CryptoConfig,
+    GitConfig,
     ServerConfig,
     SiteConfig,
     load_config,
@@ -121,6 +122,11 @@ def _prompt_for_config(
             "Redis URL:", default=existing.cache.redis_url
         ).ask()
 
+    print("\nGit versioning:\n")
+    git_auto_push = questionary.confirm(
+        "Auto-push after file saves?", default=existing.git.auto_push
+    ).ask()
+
     crypto_key = existing.crypto.key
     if generate_crypto_key or not crypto_key:
         crypto_key = generate_key()
@@ -149,6 +155,7 @@ def _prompt_for_config(
             maxsize=existing.cache.maxsize,
             redis_url=redis_url,
         ),
+        git=GitConfig(auto_push=git_auto_push),
         image_cdn=existing.image_cdn,
         image_processing=existing.image_processing,
         sanitize=existing.sanitize,
@@ -180,7 +187,7 @@ def cmd_init(args: argparse.Namespace) -> None:
         src,
         dst,
         dirs_exist_ok=True,
-        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc", ".git"),
     )
 
     print("\nLet's configure your Moosey CMS site.\n")
