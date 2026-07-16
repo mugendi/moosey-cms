@@ -96,7 +96,7 @@
     if (!entryList) {
       entryList = new List("content-list", {
         listClass: "list",
-        page: 20,
+        page: 10,
         pagination: true,
         valueNames: [
           "entry-name",
