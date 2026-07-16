@@ -36,6 +36,13 @@ cd my-site
 moosey-cms dev
 ```
 
+### Git Versioning
+
+During `init`, you are prompted for an "auto-push to remote" setting. This controls
+whether file saves are automatically pushed to your Git remote. The value is stored
+as `git.auto_push` in `.moosey-cms.yaml` (default: `false`). Even with auto-push
+enabled, rollback commits are never pushed.
+
 ## `moosey-cms config`
 
 Create or update `.moosey-cms.yaml` in an existing project. This command uses
@@ -47,7 +54,9 @@ moosey-cms config
 ```
 
 Use `--force` to skip the overwrite confirmation or `--generate-key` to
-rotate the crypto key.
+rotate the crypto key. The command also prompts for the `git.auto_push`
+setting, which controls whether file saves are automatically pushed to
+your Git remote.
 
 ## `moosey-cms admin`
 
