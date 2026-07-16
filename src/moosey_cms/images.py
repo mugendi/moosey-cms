@@ -36,7 +36,7 @@ from typing import Any, Dict, Optional, Tuple
 from urllib.parse import urlencode
 
 from fastapi import Request, BackgroundTasks
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 import json
 from .lib.crypto import encode, decode
 from .lib.cache import cache
@@ -863,11 +863,9 @@ def register_routes(
 
             params = file_data.get("params") or {}
             if not _can_transform(params):
-                # 
-                # todo: We are serving original file before we can generate transformation that will be served in subsequent requests. As such we should serve it as a redirect and no cache
-                return FileResponse(
-                    str(original_file),
-                    headers={"Cache-Control": "public, max-age=31536000, immutable"},
+                return RedirectResponse(
+                    url=src,
+                    headers={"Cache-Control": "no-store"},
                 )
 
             # run bg process
