@@ -217,6 +217,17 @@ class TestAdminGetFile:
 # ---------------------------------------------------------------------------
 
 class TestAdminCreateFile:
+    def test_create_file_adds_basic_frontmatter_defaults(self, client):
+        resp = client.post(
+            f"/{PREFIX}/file/defaults.md",
+            json={"frontmatter": {}, "body": ""},
+        )
+        assert resp.status_code == 201
+
+        frontmatter = client.get(f"/{PREFIX}/file/defaults.md").json()["frontmatter"]
+        assert frontmatter["title"] == ""
+        assert frontmatter["description"] == ""
+
     def test_create_file(self, client, content_dir):
         payload = {"frontmatter": {"title": "New Post"}, "body": "Hello!"}
         resp = client.post(f"/{PREFIX}/file/blog/new.md", json=payload)

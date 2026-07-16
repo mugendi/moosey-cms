@@ -9,6 +9,7 @@ import mimetypes
 import os
 import shutil
 import tempfile
+from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -381,7 +382,15 @@ def register_admin_routes(
         if target.exists():
             raise HTTPException(status_code=409, detail="File already exists")
 
-        md = build_markdown(payload.frontmatter, payload.body)
+        metadata = {
+            name: deepcopy(field["default"])
+            for name, field in frontmatter_fields.get("fields", {}).items()
+            if isinstance(field, dict)
+            and field.get("group") == "Basic"
+            and "default" in field
+        }
+        metadata.update(payload.frontmatter)
+        md = build_markdown(metadata, payload.body)
         _atomic_write(target, md)
 
         return {"path": str(target.relative_to(content_dir)).replace("\\", "/"), "status": "created"}
