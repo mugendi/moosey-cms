@@ -10,7 +10,8 @@ node_modules/
 # Virtual environments
 .venv
 repomix-output.xml
-superpowers
+.codex
 .superpowers
 .opencode
 .moosey-cms.yaml
+.pytest_cache
