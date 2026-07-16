@@ -254,6 +254,8 @@ class TestAdminListTemplate:
         assert 'id="new-file-directory"' in resp.text
         assert 'aria-label="Markdown file name"' in resp.text
         assert ">.md</span" in resp.text
+        assert 'id="new-dir-directory"' in resp.text
+        assert 'aria-label="Folder name"' in resp.text
 
         nested = client.get(f"/{PREFIX}/browse/blog")
         assert nested.status_code == 200

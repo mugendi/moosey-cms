@@ -23,8 +23,13 @@
   };
 
   window.openNewDirModal = function () {
-    document.getElementById("new-dir-name").value = "";
+    var input = document.getElementById("new-dir-name");
+    var directory = document.getElementById("new-dir-directory");
+    input.value = "";
+    directory.textContent = subpath ? subpath + "/" : "/";
+    directory.title = directory.textContent;
     document.getElementById("new-dir-modal").classList.remove("hidden");
+    input.focus();
   };
 
   window.closeModal = function (id) {
@@ -148,6 +153,10 @@
   window.createDir = function () {
     var name = document.getElementById("new-dir-name").value.trim();
     if (!name) return showFlash("Enter a folder name", "error");
+    if (/[\\/]/.test(name))
+      return showFlash("Enter a folder name without parent folders", "error");
+    if (name === "." || name === "..")
+      return showFlash("Enter a valid folder name", "error");
     var path = subpath ? subpath + "/" + name : name;
     requestJson("/" + prefix + "/dir/" + path, { method: "POST" }, "Create failed")
       .then(function () {
@@ -178,6 +187,13 @@
       if (event.key !== "Enter") return;
       event.preventDefault();
       window.createFile();
+    });
+  document
+    .getElementById("new-dir-name")
+    .addEventListener("keydown", function (event) {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      window.createDir();
     });
   loadDirectory(subpath);
 })();
