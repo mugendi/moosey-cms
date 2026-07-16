@@ -61,6 +61,34 @@
     }
     return link;
   }
+  function directoriesFirstSort(itemA, itemB, options) {
+    var valuesA = itemA.values();
+    var valuesB = itemB.values();
+    var typeA = Number(valuesA["entry-size"]) === -1 ? 0 : 1;
+    var typeB = Number(valuesB["entry-size"]) === -1 ? 0 : 1;
+
+    if (typeA !== typeB) {
+      // List.js reverses custom comparator results for descending sorts.
+      return (typeA - typeB) * (options.order === "desc" ? -1 : 1);
+    }
+
+    var valueA = valuesA[options.valueName];
+    var valueB = valuesB[options.valueName];
+    if (options.valueName !== "entry-name") {
+      return Number(valueA) - Number(valueB);
+    }
+    return String(valueA).localeCompare(String(valueB), undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+  }
+
+  function sortEntries(valueName, order) {
+    entryList.sort(valueName, {
+      order: order,
+      sortFunction: directoriesFirstSort,
+    });
+  }
 
   function refreshEntryList() {
     if (typeof List === "undefined") return;
@@ -68,6 +96,8 @@
     if (!entryList) {
       entryList = new List("content-list", {
         listClass: "list",
+        page: 20,
+        pagination: true,
         valueNames: [
           "entry-name",
           "entry-title",
@@ -85,7 +115,7 @@
     }
 
     var selection = document.getElementById("content-sort").value.split(":");
-    entryList.sort(selection[0], { order: selection[1] });
+    sortEntries(selection[0], selection[1]);
   }
 
   function renderEntries(entries) {
@@ -235,7 +265,14 @@
     .addEventListener("change", function (event) {
       if (!entryList) return;
       var selection = event.target.value.split(":");
-      entryList.sort(selection[0], { order: selection[1] });
+      sortEntries(selection[0], selection[1]);
+    });
+  document
+    .getElementById("content-page-size")
+    .addEventListener("change", function (event) {
+      if (!entryList) return;
+      entryList.page = Number(event.target.value);
+      entryList.show(1, entryList.page);
     });
   loadDirectory(subpath);
 })();

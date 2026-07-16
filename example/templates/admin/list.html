@@ -5,6 +5,26 @@ Browser{% endblock %} {% set active_page = 'list' %} {% block content %}
   #entries-body tr:nth-child(even) {
     background: #fafafa;
   }
+  .pagination {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.25rem;
+  }
+  .pagination .page {
+    display: block;
+    min-width: 2rem;
+    padding: 0.375rem 0.625rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    color: #374151;
+    text-align: center;
+  }
+  .pagination .active .page {
+    border-color: #334155;
+    background: #334155;
+    color: white;
+  }
 </style>
 <div class="mx-auto space-y-6">
   {# ── Page header ── #}
@@ -78,11 +98,22 @@ Browser{% endblock %} {% set active_page = 'list' %} {% block content %}
           id="content-sort"
           class="rounded-lg border border-moose-300 bg-white px-3 py-2 text-sm text-moose-700 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-moose-500"
         >
-          <option value="entry-name:asc" selected>Name</option>
+          <option value="entry-modified:desc" selected>Modified: newest first</option>
+          <option value="entry-modified:asc">Modified: oldest first</option>
+          <option value="entry-name:asc">Name</option>
           <option value="entry-size:asc">Size: smallest first</option>
           <option value="entry-size:desc">Size: largest first</option>
-          <option value="entry-modified:desc">Modified: newest first</option>
-          <option value="entry-modified:asc">Modified: oldest first</option>
+        </select>
+      </label>
+      <label class="flex items-center gap-2 text-sm text-moose-500" for="content-page-size">
+        Show
+        <select
+          id="content-page-size"
+          class="rounded-lg border border-moose-300 bg-white px-3 py-2 text-sm text-moose-700 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-moose-500"
+        >
+          <option value="20" selected>20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
         </select>
       </label>
     </div>
@@ -103,6 +134,7 @@ Browser{% endblock %} {% set active_page = 'list' %} {% block content %}
         </tbody>
       </table>
     </div>
+    <ul class="pagination" aria-label="Content pagination"></ul>
   </div>
 </div>
 

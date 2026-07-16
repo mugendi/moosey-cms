@@ -261,10 +261,18 @@ class TestAdminListTemplate:
         assert 'id="content-list"' in resp.text
         assert 'class="fuzzy-search' in resp.text
         assert 'id="content-sort"' in resp.text
-        assert '<option value="entry-name:asc" selected>Name</option>' in resp.text
+        assert (
+            '<option value="entry-modified:desc" selected>'
+            "Modified: newest first</option>"
+        ) in resp.text
         assert resp.text.index("vendor/list.js/list.min.js") < resp.text.index(
             'static/admin/list.js'
         )
+        assert 'id="content-page-size"' in resp.text
+        assert '<option value="20" selected>20</option>' in resp.text
+        assert '<option value="50">50</option>' in resp.text
+        assert '<option value="100">100</option>' in resp.text
+        assert 'class="pagination"' in resp.text
 
         nested = client.get(f"/{PREFIX}/browse/blog")
         assert nested.status_code == 200
