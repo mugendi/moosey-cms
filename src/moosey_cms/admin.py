@@ -24,25 +24,31 @@ from .helpers import get_secure_target, parse_markdown_file
 from .frontmatter import load_frontmatter_fields
 from .yaml_handler import build_markdown, split_frontmatter
 
-
 # ---------------------------------------------------------------------------
 # Request / Response models
 # ---------------------------------------------------------------------------
 
+
 class FilePayload(BaseModel):
     """Body for creating or updating a content file."""
+
     frontmatter: Dict[str, Any] = Field(default_factory=dict)
-    frontmatter_raw: Optional[str] = Field(default=None, description="Raw YAML frontmatter text from the original file. When provided, preserves comments and formatting on update.")
+    frontmatter_raw: Optional[str] = Field(
+        default=None,
+        description="Raw YAML frontmatter text from the original file. When provided, preserves comments and formatting on update.",
+    )
     body: str = Field(default="")
 
 
 class DirCreateRequest(BaseModel):
     """Body for creating a directory (currently empty, reserved for future use)."""
+
     pass
 
 
 class Entry(BaseModel):
     """One item returned by the list endpoint."""
+
     name: str
     path: str
     type: str  # "file" | "directory"
@@ -54,15 +60,20 @@ class Entry(BaseModel):
 
 class ListResponse(BaseModel):
     """Response for the list endpoint."""
+
     path: str
     entries: List[Entry]
 
 
 class FileResponse(BaseModel):
     """Response for the file detail endpoint."""
+
     path: str
     frontmatter: Dict[str, Any]
-    frontmatter_raw: Optional[str] = Field(default=None, description="Raw YAML frontmatter text (preserves comments). Client should send this back on update to preserve formatting.")
+    frontmatter_raw: Optional[str] = Field(
+        default=None,
+        description="Raw YAML frontmatter text (preserves comments). Client should send this back on update to preserve formatting.",
+    )
     body: str
     size: int = 0
     modified: Optional[str] = None
@@ -70,6 +81,7 @@ class FileResponse(BaseModel):
 
 class StaticEntry(BaseModel):
     """One item returned by the static directory list endpoint."""
+
     name: str
     path: str
     type: str  # "file" | "directory"
@@ -82,12 +94,14 @@ class StaticEntry(BaseModel):
 
 class StaticListResponse(BaseModel):
     """Response for the static directory list endpoint."""
+
     path: str
     entries: List[StaticEntry]
 
 
 class StaticUploadResponse(BaseModel):
     """Response for the static file upload endpoint."""
+
     path: str
     url: str
     mime_type: Optional[str] = None
@@ -96,12 +110,14 @@ class StaticUploadResponse(BaseModel):
 
 class StaticMkdirResponse(BaseModel):
     """Response for the static directory creation endpoint."""
+
     path: str
     status: str
 
 
 class DirectoryStats(BaseModel):
     """Recursive metadata totals for one managed directory tree."""
+
     available: bool = True
     file_count: int = 0
     directory_count: int = 0
@@ -111,6 +127,7 @@ class DirectoryStats(BaseModel):
 
 class DashboardStatsResponse(BaseModel):
     """Separate content and uploaded-file dashboard statistics."""
+
     content: DirectoryStats
     uploads: DirectoryStats
 
@@ -118,6 +135,7 @@ class DashboardStatsResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _safe_path(user_path: str, content_dir: Path) -> Path:
     """Resolve *user_path* relative to *content_dir*, blocking traversal."""
@@ -162,12 +180,24 @@ def _file_entry(file_path: Path, content_dir: Path) -> Entry:
     )
 
 
-IMAGE_EXTS = frozenset({
-    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg",
-    ".avif", ".bmp", ".ico", ".tiff", ".tif",
-})
+IMAGE_EXTS = frozenset(
+    {
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".gif",
+        ".webp",
+        ".svg",
+        ".avif",
+        ".bmp",
+        ".ico",
+        ".tiff",
+        ".tif",
+    }
+)
 VIDEO_EXTS = frozenset({".mp4", ".webm", ".ogg", ".mov", ".avi"})
 AUDIO_EXTS = frozenset({".mp3", ".wav", ".ogg", ".flac", ".aac"})
+
 
 def classify_static_type(file_path: Path) -> str:
     """Return the media type label for *file_path* based on its extension."""
@@ -238,7 +268,6 @@ def _directory_stats(root: Optional[Path]) -> DirectoryStats:
                 continue
             latest_modified = max(latest_modified or modified, modified)
 
- 
         for name in file_names:
             file_path = current_path / name
             if file_path.is_symlink():
@@ -287,6 +316,7 @@ def _atomic_write(file_path: Path, content: str) -> None:
 # Router registration
 # ---------------------------------------------------------------------------
 
+
 def register_admin_routes(
     router: APIRouter,
     dirs: Dict[str, Path],
@@ -331,7 +361,9 @@ def register_admin_routes(
             raise HTTPException(status_code=400, detail="Path is not a directory")
 
         entries: List[Entry] = []
-        for item in sorted(target.iterdir(), key=lambda p: (p.is_file(), p.name.lower())):
+        for item in sorted(
+            target.iterdir(), key=lambda p: (p.is_file(), p.name.lower())
+        ):
             if item.name.startswith("."):
                 continue
             entries.append(_file_entry(item, content_dir))
@@ -352,7 +384,9 @@ def register_admin_routes(
         if not target.exists():
             raise HTTPException(status_code=404, detail="File not found")
         if target.is_dir():
-            raise HTTPException(status_code=400, detail="Path is a directory, not a file")
+            raise HTTPException(
+                status_code=400, detail="Path is a directory, not a file"
+            )
 
         try:
             raw_content = target.read_text(encoding="utf-8")
@@ -386,14 +420,18 @@ def register_admin_routes(
             name: deepcopy(field["default"])
             for name, field in frontmatter_fields.get("fields", {}).items()
             if isinstance(field, dict)
-            and field.get("group") == "Basic"
+            and field.get("is_basic_field")
             and "default" in field
         }
+
         metadata.update(payload.frontmatter)
         md = build_markdown(metadata, payload.body)
         _atomic_write(target, md)
 
-        return {"path": str(target.relative_to(content_dir)).replace("\\", "/"), "status": "created"}
+        return {
+            "path": str(target.relative_to(content_dir)).replace("\\", "/"),
+            "status": "created",
+        }
 
     # ------------------------------------------------------------------
     # FILE — update
@@ -406,7 +444,9 @@ def register_admin_routes(
         if not target.exists():
             raise HTTPException(status_code=404, detail="File not found")
         if target.is_dir():
-            raise HTTPException(status_code=400, detail="Path is a directory, not a file")
+            raise HTTPException(
+                status_code=400, detail="Path is a directory, not a file"
+            )
 
         md = build_markdown(
             payload.frontmatter,
@@ -415,7 +455,10 @@ def register_admin_routes(
         )
         _atomic_write(target, md)
 
-        return {"path": str(target.relative_to(content_dir)).replace("\\", "/"), "status": "updated"}
+        return {
+            "path": str(target.relative_to(content_dir)).replace("\\", "/"),
+            "status": "updated",
+        }
 
     # ------------------------------------------------------------------
     # FILE — delete
@@ -428,10 +471,15 @@ def register_admin_routes(
         if not target.exists():
             raise HTTPException(status_code=404, detail="File not found")
         if target.is_dir():
-            raise HTTPException(status_code=400, detail="Path is a directory, not a file")
+            raise HTTPException(
+                status_code=400, detail="Path is a directory, not a file"
+            )
 
         target.unlink()
-        return {"path": str(target.relative_to(content_dir)).replace("\\", "/"), "status": "deleted"}
+        return {
+            "path": str(target.relative_to(content_dir)).replace("\\", "/"),
+            "status": "deleted",
+        }
 
     # ------------------------------------------------------------------
     # DIR — create
@@ -445,7 +493,10 @@ def register_admin_routes(
             raise HTTPException(status_code=409, detail="Directory already exists")
 
         target.mkdir(parents=True, exist_ok=False)
-        return {"path": str(target.relative_to(content_dir)).replace("\\", "/"), "status": "created"}
+        return {
+            "path": str(target.relative_to(content_dir)).replace("\\", "/"),
+            "status": "created",
+        }
 
     # ------------------------------------------------------------------
     # DIR — delete (recursive)
@@ -458,12 +509,19 @@ def register_admin_routes(
         if not target.exists():
             raise HTTPException(status_code=404, detail="Directory not found")
         if not target.is_dir():
-            raise HTTPException(status_code=400, detail="Path is a file, not a directory")
+            raise HTTPException(
+                status_code=400, detail="Path is a file, not a directory"
+            )
         if target == content_dir:
-            raise HTTPException(status_code=400, detail="Cannot delete the content root")
+            raise HTTPException(
+                status_code=400, detail="Cannot delete the content root"
+            )
 
         shutil.rmtree(target)
-        return {"path": str(target.relative_to(content_dir)).replace("\\", "/"), "status": "deleted"}
+        return {
+            "path": str(target.relative_to(content_dir)).replace("\\", "/"),
+            "status": "deleted",
+        }
 
     # ------------------------------------------------------------------
     # HTML Dashboard Routes
@@ -488,27 +546,45 @@ def register_admin_routes(
     @router.get(f"/{prefix}/", include_in_schema=False)
     @router.get(f"/{prefix}", include_in_schema=False)
     async def admin_dashboard(request: Request):
-        return await _render_admin_template(request, f"{templates_subdir}/dashboard.html", {
-            "admin_config": admin_config, "mode": mode,
-        })
+        return await _render_admin_template(
+            request,
+            f"{templates_subdir}/dashboard.html",
+            {
+                "admin_config": admin_config,
+                "mode": mode,
+            },
+        )
 
     @router.get(f"/{prefix}/browse/", include_in_schema=False)
     @router.get(f"/{prefix}/browse/{{subpath:path}}", include_in_schema=False)
     async def admin_browse_page(request: Request, subpath: str = ""):
 
-        route_path = request.url.path.strip('/').replace(prefix.strip('/'),'')
+        route_path = request.url.path.strip("/").replace(prefix.strip("/"), "")
 
-        return await _render_admin_template(request, f"{templates_subdir}/list.html", {
-            "admin_config": admin_config, "mode": mode, "subpath": subpath,'route_path':route_path
-        })
+        return await _render_admin_template(
+            request,
+            f"{templates_subdir}/list.html",
+            {
+                "admin_config": admin_config,
+                "mode": mode,
+                "subpath": subpath,
+                "route_path": route_path,
+            },
+        )
 
     @router.get(f"/{prefix}/edit/", include_in_schema=False)
     @router.get(f"/{prefix}/edit/{{file_path:path}}", include_in_schema=False)
     async def admin_editor_page(request: Request, file_path: str = ""):
-        return await _render_admin_template(request, f"{templates_subdir}/editor.html", {
-            "admin_config": admin_config, "mode": mode, "file_path": file_path,
-            "frontmatter_fields": frontmatter_fields,
-        })
+        return await _render_admin_template(
+            request,
+            f"{templates_subdir}/editor.html",
+            {
+                "admin_config": admin_config,
+                "mode": mode,
+                "file_path": file_path,
+                "frontmatter_fields": frontmatter_fields,
+            },
+        )
 
     # ------------------------------------------------------------------
     # STATIC — file browsing, upload, and directory creation
@@ -533,7 +609,9 @@ def register_admin_routes(
             return get_secure_target(user_path, relative_to_path=static_dir)
 
         @router.get(f"/{prefix}/static", response_model=StaticListResponse)
-        @router.get(f"/{prefix}/static/{{subpath:path}}", response_model=StaticListResponse)
+        @router.get(
+            f"/{prefix}/static/{{subpath:path}}", response_model=StaticListResponse
+        )
         async def admin_static_list(subpath: str = "") -> StaticListResponse:
             if subpath:
                 target = _safe_static_path(subpath)
@@ -546,7 +624,9 @@ def register_admin_routes(
                 raise HTTPException(status_code=400, detail="Path is not a directory")
 
             entries: List[StaticEntry] = []
-            for item in sorted(target.iterdir(), key=lambda p: (p.is_file(), p.name.lower())):
+            for item in sorted(
+                target.iterdir(), key=lambda p: (p.is_file(), p.name.lower())
+            ):
                 if item.name.startswith("."):
                     continue
                 entries.append(_static_entry(item, static_dir, static_route))
@@ -554,7 +634,9 @@ def register_admin_routes(
             return StaticListResponse(path=subpath or "", entries=entries)
 
         @router.post(f"/{prefix}/static/upload/{{file_path:path}}", status_code=201)
-        async def admin_static_upload(file_path: str, request: Request) -> StaticUploadResponse:
+        async def admin_static_upload(
+            file_path: str, request: Request
+        ) -> StaticUploadResponse:
             target = _safe_static_path(file_path)
             target.parent.mkdir(parents=True, exist_ok=True)
 
@@ -567,7 +649,9 @@ def register_admin_routes(
             if len(contents) > 10 * 1024 * 1024:
                 raise HTTPException(status_code=400, detail="File too large (max 10MB)")
 
-            fd, tmp = tempfile.mkstemp(dir=target.parent, suffix=".tmp", prefix=".moosey-")
+            fd, tmp = tempfile.mkstemp(
+                dir=target.parent, suffix=".tmp", prefix=".moosey-"
+            )
             try:
                 with os.fdopen(fd, "wb") as f:
                     f.write(contents)
@@ -583,7 +667,9 @@ def register_admin_routes(
             rel = str(target.relative_to(static_dir)).replace("\\", "/")
             url = f"{static_route.rstrip('/')}/{rel}"
 
-            return StaticUploadResponse(path=rel, url=url, mime_type=mime_type, status="created")
+            return StaticUploadResponse(
+                path=rel, url=url, mime_type=mime_type, status="created"
+            )
 
         @router.post(f"/{prefix}/static/mkdir/{{dir_path:path}}", status_code=201)
         async def admin_static_mkdir(dir_path: str) -> StaticMkdirResponse:
