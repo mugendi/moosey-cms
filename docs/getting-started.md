@@ -206,7 +206,7 @@ The `init_cms()` function accepts these parameters:
 | Doc | What you'll learn |
 |-----|-------------------|
 | **[Templates](templates.md)** | Template waterfall, layouts, static files, pagination, collections |
-| **[Filters Reference](filters.md)** | All 54 built-in Jinja2 filters for dates, text, numbers, images, and more |
+| **[Filters Reference](filters.md)** | All 60+ built-in Jinja2 filters for dates, text, numbers, images, and more |
 | **[Markdown Rendering](markdown.md)** | Using the `markdown` and `markdown_inline` filters, enabled extensions |
 | **[Image Processing](images.md)** | Responsive images, `srcset`, face detection, CDN support |
 | **[SEO](seo.md)** | Meta tags, Open Graph, structured data, robots.txt, canonical URLs |
