@@ -10,8 +10,7 @@ endblock %} {% set active_page = 'dashboard' %} {% block content %}
   </div> -->
 
   <div class="bg-gray-100 p-3 rounded-2xl space-y-4">
-    {% for group, heading in [('content', 'Content'), ('uploads', 'Uploaded
-    Files')] %}
+    {% for group, heading in [('content', 'Content'), ('uploads', 'Uploaded Files')] %}
     <section
       class=""
       aria-labelledby="{{ group }}-stats-heading"
