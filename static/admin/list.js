@@ -2,6 +2,7 @@
   var config = window.mooseyListConfig || {};
   var prefix = config.prefix || "admin";
   var subpath = config.subpath || "";
+  var entryList = null;
 
   function requestJson(url, options, fallbackMessage) {
     return fetch(url, options).then(function (response) {
@@ -49,7 +50,7 @@
   function entryName(entry) {
     var link = document.createElement("a");
     link.className =
-      "text-moose-800 hover:text-moose-600 font-medium transition-colors";
+      "entry-name text-moose-800 hover:text-moose-600 font-medium transition-colors";
     if (entry.type === "directory") {
       var path = subpath ? subpath + "/" + entry.name : entry.name;
       link.href = "/" + prefix + "/browse/" + path;
@@ -61,10 +62,36 @@
     return link;
   }
 
+  function refreshEntryList() {
+    if (typeof List === "undefined") return;
+
+    if (!entryList) {
+      entryList = new List("content-list", {
+        listClass: "list",
+        valueNames: [
+          "entry-name",
+          "entry-title",
+          { name: "entry-size", attr: "data-sort-value" },
+          { name: "entry-modified", attr: "data-sort-value" },
+        ],
+        fuzzySearch: {
+          searchClass: "fuzzy-search",
+          threshold: 0.4,
+          multiSearch: true,
+        },
+      });
+    } else {
+      entryList.reIndex();
+    }
+
+    var selection = document.getElementById("content-sort").value.split(":");
+    entryList.sort(selection[0], { order: selection[1] });
+  }
+
   function renderEntries(entries) {
     var tbody = document.getElementById("entries-body");
     tbody.replaceChildren();
-    console.log({entries});
+
     if (!entries || entries.length === 0) {
       tbody.innerHTML =
         '<tr><td colspan="4" class="px-5 py-6 text-center text-moose-400">This directory is empty.</td></tr>';
@@ -73,14 +100,20 @@
 
     entries.forEach(function (entry) {
       var row = document.createElement("tr");
+      var modified = Date.parse(entry.modified) || 0;
+      var size = entry.type === "directory" ? -1 : entry.size;
       row.className = "hover:bg-moose-50 transition-colors";
       row.innerHTML =
         '<td class="px-5 py-3"><div class="flex items-center gap-3">' +
         entryIcon(entry) +
         '<div data-entry-name></div></div></td>' +
-        '<td class="px-5 py-3 text-right text-moose-400">' +
+        '<td class="entry-size px-5 py-3 text-right text-moose-400" data-sort-value="' +
+        size +
+        '">' +
         (entry.type === "directory" ? "—" : formatSize(entry.size)) +
-        '</td><td class="px-5 py-3 text-right text-moose-400">' +
+        '</td><td class="entry-modified px-5 py-3 text-right text-moose-400" data-sort-value="' +
+        modified +
+        '">' +
         timeAgo(entry.modified) +
         '</td><td class="px-5 py-3 text-right"><button type="button" class="text-moose-400 hover:text-red-600 transition-colors" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></td>';
 
@@ -88,7 +121,7 @@
       nameContainer.appendChild(entryName(entry));
       if (entry.title && entry.type !== "directory") {
         var title = document.createElement("span");
-        title.className = "block text-xs text-moose-400";
+        title.className = "entry-title block text-xs text-moose-400";
         title.textContent = entry.title;
         nameContainer.appendChild(title);
       }
@@ -97,6 +130,8 @@
       });
       tbody.appendChild(row);
     });
+
+    refreshEntryList();
   }
 
   window.openDeleteModal = function (path, type, name) {
@@ -194,6 +229,13 @@
       if (event.key !== "Enter") return;
       event.preventDefault();
       window.createDir();
+    });
+  document
+    .getElementById("content-sort")
+    .addEventListener("change", function (event) {
+      if (!entryList) return;
+      var selection = event.target.value.split(":");
+      entryList.sort(selection[0], { order: selection[1] });
     });
   loadDirectory(subpath);
 })();

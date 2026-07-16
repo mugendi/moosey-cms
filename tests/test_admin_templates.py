@@ -258,6 +258,13 @@ class TestAdminListTemplate:
         assert 'id="new-dir-directory"' in resp.text
         assert 'for="new-dir-name"' in resp.text
         assert 'aria-label="Folder name"' in resp.text
+        assert 'id="content-list"' in resp.text
+        assert 'class="fuzzy-search' in resp.text
+        assert 'id="content-sort"' in resp.text
+        assert '<option value="entry-name:asc" selected>Name</option>' in resp.text
+        assert resp.text.index("vendor/list.js/list.min.js") < resp.text.index(
+            'static/admin/list.js'
+        )
 
         nested = client.get(f"/{PREFIX}/browse/blog")
         assert nested.status_code == 200
