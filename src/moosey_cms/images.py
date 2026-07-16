@@ -831,7 +831,7 @@ def register_routes(
         except ValueError:
             return JSONResponse({"detail": "forbidden"}, status_code=403)
 
-        if target.is_file() :
+        if target.is_file():
             # return immediately
             return FileResponse(
                 str(target),
@@ -897,7 +897,11 @@ async def _generate_image(source, target,params ):
 
     from filelock import FileLock, Timeout
 
-    # print(source, target,params)
+    failed_generation = Path(str(target) + '.failed')
+
+    if failed_generation.exists():
+        return 
+
 
     try:
         lock = FileLock(target, timeout=20)
@@ -908,6 +912,8 @@ async def _generate_image(source, target,params ):
 
     except Timeout:
         print(f"Could not acquire lock within {timeout} seconds")
+        # touch failed file to ensure we dont keep trying regeneration
+        failed_generation.touch()
 
     except ImageError as exc:
         print(exc)
