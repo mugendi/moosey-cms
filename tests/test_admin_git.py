@@ -154,3 +154,17 @@ def test_rollback_missing_commit_field(client, git_content_dir):
         json={},
     )
     assert resp.status_code == 400
+
+
+def test_delete_file_no_commit(client, git_content_dir):
+    """File deletion should not create a git commit."""
+    # Create
+    client.post(
+        "/admin/content/file/del-test.md",
+        json={"frontmatter": {"title": "Del"}, "body": "Goodbye"},
+    )
+
+    # Delete
+    resp = client.delete("/admin/content/file/del-test.md")
+    assert resp.status_code == 200
+    assert not (git_content_dir / "del-test.md").exists()
