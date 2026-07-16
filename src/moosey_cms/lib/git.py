@@ -31,12 +31,6 @@ class GitManager:
             self._repo = Repo(self.repo_path)
         else:
             self._repo = Repo.init(self.repo_path)
-            # Create initial commit so repo has a HEAD
-            readme = self.repo_path / "README.md"
-            if not readme.exists():
-                readme.write_text("# Content\n")
-            self._repo.index.add(["README.md"])
-            self._repo.index.commit("chore: initialize content repository")
             logger.info("Initialized git repo at %s", self.repo_path)
 
         return self._repo

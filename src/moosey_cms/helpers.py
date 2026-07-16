@@ -114,8 +114,10 @@ def find_best_template(
 
 @cache(ttl=3600 * 24 * 30, maxsize=10000)
 def parse_markdown_file(file):
-    data = frontmatter.load(file)
-    stats = file.stat()
+    file_path = Path(file).resolve()
+    raw = file_path.read_text(encoding="utf-8")
+    data = frontmatter.load(file_path)
+    stats = file_path.stat()
 
     # Ensure date metadata exists
     if "date" not in data.metadata or not isinstance(data.metadata["date"], dict):

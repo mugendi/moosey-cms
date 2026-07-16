@@ -23,6 +23,9 @@ from starlette.responses import HTMLResponse
 from .helpers import get_secure_target, parse_markdown_file
 from .frontmatter import load_frontmatter_fields
 from .yaml_handler import build_markdown, split_frontmatter
+from .lib.git import GitManager
+from .lib.config import GitConfig
+from .lib.cache import clear_cache
 
 # ---------------------------------------------------------------------------
 # Request / Response models
@@ -343,6 +346,11 @@ def register_admin_routes(
     content_dir: Path = dirs["content"]
     frontmatter_fields = load_frontmatter_fields(content_dir)
 
+    # Git versioning
+    git_config_data = admin_config.get("git", {})
+    git_config = GitConfig(**git_config_data) if isinstance(git_config_data, dict) else GitConfig()
+    git_mgr = GitManager(content_dir)
+
     # ------------------------------------------------------------------
     # LIST — directory contents with metadata
     # ------------------------------------------------------------------
@@ -425,11 +433,18 @@ def register_admin_routes(
         }
 
         metadata.update(payload.frontmatter)
+        metadata["version"] = 1
         md = build_markdown(metadata, payload.body)
         _atomic_write(target, md)
 
+        # Git commit
+        rel_path = str(target.relative_to(content_dir)).replace("\\", "/")
+        commit_hash = git_mgr.commit_file(target, f"content: create {rel_path} (v1)")
+        if git_config.auto_push and commit_hash:
+            git_mgr.push()
+
         return {
-            "path": str(target.relative_to(content_dir)).replace("\\", "/"),
+            "path": rel_path,
             "status": "created",
         }
 
@@ -448,16 +463,101 @@ def register_admin_routes(
                 status_code=400, detail="Path is a directory, not a file"
             )
 
+        # Load existing metadata so we don't lose fields the client didn't send
+        try:
+            current_post = parse_markdown_file(target)
+            existing_meta = dict(current_post.metadata)
+        except Exception:
+            existing_meta = {}
+
+        # Merge: existing → client payload → version bump
+        merged = {**existing_meta, **payload.frontmatter}
+        current_ver = existing_meta.get("version", 0)
+        new_version = current_ver + 1
+        merged["version"] = new_version
+
         md = build_markdown(
-            payload.frontmatter,
+            merged,
             payload.body,
             original_fm=payload.frontmatter_raw,
         )
         _atomic_write(target, md)
+        clear_cache()
+
+        # Git commit
+        rel_path = str(target.relative_to(content_dir)).replace("\\", "/")
+        commit_hash = git_mgr.commit_file(target, f"content: update {rel_path} (v{new_version})")
+        if git_config.auto_push and commit_hash:
+            git_mgr.push()
 
         return {
-            "path": str(target.relative_to(content_dir)).replace("\\", "/"),
+            "path": rel_path,
             "status": "updated",
+        }
+
+    # ------------------------------------------------------------------
+    # FILE — git history
+    # ------------------------------------------------------------------
+
+    @router.get(f"/{prefix}/file-history/{{file_path:path}}")
+    async def admin_file_history(file_path: str) -> Dict[str, Any]:
+        target = _safe_path(file_path, content_dir)
+
+        if not target.exists():
+            raise HTTPException(status_code=404, detail="File not found")
+
+        history = git_mgr.file_history(target)
+        return {
+            "path": str(target.relative_to(content_dir)).replace("\\", "/"),
+            "history": history,
+        }
+
+    # ------------------------------------------------------------------
+    # FILE — rollback
+    # ------------------------------------------------------------------
+
+    @router.post(f"/{prefix}/rollback/{{file_path:path}}")
+    async def admin_rollback(file_path: str, payload: Dict[str, str]) -> Dict[str, Any]:
+        target = _safe_path(file_path, content_dir)
+
+        if not target.exists():
+            raise HTTPException(status_code=404, detail="File not found")
+
+        commit_hash = payload.get("commit")
+        if not commit_hash:
+            raise HTTPException(status_code=400, detail="Missing 'commit' field")
+
+        # Read current version before rollback
+        try:
+            current_post = parse_markdown_file(target)
+            current_version = current_post.metadata.get("version", 0)
+        except Exception:
+            current_version = 0
+
+        # Restore file from commit
+        try:
+            content = git_mgr.restore_file(target, commit_hash)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+        # Parse restored content, bump version, rewrite file
+        post = frontmatter.loads(content)
+        new_version = current_version + 1
+        post.metadata["version"] = new_version
+
+        md = build_markdown(dict(post.metadata), post.content)
+        _atomic_write(target, md)
+        clear_cache()
+
+        # Commit (never auto-push on rollback)
+        rel_path = str(target.relative_to(content_dir)).replace("\\", "/")
+        git_mgr.commit_file(target, f"content: rollback {rel_path} (v{new_version})")
+
+        return {
+            "path": rel_path,
+            "restored_from": commit_hash,
+            "version": new_version,
+            "status": "rolled_back",
         }
 
     # ------------------------------------------------------------------
