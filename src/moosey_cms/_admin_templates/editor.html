@@ -61,6 +61,21 @@ Guifier ships as an ES module only — must use type="module" to import. #}
   .toastui-editor-defaultUI {
     border: none;
   }
+
+  @media (max-width: 640px) {
+    #guifier-container .guifierMainWrapper {
+      --primary-padding: 12px;
+      --primary-grid-gap: 12px;
+    }
+
+    #guifier-container .guifierObjectContainerbody {
+      display: block;
+    }
+
+    #guifier-container .guifierObjectFieldContainer {
+      margin: 10px 0;
+    }
+  }
 </style>
 {% endblock %} {% block content %}
 <div class="mx-auto">
@@ -86,7 +101,7 @@ Guifier ships as an ES module only — must use type="module" to import. #}
           id="btn-save"
           onclick="saveFile()"
           disabled
-          class="inline-flex items-center gap-1.5 bg-moose-700 hover:bg-moose-800 disabled:bg-moose-200 disabled:text-moose-300 disabled:cursor-not-allowed text-white  text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
+          class="inline-flex items-center gap-1.5 bg-moose-700 hover:bg-moose-800 disabled:bg-moose-200 disabled:text-moose-300 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
         >
           <svg
             id="save-icon"
@@ -154,14 +169,17 @@ Guifier ships as an ES module only — must use type="module" to import. #}
             onclick="switchTab('content')"
             class="tab-button active px-5 py-3 text-sm font-medium border-b-2 border-moose-700 text-moose-900 bg-moose-50"
           >
-            Content (<span id="content-char-count">0</span> chars)
+            <span class="block md:inline">Content</span>
+            (<span id="content-char-count">0</span>
+            chars)
           </button>
           <button
             id="tab-metadata"
             onclick="switchTab('metadata')"
             class="tab-button px-5 py-3 text-sm font-medium border-b-2 border-transparent text-moose-500 hover:text-moose-700 hover:bg-moose-50 transition-colors"
           >
-            Metadata (<span id="metadata-prop-count">0</span> props)
+            <span class="block md:inline">Metadata</span>
+            (<span id="metadata-prop-count">0</span> props)
           </button>
         </div>
 
@@ -172,7 +190,7 @@ Guifier ships as an ES module only — must use type="module" to import. #}
             onclick="togglePreviewStyle()"
             aria-pressed="false"
             title="Switch to split preview"
-            class="items-center gap-1.5 bg-white hover:bg-moose-100 text-moose-700 border border-moose-300 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors hidden cursor-pointer"
+            class="items-center gap-1.5 bg-white hover:bg-moose-100 text-moose-700 border border-moose-300 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors hidden cursor-pointer "
           >
             <svg
               id="preview-style-split-icon"
@@ -219,9 +237,9 @@ Guifier ships as an ES module only — must use type="module" to import. #}
         ></textarea>
       </div>
 
-      <div id="panel-metadata" class="tab-panel hidden ">
+      <div id="panel-metadata" class="tab-panel hidden">
         <div
-          class="relative flex items-center justify-between gap-3 border-b border-moose-200  bg-[#f7f9fc] p-2"
+          class="relative flex items-center justify-between gap-3 border-b border-moose-200 bg-[#f7f9fc] p-2"
         >
           <div>
             <p class="text-sm font-semibold text-moose-900">Frontmatter</p>
@@ -377,11 +395,7 @@ Guifier ships as an ES module only — must use type="module" to import. #}
   var fpStaticRoute = '{{ admin_config._static_route | default("/static") }}';
 </script>
 <script src="/__moosey/static/admin/editor.js"></script>
-{% endblock %}
-
-
-
-{#
+{% endblock %} {#
 <!-- Sample Extra Sidebar Links  -->
 <!-- {%block side_bar_links%}
 <li>
