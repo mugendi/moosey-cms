@@ -4,6 +4,24 @@ Moosey CMS ships with a full-featured admin dashboard — a Tailwind-rendered HT
 
 The editor includes a searchable picker for runtime-supported metadata. See [Frontmatter fields](frontmatter.md) for the complete reference and automatic `.moosey/frontmatter_fields.yaml` project overrides.
 
+## Admin UI
+
+The dashboard summarizes content and uploaded assets and keeps recently edited pages close at hand.
+
+![Admin dashboard showing content statistics, upload statistics, and recent content](../example/assets/screenshots/admin-dashboard-overview.png)
+
+Browse files and directories, create content, sort results, and choose how many entries to show on each page.
+
+![Content browser with search, sorting, pagination, and file management actions](../example/assets/screenshots/admin-content-browser.png)
+
+Search narrows the current directory immediately, including matches against content titles.
+
+![Content browser filtered to a matching Markdown file](../example/assets/screenshots/admin-content-search.png)
+
+The metadata editor exposes frontmatter as structured fields, including nested values and date controls.
+
+![Structured frontmatter editor showing text fields and nested publication dates](../example/assets/screenshots/admin-editor-metadata.png)
+
 ---
 
 ## Quick Start
