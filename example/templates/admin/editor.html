@@ -152,14 +152,14 @@ Guifier ships as an ES module only — must use type="module" to import. #}
             onclick="switchTab('content')"
             class="tab-button active px-5 py-3 text-sm font-medium border-b-2 border-moose-700 text-moose-900 bg-moose-50"
           >
-            Content
+            Content (<span id="content-char-count">0</span> chars)
           </button>
           <button
             id="tab-metadata"
             onclick="switchTab('metadata')"
             class="tab-button px-5 py-3 text-sm font-medium border-b-2 border-transparent text-moose-500 hover:text-moose-700 hover:bg-moose-50 transition-colors"
           >
-            Metadata
+            Metadata (<span id="metadata-prop-count">0</span> props)
           </button>
         </div>
 
@@ -201,9 +201,9 @@ Guifier ships as an ES module only — must use type="module" to import. #}
         ></textarea>
       </div>
 
-      <div id="panel-metadata" class="tab-panel hidden">
+      <div id="panel-metadata" class="tab-panel hidden ">
         <div
-          class="relative flex items-center justify-between gap-3 border-b border-moose-200 bg-moose-50 px-4 py-3"
+          class="relative flex items-center justify-between gap-3 border-b border-moose-200  bg-[#f7f9fc] p-2"
         >
           <div>
             <p class="text-sm font-semibold text-moose-900">Frontmatter</p>

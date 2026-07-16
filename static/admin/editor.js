@@ -582,6 +582,7 @@
     }
     guifierSnapshot = cloneData(current);
     frontmatterData = cloneData(current);
+    updateStats();
   }
 
   function observeGuifier(container) {
@@ -631,12 +632,22 @@
     return document.getElementById("fallback-editor").value;
   }
 
+  function updateStats() {
+    var contentCount = document.getElementById("content-char-count");
+    var metadataCount = document.getElementById("metadata-prop-count");
+    if (contentCount) contentCount.textContent = getEditorValue().length;
+    var metadata = readGuifierData();
+    if (metadata === null) metadata = frontmatterData;
+    if (metadataCount) metadataCount.textContent = Object.keys(metadata || {}).length;
+  }
+
   function setEditorValue(text) {
     if (tuiEditor) {
       tuiEditor.setMarkdown(text || "");
     } else {
       document.getElementById("fallback-editor").value = text || "";
     }
+    updateStats();
   }
 
   function getFrontmatter() {
@@ -668,6 +679,7 @@
         console.warn("Guifier setData failed:", e);
       }
     }
+    updateStats();
   }
 
   /* ================================================================
@@ -994,6 +1006,10 @@
   document.addEventListener("DOMContentLoaded", function () {
     initTuiEditor();
     initGuifier({});
+    updateStats();
+
+    if (tuiEditor) tuiEditor.on("change", updateStats);
+    document.getElementById("fallback-editor").addEventListener("input", updateStats);
 
     if (filePath) {
       loadFile(filePath);
