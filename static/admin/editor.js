@@ -236,7 +236,6 @@
 
 
   function prepareForGuifier(obj) {
-    console.log(JSON.stringify(obj,0,4));
     if (obj === null || typeof obj !== "object") {
       val = typecast(obj)
       return val
