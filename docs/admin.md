@@ -109,6 +109,29 @@ Access `admin_config.prefix` in templates for URL building:
 <a href="/{{ prefix }}/browse/">Content</a>
 ```
 
+### Adding Sidebar Links
+
+Override the `side_bar_links` block in `dashboard.html`, `editor.html`, and
+`list.html` to append project-specific navigation to every admin page:
+
+```jinja2
+{% block side_bar_links %}
+<li>
+  <a
+    href="/admin/users"
+    title="Admin Users"
+    class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium {% if active_page == 'users' %}bg-moose-800 text-white{% else %}text-moose-300 hover:bg-moose-800 hover:text-white{% endif %} transition-colors"
+  >
+    <span data-sidebar-label class="whitespace-nowrap">Admin Users</span>
+  </a>
+</li>
+{% endblock %}
+```
+
+Set `active_page` in the custom page template to the value used by its link
+(for example, `{% set active_page = 'users' %}`). Each shipped page template
+also includes a commented sample with a collapsible parent and child link.
+
 ### Editor Tabbed Interface
 
 The editor uses a two-tab interface:

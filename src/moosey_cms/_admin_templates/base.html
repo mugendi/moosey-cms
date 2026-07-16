@@ -219,39 +219,18 @@
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   stroke-width="2"
-                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1"
-                />
-              </svg>
-              <span data-sidebar-label class="whitespace-nowrap"
-                >Dashboard</span
-              >
-            </a>
-          </li>
-          {% endblock %} {% block nav_content %}
-          <li>
-            <a
-              href="/{{ prefix }}/browse/"
-              title="Content"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {% if active_page == 'list' %}bg-moose-800 text-white{% else %}text-moose-300 hover:bg-moose-800 hover:text-white{% endif %} transition-colors"
-            >
-              <svg
-                class="w-5 h-5 flex-shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
                   d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
                 />
               </svg>
-              <span data-sidebar-label class="whitespace-nowrap">Content</span>
+              <span data-sidebar-label class="whitespace-nowrap">
+                Content
+              </span>
             </a>
           </li>
           {% endblock %}
+
+          <!--  -->
+          {% block side_bar_links %} {% endblock %}
         </ul>
       </nav>
 
@@ -329,24 +308,21 @@
       ></div>
 
       <main class="flex-1 p-4 md:p-8">
-        
-        {%if file_path%} 
+        {%if file_path%}
         <!--  -->
-        {%set breadcrumb_path =file_path.strip('/')%} 
+        {%set breadcrumb_path =file_path.strip('/')%}
         <!-- else -->
-        {%elif route_path%}
-        {%set breadcrumb_path = route_path.strip('/') %}
+        {%elif route_path%} {%set breadcrumb_path = route_path.strip('/') %}
         <!--  -->
         {%endif%}
-        
+
         <!-- render conditionally -->
-        {% if
-        breadcrumb_path %} {% set parts = breadcrumb_path.split('/') %}
+        {% if breadcrumb_path %} {% set parts = breadcrumb_path.split('/') %}
         <div
           id="nav-container"
           class="text-sm text-moose-500 bg-moose-100 p-3 mb-4 flex gap-1"
         >
-          <div >▷</div>
+          <div>▷</div>
           <nav class="flex items-center gap-1" aria-label="Breadcrumb">
             <a
               href="/{{ prefix }}/"
@@ -397,7 +373,11 @@
       var prefix = "{{ admin_config.prefix }}";
       var subpath = '{{ subpath | default("") }}';
     </script>
-    
+
+    <!-- Scripts -->
+
     {% block scripts %}{% endblock %}
   </body>
 </html>
+
+
