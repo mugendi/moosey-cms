@@ -36,5 +36,10 @@ def load_frontmatter_fields(content_dir: Path) -> dict[str, Any]:
             registry = _merge(registry, _read_yaml(override))
         except (OSError, ValueError) as exc:
             logger.warning("Ignoring invalid frontmatter field override %s: %s", override, exc)
+    fields = registry.get("fields")
+    if isinstance(fields, dict):
+        for position, field in enumerate(fields.values()):
+            if isinstance(field, dict):
+                field.setdefault("order", position)
     registry["override_path"] = str(override)
     return registry

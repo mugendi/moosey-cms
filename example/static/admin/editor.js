@@ -463,7 +463,20 @@
       .trim()
       .toLowerCase();
     var grouped = {};
-    Object.keys(frontmatterRegistry.fields || {}).forEach(function (id) {
+    Object.keys(frontmatterRegistry.fields || {})
+      .sort(function (left, right) {
+        var leftField = frontmatterRegistry.fields[left];
+        var rightField = frontmatterRegistry.fields[right];
+        var leftOrder = Number(leftField.order);
+        var rightOrder = Number(rightField.order);
+        if (!Number.isFinite(leftOrder)) leftOrder = 9007199254740991;
+        if (!Number.isFinite(rightOrder)) rightOrder = 9007199254740991;
+        if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+        return String(leftField.label || left).localeCompare(
+          String(rightField.label || right)
+        );
+      })
+      .forEach(function (id) {
       var field = frontmatterRegistry.fields[id];
       if (field.hidden) return;
       var haystack = [id, field.label, field.description, field.group]
@@ -472,7 +485,7 @@
       if (needle && haystack.indexOf(needle) === -1) return;
       var group = field.group || "Other";
       (grouped[group] = grouped[group] || []).push({ id: id, field: field });
-    });
+      });
     list.innerHTML = "";
     Object.keys(grouped).forEach(function (group) {
       var heading = document.createElement("p");

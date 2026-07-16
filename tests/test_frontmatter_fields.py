@@ -19,6 +19,10 @@ def test_builtin_registry_contains_runtime_fields(tmp_path):
         assert fields[name]["path"] == f"date.{name}"
         assert fields[name]["replace_scalar_parent"] is True
         assert fields[name]["scalar_parent_key"] == "published"
+    date_fields = ("date", "published", "updated", "created")
+    assert [fields[name]["order"] for name in date_fields] == sorted(
+        fields[name]["order"] for name in date_fields
+    )
 
 
 def test_project_registry_is_discovered_and_deep_merged(tmp_path):
@@ -42,6 +46,7 @@ def test_project_registry_is_discovered_and_deep_merged(tmp_path):
     assert fields["draft"]["default"] is True
     assert fields["draft"]["type"] == "boolean"
     assert fields["client"]["group"] == "Projects"
+    assert fields["client"]["order"] > fields["canonical"]["order"]
 
 
 def test_registry_reports_automatic_override_path(tmp_path):
