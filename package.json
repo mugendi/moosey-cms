@@ -3,7 +3,9 @@
   "private": true,
   "scripts": {
     "build:admin-css": "tailwindcss -i ./src/moosey_cms/_styles/admin.css -o ./src/moosey_cms/_static/admin/admin.css --minify",
-    "watch:admin-css": "npm run build:admin-css -- --watch"
+    "watch:admin-css": "npm run build:admin-css -- --watch",
+    "sync:templates" : "uv run moosey-cms admin --templates ./example/templates",
+    "watch:templates" : "nodemon --exec 'uv run moosey-cms admin --templates ./example/templates' -e html,js,css -w ./src"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.0",
