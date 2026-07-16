@@ -35,6 +35,15 @@ fields:
       description: "Hide the page outside development mode and exclude it from normal indexes.",
       is_basic_field: true
     }
+  version:
+    {
+      label: Version,
+      type: number,
+      default: 1,
+      group: Publishing,
+      description: "Auto-incremented version number on each save.",
+      is_basic_field: true
+    }
   visible:
     {
       label: Visible in navigation,
