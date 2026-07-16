@@ -72,6 +72,15 @@
       return (typeA - typeB) * (options.order === "desc" ? -1 : 1);
     }
 
+    var indexA =
+      typeA === 1 && String(valuesA["entry-name"]).toLowerCase() === "index.md";
+    var indexB =
+      typeB === 1 && String(valuesB["entry-name"]).toLowerCase() === "index.md";
+    if (indexA !== indexB) {
+      var indexOrder = indexA ? -1 : 1;
+      return indexOrder * (options.order === "desc" ? -1 : 1);
+    }
+
     var valueA = valuesA[options.valueName];
     var valueB = valuesB[options.valueName];
     if (options.valueName !== "entry-name") {
