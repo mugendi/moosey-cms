@@ -32,8 +32,6 @@ function setDesktopSidebarCollapsed(collapsed, persist) {
   if (!sidebar) return;
 
   sidebar.dataset.collapsed = String(collapsed);
-  sidebar.classList.toggle("md:w-20", collapsed);
-  sidebar.classList.toggle("md:w-64", !collapsed);
   sidebar.querySelectorAll("[data-sidebar-label]").forEach(function (label) {
     label.classList.toggle("md:hidden", collapsed);
   });
