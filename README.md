@@ -64,18 +64,9 @@ See the [admin dashboard and API guide](docs/admin.md), or explore the [/example
 
 | Moosey CMS Feature | Replaces Paid Services |
 |---|---|
-| `image()` filter with responsive `srcset` and CDN transforms | Cloudinary, Imgix |
-| `schema_article()` + OpenGraph + Twitter Cards + meta tags | Yoast SEO, Rank Math |
-| `sanitize()` HTML sanitizer (Bleach-based) | DOMPurify, HTML sanitization APIs |
-| `embed()` (YouTube, Twitter/X, Vimeo, CodePen, Gist) | Embedly, oEmbed API services |
-| `sitemap.xml` + `robots.txt` + RSS/Atom feed | Google XML Sitemaps, Feedburner |
-| `country_flag`, `country_name`, `language_name`, `currency_name` (pycountry) | RestCountries API, currency data APIs |
-| `dominant_color()` from local images | ColorThief, LCP placeholder services |
-| `inline()` + `cache_bust()` | Critical CSS tools, Webpack/Gulp cache busting |
-| `headings()` + `toc_from_html()` | Table of Contents plugins |
-| `markdown` with pymdown-extensions | Contentful, Sanity (content authoring) |
-| Hot-reload browser refresh | BrowserSync, LiveReload |
-| No-database flat-file CMS | WordPress, Strapi, Ghost |
+| Responsive image generation, `srcset`, local transforms, and CDN URL support | Cloudinary, Imgix, ImageKit |
+| Open Graph, Twitter Cards, JSON-LD, canonical URLs, sitemaps, robots.txt, and RSS feeds | Yoast SEO Premium, Rank Math Pro, managed SEO tooling |
+| Markdown content management with a visual admin, structured metadata, file uploads, and a CRUD API | Contentful, Sanity, Ghost(Pro), hosted headless CMS platforms |
 
 ---
 
