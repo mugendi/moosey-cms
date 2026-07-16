@@ -2,7 +2,7 @@
    admin.js — Shared JavaScript utilities for Moosey CMS admin UI.
    Included in base.html; available to all admin templates.
    ================================================================ */
-(function () {
+
   const sidebarBreakpoint = window.matchMedia("(min-width: 768px)");
   const sidebarStorageKey = "moosey-admin-sidebar-collapsed";
 
@@ -204,5 +204,3 @@
       m.classList.add("hidden");
     });
   });
-
-})();

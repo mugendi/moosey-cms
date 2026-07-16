@@ -351,6 +351,62 @@
             });
     }
 
+    function fpRenderGrid(entries) {
+        var grid = document.getElementById('fp-grid');
+        var empty = document.getElementById('fp-empty');
+
+        if (entries.length === 0) {
+            grid.innerHTML = '';
+            empty.classList.remove('hidden');
+            return;
+        }
+        empty.classList.add('hidden');
+
+        var html = '';
+        for (var i = 0; i < entries.length; i++) {
+            var e = entries[i];
+
+            html += '<div class="fp-card border border-moose-200 rounded-lg p-3 cursor-pointer hover:border-moose-500 hover:shadow transition-all" ';
+            html += 'data-path="' + escHtml(e.path) + '" ';
+            html += 'data-url="' + escHtml(e.url || '') + '" ';
+            html += 'data-type="' + e.type + '" ';
+            html += 'data-mime="' + escHtml(e.mime_type || '') + '" ';
+            html += 'data-name="' + escHtml(e.name) + '" ';
+            html += 'data-size="' + e.size + '" ';
+            html += 'onclick="fpSelect(this)" ondblclick="fpSelect(this);fpInsertSelected()">';
+
+            if (e.type === 'directory') {
+                html += '<div class="text-3xl text-center mb-2">📁</div>';
+            } else if (e.mime_type && e.mime_type.indexOf('image/') === 0 && e.url) {
+                html += '<div class="aspect-square mb-2 overflow-hidden rounded bg-moose-100 flex items-center justify-center">';
+                html += '<img src="' + escHtml(e.url) + '" alt="" class="max-h-full max-w-full object-contain" loading="lazy">';
+                html += '</div>';
+            } else {
+                // File icon — render emoji placeholder, async-update with file-icons
+                html += '<div class="fp-icon text-3xl text-center mb-2">📄</div>';
+            }
+
+            html += '<div class="text-xs text-moose-700 truncate text-center" title="' + escHtml(e.name) + '">' + escHtml(e.name) + '</div>';
+            html += '</div>';
+        }
+        grid.innerHTML = html;
+
+        // Async-update file icons (FileIcons.getClass is async)
+        if (typeof FileIcons !== 'undefined') {
+            var cards = grid.querySelectorAll('.fp-card[data-type="file"]:not([data-mime^="image/"])');
+            cards.forEach(function(card) {
+                var name = card.getAttribute('data-name');
+                var iconEl = card.querySelector('.fp-icon');
+                if (iconEl) {
+                    FileIcons.getClass(name).then(function(cls) {
+                        iconEl.innerHTML = '<i class="' + cls + '"></i>';
+                    });
+                }
+            });
+        }
+    }
+
+
   window.addMetadataField = function (id) {
     var field = (frontmatterRegistry.fields || {})[id];
     if (!field || field.hidden) return;
