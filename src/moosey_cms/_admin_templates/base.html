@@ -21,6 +21,82 @@
         --admin-ink: #0f172a;
         --admin-surface: #ffffff;
       }
+      .sidebar-expand-btn {
+        position: relative;
+        display: inline-grid;
+        flex: 0 0 auto;
+        width: 2rem;
+        height: 2rem;
+        place-items: center;
+        overflow: hidden;
+        color: #525866;
+        background: #f2f3f5;
+        border: 1px solid transparent;
+        border-radius: 0.25rem;
+        cursor: pointer;
+        transition:
+          color 180ms ease,
+          background-color 180ms ease,
+          border-color 180ms ease,
+          transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .sidebar-expand-btn:hover {
+        color: #171a21;
+        background: #e9eaed;
+        border-color: rgba(15, 23, 42, 0.06);
+        transform: scale(1.06);
+      }
+      .sidebar-expand-btn:active {
+        transform: scale(0.94);
+      }
+      .sidebar-expand-btn:focus-visible {
+        outline: 2px solid #94a3b8;
+        outline-offset: 2px;
+      }
+      .sidebar-expand-btn svg {
+        width: 1.125rem;
+        height: 1.125rem;
+      }
+      .sidebar-expand-btn__panel,
+      .sidebar-expand-btn__chevron {
+        transform-box: fill-box;
+        transform-origin: center;
+        transition:
+          opacity 180ms ease,
+          transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .sidebar-expand-btn:hover .sidebar-expand-btn__panel {
+        transform: translateX(-0.7px);
+      }
+      .sidebar-expand-btn__chevron {
+        opacity: 0;
+        transform: translateX(3px);
+      }
+      .sidebar-expand-btn:hover .sidebar-expand-btn__chevron,
+      .sidebar-expand-btn:focus-visible .sidebar-expand-btn__chevron {
+        opacity: 1;
+        transform: translateX(0);
+      }
+      .sidebar-expand-btn[aria-expanded="false"] .sidebar-expand-btn__panel {
+        transform: translateX(-2px);
+      }
+      .sidebar-expand-btn[aria-expanded="false"] .sidebar-expand-btn__chevron {
+        transform: translateX(-3px) rotate(180deg);
+      }
+      .sidebar-expand-btn[aria-expanded="false"]:hover
+        .sidebar-expand-btn__chevron,
+      .sidebar-expand-btn[aria-expanded="false"]:focus-visible
+        .sidebar-expand-btn__chevron {
+        opacity: 1;
+        transform: translateX(0) rotate(180deg);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .sidebar-expand-btn,
+        .sidebar-expand-btn__panel,
+        .sidebar-expand-btn__chevron {
+          transition-duration: 0.01ms;
+        }
+      }
       #flash-container {
         pointer-events: none;
       }
@@ -258,23 +334,36 @@
             id="sidebar-toggle"
             type="button"
             onclick="toggleSidebar()"
-            class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-moose-600 hover:text-moose-900 hover:bg-moose-100 transition-colors"
+            class="sidebar-expand-btn"
             aria-label="Toggle sidebar"
             aria-controls="sidebar"
             aria-expanded="true"
           >
             <svg
-              class="w-6 h-6 md:w-5 md:h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
               aria-hidden="true"
             >
+              <rect
+                x="3.5"
+                y="4"
+                width="17"
+                height="16"
+                rx="3"
+                stroke-width="1.7"
+              />
               <path
+                class="sidebar-expand-btn__panel"
+                d="M9 4.75v14.5"
+                stroke-width="1.7"
+              />
+              <path
+                class="sidebar-expand-btn__chevron"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 6h16M4 12h16M4 18h16"
+                stroke-width="1.7"
+                d="m17.25 9.25-2.75 2.75 2.75 2.75"
               />
             </svg>
           </button>
