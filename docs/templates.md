@@ -30,6 +30,7 @@ Standard Jinja2 syntax:
 | `get_files` | Callable to get navigation for a different folder |
 | `app_state` | `request.app.state` (access `app.state.templates`, etc.) |
 | `debug_template_used` | Name of the template that was resolved |
+| `version` | Auto-incremented version number from git tracking (int, starts at 1) |
 
 Any keys in the page's YAML frontmatter are also available as variables (e.g., `{{ author }}`).
 
