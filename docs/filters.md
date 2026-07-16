@@ -1,6 +1,6 @@
 # Filters Reference
 
-moosey-cms provides 54 built-in Jinja2 filters for dates, text, numbers, images, and more.
+moosey-cms provides 60+ built-in Jinja2 filters for dates, text, numbers, images, and more.
 
 All filters are automatically registered when you call `init_cms()`.
 
