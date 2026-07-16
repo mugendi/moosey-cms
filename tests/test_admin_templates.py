@@ -269,7 +269,7 @@ class TestAdminListTemplate:
             'static/admin/list.js'
         )
         assert 'id="content-page-size"' in resp.text
-        assert '<option value="20" selected>20</option>' in resp.text
+        assert '<option value="10" selected>10</option>' in resp.text
         assert '<option value="50">50</option>' in resp.text
         assert '<option value="100">100</option>' in resp.text
         assert 'class="pagination"' in resp.text
