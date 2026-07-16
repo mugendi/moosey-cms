@@ -39,6 +39,7 @@ dependencies = [
     "pynacl>=1.6.2",
     "pytest>=9.1.1",
     "python-frontmatter>=1.1.0",
+    "python-multipart>=0.0.32",
     "python-slugify>=8.0.4",
     "questionary>=2.1.1",
     "redis>=8.0.1",
