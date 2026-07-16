@@ -9,6 +9,7 @@ import yaml
 from moosey_cms.lib.config import (
     AdminConfig,
     CMSConfig,
+    GitConfig,
     ServerConfig,
     SiteConfig,
     CryptoConfig,
@@ -143,3 +144,16 @@ def test_load_config_with_advanced(tmp_path):
     assert loaded.image_cdn is not None
     assert loaded.image_cdn["provider"] == "imgix"
     assert loaded.sanitize is None
+
+
+def test_git_config_defaults():
+    config = CMSConfig()
+    assert config.git.auto_push is False
+
+
+def test_git_config_roundtrip(tmp_path):
+    config_path = tmp_path / ".moosey-cms.yaml"
+    config = CMSConfig(git=GitConfig(auto_push=True))
+    save_config(config, config_path)
+    loaded = load_config(config_path)
+    assert loaded.git.auto_push is True

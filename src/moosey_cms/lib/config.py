@@ -56,11 +56,17 @@ class CacheConfig:
 
 
 @dataclass
+class GitConfig:
+    auto_push: bool = False
+
+
+@dataclass
 class CMSConfig:
     server: ServerConfig = field(default_factory=ServerConfig)
     site: SiteConfig = field(default_factory=SiteConfig)
     crypto: CryptoConfig = field(default_factory=CryptoConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
+    git: GitConfig = field(default_factory=GitConfig)
 
     # Advanced configs (optional)
     image_cdn: Optional[dict] = None
@@ -85,12 +91,14 @@ def load_config(config_path: Optional[Path] = None) -> CMSConfig:
     admin_data = site_data.pop("admin", {}) or {}
     crypto_data = data.get("crypto", {})
     cache_data = data.get("cache", {})
+    git_data = data.get("git", {})
 
     return CMSConfig(
         server=ServerConfig(**server_data),
         site=SiteConfig(admin=AdminConfig(**admin_data), **site_data),
         crypto=CryptoConfig(**crypto_data),
         cache=CacheConfig(**cache_data),
+        git=GitConfig(**git_data),
         image_cdn=data.get("image_cdn"),
         image_processing=data.get("image_processing"),
         sanitize=data.get("sanitize"),
@@ -107,6 +115,7 @@ def save_config(config: CMSConfig, config_path: Optional[Path] = None):
         "site": asdict(config.site),
         "crypto": asdict(config.crypto),
         "cache": asdict(config.cache),
+        "git": asdict(config.git),
     }
 
     # Add advanced configs only if set
