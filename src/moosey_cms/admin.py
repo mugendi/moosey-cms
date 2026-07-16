@@ -497,7 +497,6 @@ def register_admin_routes(
     async def admin_browse_page(request: Request, subpath: str = ""):
 
         route_path = request.url.path.strip('/').replace(prefix.strip('/'),'')
-        print('>>>>', request.url.path, route_path)
 
         return await _render_admin_template(request, f"{templates_subdir}/list.html", {
             "admin_config": admin_config, "mode": mode, "subpath": subpath,'route_path':route_path

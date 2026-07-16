@@ -71,7 +71,7 @@ class ScriptInjectorMiddleware(BaseHTTPMiddleware):
 
 
 def inject_script_middleware(app, host, port):
-    # print('>>>>>>IIIIII')
+
     # Your custom script to inject
     package_root = Path(__file__).resolve().parent
     javascript_file = package_root / "static" / "js" / "reload-script.js"
