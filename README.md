@@ -30,7 +30,7 @@
 
 Moosey CMS transforms your FastAPI application into a content-driven website without the need for a database. It bridges the gap between static site generators and dynamic web servers, offering hot-reloading, intelligent caching, SEO management, and a powerful templating hierarchy.
 
-### Frontend
+### Frontend Example
 
 ![A public website homepage rendered from Markdown content by Moosey CMS](example/assets/example-1.jpeg)
 
