@@ -233,19 +233,13 @@
     if (previewToggle) previewToggle.disabled = true;
   }
 
-  /* ================================================================
-       Guifier — date detection & data pre-processing
-       Guifier uses lodash.isDate() which only recognises Date instances.
-       ISO date strings like "2024-01-15" must be converted to Date
-       objects before Guifier sees them, otherwise they render as text.
-       ================================================================ */
-  function looksLikeDate(v) {
-    return typeof v === "string" && /^\d{4}-\d{2}-\d{2}(T|\s)/.test(v);
-  }
+
 
   function prepareForGuifier(obj) {
+    console.log(JSON.stringify(obj,0,4));
     if (obj === null || typeof obj !== "object") {
-      return looksLikeDate(obj) ? new Date(obj) : obj;
+      val = typecast(obj)
+      return val
     }
     if (Array.isArray(obj)) return obj.map(prepareForGuifier);
     var out = {};

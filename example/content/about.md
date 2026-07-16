@@ -1,14 +1,14 @@
 ---
 title: About Us
 # 
-description: We are a team of digital nomads building tools for creators.
+description: We are a team of digital nomads building tools for creators!
 date:
   updated: '2026-07-10T21:18:25.638Z'
-  created: '2026-07-10T21:18:25.640Z'
+  created: '2025-05-10T21:18:25.640Z'
 slug: about
 ---
 
-## Our Mission
+## Our Missions
 
 We believe that content management should be simple, fast, and fun. We stripped away the databases, the complicated dashboards, and the plugin hell to bring you **Moosey CMS**.
 

@@ -121,8 +121,12 @@ def parse_markdown_file(file):
     if "date" not in data.metadata or not isinstance(data.metadata["date"], dict):
         data.metadata["date"] = {}
 
-    data.metadata["date"]["updated"] = datetime.fromtimestamp(stats.st_mtime)
-    data.metadata["date"]["created"] = datetime.fromtimestamp(stats.st_ctime)
+    data.metadata["date"].setdefault(
+        "updated", datetime.fromtimestamp(stats.st_mtime)
+    )
+    data.metadata["date"].setdefault(
+        "created", datetime.fromtimestamp(stats.st_ctime)
+    )
     data.metadata["slug"] = slugify(str(file.stem))
 
     data.html = parse_markdown(data.content)
@@ -164,6 +168,5 @@ async def template_render_content(templates, content, data, safe=True):
         print(f"⚠️ Template Rendering Error: {e}")
         # Fallback: Return raw content if injection fails, rather than crashing
         return content
-
 
 
