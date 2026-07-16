@@ -30,9 +30,19 @@
 
 Moosey CMS transforms your FastAPI application into a content-driven website without the need for a database. It bridges the gap between static site generators and dynamic web servers, offering hot-reloading, intelligent caching, SEO management, and a powerful templating hierarchy.
 
+### Frontend
+
+![A public website homepage rendered from Markdown content by Moosey CMS](example/assets/example-1.jpeg)
+
+_A complete public-facing site rendered from Markdown, Jinja templates, and Moosey's content routing._
+
+### Backend / Admin
+
 ![Moosey CMS admin editor with side-by-side Markdown editing and live preview](example/assets/screenshots/admin-editor-split-preview.png)
 
-The built-in admin combines Markdown authoring, live preview, structured frontmatter, and content management. See the [admin dashboard and API guide](docs/admin.md), or explore the [/example](/example/) project for complete templating and content samples.
+_The built-in admin provides Markdown authoring, live preview, structured frontmatter, and content management._
+
+See the [admin dashboard and API guide](docs/admin.md), or explore the [/example](/example/) project for complete templating and content samples.
 
 ---
 
