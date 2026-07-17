@@ -349,7 +349,8 @@ def register_admin_routes(
     # Git versioning
     git_config_data = admin_config.get("git", {})
     git_config = GitConfig(**git_config_data) if isinstance(git_config_data, dict) else GitConfig()
-    git_mgr = GitManager(content_dir)
+    git_repo = Path(git_config.repo_path).resolve() if git_config.repo_path else content_dir.parent
+    git_mgr = GitManager(git_repo)
 
     # ------------------------------------------------------------------
     # LIST — directory contents with metadata

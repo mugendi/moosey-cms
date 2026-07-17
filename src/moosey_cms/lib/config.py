@@ -58,6 +58,7 @@ class CacheConfig:
 @dataclass
 class GitConfig:
     auto_push: bool = False
+    repo_path: str = ""  # empty = use parent of content dir
 
 
 @dataclass

@@ -301,6 +301,7 @@ cache:
 
 git:
   auto_push: false        # auto-push each commit to the remote after save
+  repo_path: ""           # git repo path (empty = parent of content dir)
 ```
 
 **How it works:**

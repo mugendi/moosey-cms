@@ -8,12 +8,13 @@ import frontmatter
 
 @pytest.fixture
 def git_content_dir(tmp_path):
-    """Content dir with a git repo initialized."""
+    """Content dir with a git repo in the parent directory."""
     from moosey_cms.lib.git import GitManager
 
     d = tmp_path / "content"
     d.mkdir()
-    mgr = GitManager(d)
+    # Git repo lives in parent (default repo_path behavior)
+    mgr = GitManager(tmp_path)
     mgr.ensure_repo()
     return d
 
@@ -251,3 +252,47 @@ def test_no_auto_push_skips_push(client, git_content_dir):
         )
         assert resp.status_code == 201
         mock_push.assert_not_called()
+
+
+def test_explicit_repo_path(tmp_path):
+    """Explicit repo_path in git config should override default."""
+    from moosey_cms.admin import register_admin_routes
+    from moosey_cms.lib.config import CMSConfig
+    from moosey_cms.lib.git import GitManager
+    from fastapi import FastAPI
+    from fastapi import APIRouter
+
+    # Simulate: project root has .git, content/ is a subdirectory
+    project_root = tmp_path
+    content_dir = project_root / "content"
+    content_dir.mkdir()
+    GitManager(project_root).ensure_repo()
+
+    application = FastAPI()
+    application.state.site_data = {"name": "Test"}
+    application.state.mode = "development"
+    application.state.config = CMSConfig()
+
+    router = APIRouter()
+    register_admin_routes(
+        router=router,
+        dirs={"content": content_dir},
+        mode="development",
+        admin_config={
+            "prefix": "admin/content",
+            "templates": "admin",
+            "git": {"auto_push": False, "repo_path": str(project_root)},
+        },
+    )
+    application.include_router(router)
+    client = TestClient(application)
+
+    resp = client.post(
+        "/admin/content/file/repo-path-test.md",
+        json={"frontmatter": {"title": "RepoPath"}, "body": "Hello"},
+    )
+    assert resp.status_code == 201
+    # Verify commit exists in the explicit repo
+    mgr = GitManager(project_root)
+    history = mgr.file_history(content_dir / "repo-path-test.md")
+    assert len(history) >= 1

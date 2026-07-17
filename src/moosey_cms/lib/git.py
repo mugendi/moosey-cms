@@ -27,6 +27,7 @@ class GitManager:
             return self._repo
 
         git_dir = self.repo_path / ".git"
+
         if git_dir.is_dir():
             self._repo = Repo(self.repo_path)
         else:
