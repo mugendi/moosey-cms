@@ -22,6 +22,14 @@ The metadata editor exposes frontmatter as structured fields, including nested v
 
 ![Structured frontmatter editor showing text fields and nested publication dates](../example/assets/screenshots/admin-editor-metadata.png)
 
+The History tab lists Git-backed versions of the current file and provides a preview action for each earlier version.
+
+![Editor History tab listing Git-backed file versions and preview actions](../example/assets/screenshots/admin-editor-history.png)
+
+Before reverting, the editor clearly identifies the current and selected versions and renders the exact changes in a side-by-side diff. Reverting restores only the file being edited and records the restoration as a new history entry.
+
+![Revert preview showing version direction and a side-by-side file diff](../example/assets/screenshots/admin-editor-revert-preview.png)
+
 ---
 
 ## Quick Start
