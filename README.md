@@ -43,6 +43,15 @@ Moosey CMS turns a FastAPI application into a content-driven website using Markd
 - Responsive image processing and CDN support
 - JSON API for content management
 
+## Features that replace paid services
+
+| Moosey CMS feature | Can replace |
+|---|---|
+| Responsive image generation, `srcset`, local transforms, and CDN URL support | Cloudinary, Imgix, and ImageKit |
+| Open Graph, Twitter Cards, JSON-LD, canonical URLs, sitemaps, robots.txt, and RSS feeds | Yoast SEO Premium, Rank Math Pro, and managed SEO tooling |
+| Markdown content management, a visual admin, structured metadata, file uploads, and a CRUD API | Contentful, Sanity, Ghost(Pro), and hosted headless CMS platforms |
+| Automatic Git history, version tracking, diff previews, and one-click rollback | Contentful revisions, headless CMS version history, and Git-based CMS platforms |
+
 ## Installation
 
 ```bash
