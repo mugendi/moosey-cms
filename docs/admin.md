@@ -642,12 +642,20 @@ GET /{prefix}/file-history/{file_path}
 {
   "path": "blog/hello-world.md",
   "history": [
-    {"version": 3, "hash": "a1b2c3d", "message": "content: update blog/hello-world.md (v3)", "date": "2026-07-15T10:30:00"},
-    {"version": 2, "hash": "e4f5g6h", "message": "content: update blog/hello-world.md (v2)", "date": "2026-07-14T09:00:00"},
-    {"version": 1, "hash": "i7j8k9l", "message": "content: create blog/hello-world.md (v1)", "date": "2026-07-13T08:00:00"}
+    {"hash": "a1b2c3d4e5f6...", "message": "content: update blog/hello-world.md (v3)", "date": "2026-07-15T10:30:00"},
+    {"hash": "e4f5g6h7i8j9...", "message": "content: update blog/hello-world.md (v2)", "date": "2026-07-14T09:00:00"},
+    {"hash": "i7j8k9l0m1n2...", "message": "content: create blog/hello-world.md (v1)", "date": "2026-07-13T08:00:00"}
   ]
 }
 ```
+
+Each history entry contains:
+
+| Field | Description |
+|-------|-------------|
+| `hash` | Full SHA-1 commit hash |
+| `message` | Commit message (includes action and version number) |
+| `date` | ISO 8601 timestamp of the commit |
 
 **Example:**
 
@@ -655,11 +663,18 @@ GET /{prefix}/file-history/{file_path}
 curl http://localhost:8000/admin/content/file-history/blog/hello-world.md
 ```
 
+**Note:** The API returns up to 50 of the most recent commits by default.
+Older history is still tracked by Git but not surfaced in the admin UI.
+The version number embedded in commit messages (e.g. `v3`) corresponds to
+the `version` frontmatter field, which is auto-incremented on each save.
+
 ---
 
 ### Rollback (Git Versioning)
 
-Restore a file to a previous version by specifying the version number. The current content is committed before rollback, creating a safety net.
+Restore a file to a previous version by specifying its commit hash. The current
+content is committed before rollback, creating a safety net. The restored file
+is assigned a new version number (auto-incremented from the current version).
 
 ```
 POST /{prefix}/rollback/{file_path}
@@ -669,30 +684,43 @@ POST /{prefix}/rollback/{file_path}
 
 ```json
 {
-  "version": 2
+  "commit": "a1b2c3d4e5f6..."
 }
 ```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `commit` | yes | Full SHA-1 hash of the commit to restore (from the `hash` field in the file-history response) |
 
 **Response:**
 
 ```json
 {
   "path": "blog/hello-world.md",
-  "status": "rolled_back",
-  "from_version": 3,
-  "to_version": 2
+  "restored_from": "a1b2c3d4e5f6...",
+  "version": 4,
+  "status": "rolled_back"
 }
 ```
+
+| Field | Description |
+|-------|-------------|
+| `path` | Relative path of the restored file |
+| `restored_from` | The commit hash that was restored |
+| `version` | New version number assigned after restoration |
+| `status` | Always `"rolled_back"` |
 
 **Example:**
 
 ```bash
 curl -X POST http://localhost:8000/admin/content/rollback/blog/hello-world.md \
   -H "Content-Type: application/json" \
-  -d '{"version": 2}'
+  -d '{"commit": "a1b2c3d4e5f6..."}'
 ```
 
-**Note:** Rollback commits are never auto-pushed to the remote, even when `git.auto_push` is enabled.
+**Note:** Rollback commits are never auto-pushed to the remote, even when
+`git.auto_push` is enabled. To find the commit hash to restore, use the
+[File History](#file-history-git-versioning) endpoint.
 
 ---
 
