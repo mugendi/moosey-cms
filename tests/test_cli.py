@@ -43,7 +43,7 @@ def _init_prompts(site="My Site", host="0.0.0.0", port="8000", reload_delay="0.2
                    brand_name="Acme CMS", admin_title="Acme Admin",
                    home_label="View site", home_url="/",
                    cache_backend="memory", cache_ttl="2592000",
-                   git_auto_push=False):
+                   git_auto_push=False, git_repo_path=""):
     """Return (text_side_effect, select_side_effect, confirm_side_effect) for cmd_init prompts."""
     text_side_effect = [
         _mock_question(site),
@@ -57,6 +57,7 @@ def _init_prompts(site="My Site", host="0.0.0.0", port="8000", reload_delay="0.2
         _mock_question(home_label),
         _mock_question(home_url),
         _mock_question(cache_ttl),
+        _mock_question(git_repo_path),
     ]
     return text_side_effect, cache_backend, git_auto_push
 
@@ -66,7 +67,7 @@ def _config_prompts(site="Test Site", host="127.0.0.1", port="3000", reload_dela
                      brand_name="Test CMS", admin_title="Test Admin",
                      home_label="Home", home_url="/",
                      cache_backend="memory", cache_ttl="2592000",
-                     git_auto_push=False):
+                     git_auto_push=False, git_repo_path=""):
     """Return (text_side_effect, select_side_effect, confirm_side_effect) for cmd_config prompts."""
     text_side_effect = [
         _mock_question(site),
@@ -80,6 +81,7 @@ def _config_prompts(site="Test Site", host="127.0.0.1", port="3000", reload_dela
         _mock_question(home_label),
         _mock_question(home_url),
         _mock_question(cache_ttl),
+        _mock_question(git_repo_path),
     ]
     return text_side_effect, cache_backend, git_auto_push
 

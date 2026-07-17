@@ -126,6 +126,9 @@ def _prompt_for_config(
     git_auto_push = questionary.confirm(
         "Auto-push after file saves?", default=existing.git.auto_push
     ).ask()
+    git_repo_path = questionary.text(
+        "Git repo path (empty = project root):", default=existing.git.repo_path
+    ).ask()
 
     crypto_key = existing.crypto.key
     if generate_crypto_key or not crypto_key:
@@ -155,7 +158,7 @@ def _prompt_for_config(
             maxsize=existing.cache.maxsize,
             redis_url=redis_url,
         ),
-        git=GitConfig(auto_push=git_auto_push),
+        git=GitConfig(auto_push=git_auto_push, repo_path=git_repo_path),
         image_cdn=existing.image_cdn,
         image_processing=existing.image_processing,
         sanitize=existing.sanitize,
