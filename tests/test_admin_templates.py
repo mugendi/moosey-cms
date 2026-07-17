@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from starlette.testclient import TestClient
 from pathlib import Path
+from urllib.parse import quote
 
 from moosey_cms.admin import register_admin_routes
 
@@ -279,3 +280,59 @@ class TestAdminListTemplate:
         nested = client.get(f"/{PREFIX}/browse/blog")
         assert nested.status_code == 200
         assert 'subpath: "blog"' in nested.text
+
+    def test_list_javascript_uses_safe_dom_construction_and_encoded_paths(self):
+        package = Path(__file__).parent.parent / "src" / "moosey_cms"
+        list_js = (package / "_static" / "admin" / "list.js").read_text()
+
+        hostile_values = [
+            "<img src=x onerror=window.pwned=true>",
+            "<svg/onload=window.pwned=true>",
+            "`'\"&<>",
+            "../",
+            "%2f",
+            "#",
+            "?",
+            "Unicode-雪",
+            "name with spaces",
+        ]
+        assert hostile_values
+        assert "function encodePath(path)" in list_js
+        assert ".map(encodeURIComponent)" in list_js
+        assert "row.innerHTML" not in list_js
+        assert "tbody.innerHTML" not in list_js
+        assert "title.textContent = entry.title" in list_js
+        assert "link.textContent = entry.name" in list_js
+        assert 'deleteButton.addEventListener("click"' in list_js
+        assert "openDeleteModal(entry.path, entry.type, entry.name)" in list_js
+        assert '"/edit/" + encodePath(entry.path)' in list_js
+        assert "endpoint + encodePath(path)" in list_js
+
+    def test_editor_file_picker_rejects_dom_xss_sinks_and_icon_classes(self):
+        package = Path(__file__).parent.parent / "src" / "moosey_cms"
+        editor_js = (package / "_static" / "admin" / "editor.js").read_text()
+
+        assert "card.addEventListener" in editor_js
+        assert "card.dataset.path = path" in editor_js
+        assert "label.textContent = name" in editor_js
+        assert "info.replaceChildren(name, mime, size)" in editor_js
+        assert "/^[a-zA-Z0-9_-]+$/.test(token)" in editor_js
+        assert "icon.classList.add.apply" in editor_js
+        assert "iconEl.innerHTML" not in editor_js
+        assert 'onclick="fpSelect' not in editor_js
+        assert '"/file/" + encodePath(path)' in editor_js
+        assert '"/file/" + encodePath(savePath)' in editor_js
+
+    def test_breadcrumb_escapes_text_and_encodes_path_segments(
+        self, client, content_dir
+    ):
+        directory = "quotes'` & angles<> 雪"
+        (content_dir / directory / "child").mkdir(parents=True)
+        encoded = quote(directory, safe="")
+        response = client.get(f"/{PREFIX}/browse/{encoded}/child")
+
+        assert response.status_code == 200
+        assert directory not in response.text
+        assert "angles&lt;&gt;" in response.text
+        assert f"/{PREFIX}/browse/{encoded}" in response.text
+        assert "<svg/onload=" not in response.text
