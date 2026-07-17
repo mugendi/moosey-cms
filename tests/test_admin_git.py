@@ -168,3 +168,86 @@ def test_delete_file_no_commit(client, git_content_dir):
     resp = client.delete("/admin/content/file/del-test.md")
     assert resp.status_code == 200
     assert not (git_content_dir / "del-test.md").exists()
+
+
+# ------------------------------------------------------------------
+# auto_push tests
+# ------------------------------------------------------------------
+
+
+@pytest.fixture
+def auto_push_app(git_content_dir):
+    """App with auto_push=True."""
+    from moosey_cms.admin import register_admin_routes
+    from moosey_cms.lib.config import CMSConfig
+    from fastapi import FastAPI
+    from fastapi import APIRouter
+
+    application = FastAPI()
+    application.state.site_data = {"name": "Test"}
+    application.state.mode = "development"
+    application.state.config = CMSConfig()
+
+    router = APIRouter()
+    register_admin_routes(
+        router=router,
+        dirs={"content": git_content_dir},
+        mode="development",
+        admin_config={
+            "prefix": "admin/content",
+            "templates": "admin",
+            "git": {"auto_push": True},
+        },
+    )
+    application.include_router(router)
+    return application
+
+
+@pytest.fixture
+def auto_push_client(auto_push_app):
+    return TestClient(auto_push_app)
+
+
+def test_auto_push_triggers_push(auto_push_client, git_content_dir):
+    """When auto_push=True, git_mgr.push() should be called after commit."""
+    from unittest.mock import patch
+
+    with patch("moosey_cms.admin.GitManager.push") as mock_push:
+        resp = auto_push_client.post(
+            "/admin/content/file/push-test.md",
+            json={"frontmatter": {"title": "Push"}, "body": "Hello"},
+        )
+        assert resp.status_code == 201
+        mock_push.assert_called_once()
+
+
+def test_auto_push_triggers_push_on_update(auto_push_client, git_content_dir):
+    """When auto_push=True, push() should also be called on file update."""
+    from unittest.mock import patch
+
+    # Create first
+    auto_push_client.post(
+        "/admin/content/file/push-update.md",
+        json={"frontmatter": {"title": "Push"}, "body": "v1"},
+    )
+
+    with patch("moosey_cms.admin.GitManager.push") as mock_push:
+        resp = auto_push_client.put(
+            "/admin/content/file/push-update.md",
+            json={"frontmatter": {"title": "Push"}, "body": "v2"},
+        )
+        assert resp.status_code == 200
+        mock_push.assert_called_once()
+
+
+def test_no_auto_push_skips_push(client, git_content_dir):
+    """When auto_push=False, push() should NOT be called."""
+    from unittest.mock import patch
+
+    with patch("moosey_cms.admin.GitManager.push") as mock_push:
+        resp = client.post(
+            "/admin/content/file/no-push.md",
+            json={"frontmatter": {"title": "NoPush"}, "body": "Hello"},
+        )
+        assert resp.status_code == 201
+        mock_push.assert_not_called()
