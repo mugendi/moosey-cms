@@ -1,7 +1,6 @@
 {% extends admin_config.templates ~ "/base.html" %} {% block title %}{% if
 file_path %}Edit: {{ file_path }}{% else %}New File{% endif %}{% endblock %} {%
-set active_page = 'editor' %}
-{% macro save_button(suffix='') %}
+set active_page = 'editor' %} {% macro save_button(suffix='') %}
 <button
   id="btn-save{{ suffix }}"
   onclick="saveFile()"
@@ -45,9 +44,8 @@ set active_page = 'editor' %}
   </svg>
   <span id="save-label{{ suffix }}">Save</span>
 </button>
-{% endmacro %}
-{% block head %} {# ── TUI Editor (toast-ui) — WYSIWYG/Markdown editor for
-content. #}
+{% endmacro %} {% block head %} {# ── TUI Editor (toast-ui) — WYSIWYG/Markdown
+editor for content. #}
 <link rel="stylesheet" href="/__moosey/static/vendor/toast-ui/editor.min.css" />
 <link rel="stylesheet" href="/__moosey/static/vendor/toast-ui/chart.min.css" />
 <link
@@ -139,10 +137,51 @@ Guifier ships as an ES module only — must use type="module" to import. #}
         <h1 class="text-2xl font-bold text-moose-900">New File</h1>
         {% endif %}
       </div>
-      <div class="flex items-center gap-2">
-        
-        {{ save_button() }}
+       <div class="pr-2 flex gap-1">
+        <button
+          id="preview-style-toggle"
+          type="button"
+          onclick="togglePreviewStyle()"
+          aria-pressed="false"
+          title="Switch to split preview"
+          class="items-center gap-1.5 bg-white hover:bg-moose-100 text-moose-700 border border-moose-300 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors hidden cursor-pointer"
+        >
+          <svg
+            id="preview-style-split-icon"
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 5h16v14H4zM12 5v14"
+            />
+          </svg>
+          <svg
+            id="preview-style-tabbed-icon"
+            class="w-4 h-4 hidden"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 5h16v14H4zM4 9h16M8 5v4"
+            />
+          </svg>
+          <span id="preview-style-label">Split View</span>
+        </button>
+
+        <div class="flex items-center gap-2">{{ save_button() }}</div>
       </div>
+      
     </div>
 
     {# ── File path input (for new files) ── #} {% if not file_path %}
@@ -162,10 +201,11 @@ Guifier ships as an ES module only — must use type="module" to import. #}
     {% endif %} {# ── Tabbed editor interface ── #}
     <div class="bg-white rounded-xl border border-moose-200 overflow-hidden">
       {# ── Tab navigation ── #}
+     
       <div
         class="flex items-center justify-between w-full border-b border-moose-200"
       >
-        <div class="flex">
+        <div class="flex flex-wrap">
           <button
             id="tab-content"
             onclick="switchTab('content')"
@@ -183,48 +223,22 @@ Guifier ships as an ES module only — must use type="module" to import. #}
             <span class="block md:inline">Metadata</span>
             (<span id="metadata-prop-count">0</span> props)
           </button>
-        </div>
-
-        <div class="pr-2">
           <button
-            id="preview-style-toggle"
-            type="button"
-            onclick="togglePreviewStyle()"
-            aria-pressed="false"
-            title="Switch to split preview"
-            class="items-center gap-1.5 bg-white hover:bg-moose-100 text-moose-700 border border-moose-300 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors hidden cursor-pointer "
+            id="tab-history"
+            onclick="switchTab('history')"
+            class="tab-button px-5 py-3 text-sm font-medium border-b-2 border-transparent text-moose-500 hover:text-moose-700 hover:bg-moose-50 transition-colors"
+            {%
+            if
+            not
+            file_path
+            %}disabled
+            title="Save the file first to view history"
+            {%
+            endif
+            %}
           >
-            <svg
-              id="preview-style-split-icon"
-              class="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 5h16v14H4zM12 5v14"
-              />
-            </svg>
-            <svg
-              id="preview-style-tabbed-icon"
-              class="w-4 h-4 hidden"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 5h16v14H4zM4 9h16M8 5v4"
-              />
-            </svg>
-            <span id="preview-style-label">Split View</span>
+            <span class="block md:inline">History</span>
+            (<span id="history-count">0</span>)
           </button>
         </div>
       </div>
@@ -279,6 +293,37 @@ Guifier ships as an ES module only — must use type="module" to import. #}
           </div>
         </div>
         <div id="guifier-container" class="p-4"></div>
+      </div>
+
+      <div id="panel-history" class="tab-panel hidden">
+        <div class="p-4">
+          <div id="history-loading" class="text-center py-8 text-moose-400">
+            <p class="text-sm">Loading history...</p>
+          </div>
+          <div
+            id="history-empty"
+            class="hidden text-center py-8 text-moose-400"
+          >
+            <svg
+              class="w-10 h-10 mx-auto mb-2 text-moose-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <p class="text-sm">No history yet</p>
+            <p class="text-xs text-moose-300 mt-1">
+              Save the file to start tracking versions
+            </p>
+          </div>
+          <div id="history-list" class="space-y-2"></div>
+        </div>
       </div>
     </div>
     <div class="flex justify-end">{{ save_button("-bottom") }}</div>
@@ -398,4 +443,4 @@ Guifier ships as an ES module only — must use type="module" to import. #}
   var fpStaticRoute = '{{ admin_config._static_route | default("/static") }}';
 </script>
 <script src="/__moosey/static/admin/editor.js"></script>
-{% endblock %} 
+{% endblock %}
