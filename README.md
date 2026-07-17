@@ -6,9 +6,6 @@
 -->
 
 # Moosey CMS 🫎
-
-**A lightweight, drop-in Markdown CMS for FastAPI.**
-
 <p align="center">
   <a href="https://pypi.org/project/moosey-cms/">
     <img src="https://img.shields.io/pypi/v/moosey-cms" alt="PyPI version">
@@ -26,6 +23,10 @@
     <img src="https://img.shields.io/github/last-commit/mugendi/moosey-cms" alt="Last commit">
   </a>
 </p>
+
+**A lightweight, drop-in Markdown CMS for FastAPI.**
+
+
 
 Moosey CMS turns a FastAPI application into a content-driven website using Markdown files, YAML frontmatter, and Jinja templates - no database required.
 
