@@ -54,15 +54,24 @@ Moosey CMS turns a FastAPI application into a content-driven website using Markd
 
 ## Installation
 
-```bash
-uv add moosey-cms
-```
-
-Or with pip:
+Install every optional feature, including image processing and face-aware cropping:
 
 ```bash
-pip install moosey-cms
+uv add 'moosey-cms[all]'
+# or
+pip install 'moosey-cms[all]'
 ```
+
+Choose a smaller installation when you do not need every feature:
+
+| Package | Included features |
+|---|---|
+| `moosey-cms` | Core CMS |
+| `moosey-cms[images]` | Core CMS and Pillow image processing |
+| `moosey-cms[faces]` | Image processing and OpenCV face-aware cropping |
+| `moosey-cms[all]` | All optional features |
+
+Use the same package specifier with `uv add` or `pip install`.
 
 ## Quick start
 
