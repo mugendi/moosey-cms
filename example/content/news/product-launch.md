@@ -9,7 +9,7 @@ lock_params:
   token: moosey-announce
 ---
 
-# Product Launch — Early Access
+# Product Launch  -  Early Access
 
 This is a special early-access announcement that is hidden behind lock parameters.
 
