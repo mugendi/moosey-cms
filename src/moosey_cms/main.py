@@ -6,6 +6,7 @@ https://opensource.org/licenses/MIT
 """
 
 import asyncio
+from dataclasses import asdict
 from pathlib import Path
 from inflection import singularize
 from fastapi import APIRouter, Request
@@ -276,6 +277,9 @@ def init_cms(
     if mode == "development":
         reloader = ConnectionManager()
         inject_script_middleware(app, host, port)
+
+    # Inject git config into admin dict so register_admin_routes can read it
+    admin["git"] = asdict(file_config.git)
 
     init_routes(
         app=app,
