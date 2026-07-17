@@ -323,6 +323,16 @@ class TestAdminListTemplate:
         assert '"/file/" + encodePath(path)' in editor_js
         assert '"/file/" + encodePath(savePath)' in editor_js
 
+    def test_editor_history_uses_safe_dom_rendering(self):
+        package = Path(__file__).parent.parent / "src" / "moosey_cms"
+        editor_js = (package / "_static" / "admin" / "editor.js").read_text()
+
+        assert "function renderHistory()" in editor_js
+        assert "message.textContent = history.message" in editor_js
+        assert "list.replaceChildren()" in editor_js
+        assert 'revertButton.addEventListener("click"' in editor_js
+        assert "escHtml(" not in editor_js
+
     def test_breadcrumb_escapes_text_and_encodes_path_segments(
         self, client, content_dir
     ):
