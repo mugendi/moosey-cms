@@ -14,6 +14,7 @@ from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from urllib.parse import quote
 
 import frontmatter
 from fastapi import APIRouter, HTTPException, Request
@@ -223,6 +224,7 @@ def _static_entry(file_path: Path, static_dir: Path, static_route: str) -> Stati
     modified = datetime.fromtimestamp(stat.st_mtime).isoformat()
     rel = file_path.relative_to(static_dir)
     url_path = str(rel).replace("\\", "/")
+    encoded_url_path = "/".join(quote(part, safe="") for part in url_path.split("/"))
     is_dir = file_path.is_dir()
 
     media = "other"
@@ -231,7 +233,7 @@ def _static_entry(file_path: Path, static_dir: Path, static_route: str) -> Stati
     if not is_dir:
         media = classify_static_type(file_path)
         mime_type, _ = mimetypes.guess_type(file_path.name)
-        url = f"{static_route.rstrip('/')}/{url_path}"
+        url = f"{static_route.rstrip('/')}/{encoded_url_path}"
 
     return StaticEntry(
         name=file_path.name,
@@ -813,7 +815,8 @@ def register_admin_routes(
 
             mime_type, _ = mimetypes.guess_type(target.name)
             rel = str(target.relative_to(static_dir)).replace("\\", "/")
-            url = f"{static_route.rstrip('/')}/{rel}"
+            encoded_rel = "/".join(quote(part, safe="") for part in rel.split("/"))
+            url = f"{static_route.rstrip('/')}/{encoded_rel}"
 
             return StaticUploadResponse(
                 path=rel, url=url, mime_type=mime_type, status="created"

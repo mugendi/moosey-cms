@@ -13,7 +13,7 @@ def test_builtin_registry_contains_runtime_fields(tmp_path):
 
     for name in ("title", "template", "draft", "lock_params", "visible", "sitemap_exclude", "feed", "canonical_url"):
         assert name in fields
-    assert fields["draft"]["default"] is True
+    assert fields["draft"]["default"] is False
     assert fields["tags"]["default"] == []
     assert fields["sitemap_priority"]["path"] == "sitemap.priority"
     assert fields["sitemap_priority"]["replace_scalar_parent"] is True

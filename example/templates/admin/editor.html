@@ -280,15 +280,27 @@ Guifier ships as an ES module only — must use type="module" to import. #}
               default('the CMS', true) }}.
             </p>
           </div>
-          <button
-            id="metadata-field-toggle"
-            type="button"
-            onclick="toggleMetadataFieldMenu()"
-            aria-expanded="false"
-            class="rounded-lg bg-moose-700 px-3 py-2 text-sm font-medium text-white hover:bg-moose-800"
-          >
-            Add metadata
-          </button>
+          <div class="flex flex-wrap items-center justify-end gap-2">
+            {% if admin_config._static_dir %}
+            <button
+              id="metadata-file-browser"
+              type="button"
+              onclick="openFilePickerModal()"
+              class="rounded-lg border border-moose-300 bg-white px-3 py-2 text-sm font-medium text-moose-700 hover:bg-moose-100"
+            >
+              Browse files
+            </button>
+            {% endif %}
+            <button
+              id="metadata-field-toggle"
+              type="button"
+              onclick="toggleMetadataFieldMenu()"
+              aria-expanded="false"
+              class="rounded-lg bg-moose-700 px-3 py-2 text-sm font-medium text-white hover:bg-moose-800"
+            >
+              Add metadata
+            </button>
+          </div>
           <div
             id="metadata-field-menu"
             class="absolute right-4 top-16 z-30 hidden w-[min(28rem,calc(100vw-3rem))] overflow-hidden rounded-xl border border-moose-200 bg-white shadow-2xl"
@@ -532,13 +544,24 @@ Guifier ships as an ES module only — must use type="module" to import. #}
       >
         <div id="fp-preview-content" class="mb-4"></div>
         <div id="fp-preview-info" class="text-sm text-moose-600 mb-4"></div>
-        <button
-          id="fp-insert-btn"
-          onclick="fpInsertSelected()"
-          class="w-full bg-moose-700 hover:bg-moose-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          Insert
-        </button>
+        <div class="flex items-center gap-3">
+          <button
+            id="fp-copy-path-btn"
+            type="button"
+            onclick="fpCopySelectedPath()"
+            class="whitespace-nowrap text-sm font-medium text-moose-700 underline underline-offset-2 hover:text-moose-900"
+          >
+            Copy file path
+          </button>
+          <button
+            id="fp-insert-btn"
+            type="button"
+            onclick="fpInsertSelected()"
+            class="flex-1 bg-moose-700 hover:bg-moose-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            Insert
+          </button>
+        </div>
       </div>
     </div>
 

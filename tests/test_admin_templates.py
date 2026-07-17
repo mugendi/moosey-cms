@@ -81,6 +81,13 @@ PREFIX = "admin"
 
 
 class TestAdminEditorTemplate:
+    def test_growls_render_above_admin_modals(self):
+        package = Path(__file__).parent.parent / "src" / "moosey_cms"
+        base_html = (package / "_admin_templates" / "base.html").read_text()
+
+        assert "#flash-container" in base_html
+        assert "z-index: 2147483647" in base_html
+
     def test_editor_javascript_is_in_its_own_template(self):
         package = Path(__file__).parent.parent / "src" / "moosey_cms"
         templates = package / "_admin_templates"
@@ -88,6 +95,11 @@ class TestAdminEditorTemplate:
         editor_js = (package / "_static" / "admin" / "editor.js").read_text()
 
         assert 'src="/__moosey/static/admin/editor.js"' in editor_html
+        assert 'id="metadata-file-browser"' in editor_html
+        assert "openFilePickerModal()" in editor_html
+        assert 'id="fp-copy-path-btn"' in editor_html
+        assert "fpCopySelectedPath()" in editor_html
+        assert "navigator.clipboard.writeText(path)" in editor_js
         assert "function initTuiEditor()" not in editor_html
         assert "function initTuiEditor()" in editor_js
 
@@ -376,6 +388,10 @@ class TestAdminListTemplate:
         assert (vendor / "diff2html.min.css").is_file()
         assert (vendor / "diff2html-ui-slim.min.js").is_file()
         assert (vendor / "highlight-github.min.css").is_file()
+
+        assert 'return "/" + prefix + "/static"' in editor_js
+        assert 'String(entry.url || "")' in editor_js
+        assert "window.fpNavigate(path)" in editor_js
 
     def test_breadcrumb_escapes_text_and_encodes_path_segments(
         self, client, content_dir

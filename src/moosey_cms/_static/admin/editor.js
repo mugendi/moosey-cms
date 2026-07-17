@@ -405,14 +405,19 @@
     iconElement.replaceChildren(icon);
   }
 
+  function fpAdminStaticUrl(suffix) {
+    return "/" + prefix + "/static" + (suffix || "");
+  }
+
   function fpLoadDirectory(subpath) {
-    var url =
-      "/" +
-      prefix +
-      fpStaticRoute +
-      (subpath ? "/" + encodePath(subpath) : "");
+    var url = fpAdminStaticUrl(subpath ? "/" + encodePath(subpath) : "");
     fetch(url)
       .then(function (response) {
+        if (!response.ok) {
+          return response.json().then(function (data) {
+            throw new Error(data.detail || "Could not load directory");
+          });
+        }
         return response.json();
       })
       .then(function (data) {
@@ -440,8 +445,7 @@
       var mime = String(entry.mime_type || "");
       var name = String(entry.name || "");
       var path = String(entry.path || "");
-      var assetUrl =
-        "/" + prefix + fpStaticRoute + "/" + encodePath(path);
+      var assetUrl = type === "directory" ? "" : String(entry.url || "");
       card.className =
         "fp-card border border-moose-200 rounded-lg p-3 cursor-pointer hover:border-moose-500 hover:shadow transition-all";
       card.dataset.path = path;
@@ -450,13 +454,19 @@
       card.dataset.mime = mime;
       card.dataset.name = name;
       card.dataset.size = String(Number(entry.size) || 0);
-      card.addEventListener("click", function () {
-        window.fpSelect(card);
-      });
-      card.addEventListener("dblclick", function () {
-        window.fpSelect(card);
-        window.fpInsertSelected();
-      });
+      if (type === "directory") {
+        card.addEventListener("click", function () {
+          window.fpNavigate(path);
+        });
+      } else {
+        card.addEventListener("click", function () {
+          window.fpSelect(card);
+        });
+        card.addEventListener("dblclick", function () {
+          window.fpSelect(card);
+          window.fpInsertSelected();
+        });
+      }
 
       if (type === "directory") {
         var folderIcon = document.createElement("div");
@@ -1348,6 +1358,31 @@
     closeFilePicker();
   };
 
+  window.fpCopySelectedPath = async function () {
+    if (!fpSelectedFile || !fpSelectedFile.url) return;
+    var path = fpSelectedFile.url;
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(path);
+      } else {
+        var input = document.createElement("textarea");
+        input.value = path;
+        input.setAttribute("readonly", "");
+        input.style.position = "fixed";
+        input.style.opacity = "0";
+        document.body.appendChild(input);
+        input.select();
+        var copied = document.execCommand("copy");
+        input.remove();
+        if (!copied) throw new Error("Clipboard access was denied");
+      }
+      showFlash("Copied file path: " + path, "success");
+    } catch (error) {
+      showFlash("Could not copy file path: " + error.message, "error");
+    }
+  };
+
   window.fpUploadFiles = async function (fileList) {
     var path = fpCurrentPath;
     for (var i = 0; i < fileList.length; i++) {
@@ -1358,7 +1393,7 @@
 
       try {
         var resp = await fetch(
-          "/" + prefix + fpStaticRoute + "/upload/" + encodePath(uploadPath),
+          fpAdminStaticUrl("/upload/" + encodePath(uploadPath)),
           {
             method: "POST",
             body: formData,
@@ -1387,7 +1422,7 @@
     if (!name) return;
     var createPath = fpCurrentPath ? fpCurrentPath + "/" + name : name;
 
-    fetch("/" + prefix + fpStaticRoute + "/mkdir/" + encodePath(createPath), {
+    fetch(fpAdminStaticUrl("/mkdir/" + encodePath(createPath)), {
       method: "POST",
     })
       .then(function (r) {

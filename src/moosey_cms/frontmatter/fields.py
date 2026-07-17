@@ -139,15 +139,12 @@ def load_frontmatter_fields(
 
     overrides = [directory / OVERRIDE_PATH for directory in directories]
 
-    overrides.reverse()
-
     loaded_overrides: list[Path] = []
     for override in overrides:
         if override.is_file():
             try:
-                registry =  _read_yaml(override)
+                registry = _merge(registry, _read_yaml(override))
                 loaded_overrides.append(override)
-                break
             except (OSError, ValueError) as exc:
                 logger.warning("Ignoring invalid frontmatter field override %s: %s", override, exc)
 

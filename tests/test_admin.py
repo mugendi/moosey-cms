@@ -613,6 +613,15 @@ class TestStaticList:
         assert by_name["logo.png"]["url"] == "/static/logo.png"
         assert by_name["images"]["url"] is None  # directories have no url
 
+    def test_list_url_encodes_path_segments(self, static_client, static_dir):
+        special = static_dir / "image #1 雪.png"
+        special.write_bytes(b"png")
+
+        resp = static_client.get(f"/{PREFIX}/static")
+        entries = {entry["name"]: entry for entry in resp.json()["entries"]}
+
+        assert entries[special.name]["url"] == "/static/image%20%231%20%E9%9B%AA.png"
+
     def test_list_dirs_first(self, static_client):
         resp = static_client.get(f"/{PREFIX}/static")
         types = [e["type"] for e in resp.json()["entries"]]
