@@ -84,6 +84,11 @@
     if (tabName === "content" && tuiEditor) {
       applyEditorHeight();
     }
+
+    /* Load history when switching to history tab */
+    if (tabName === "history") {
+      loadHistory();
+    }
   };
 
   window.togglePreviewStyle = function () {
@@ -863,6 +868,7 @@
           /* Update URL so subsequent saves use PUT */
           filePath = result.path;
           isNew = false;
+          enableHistoryTab();
           window.history.replaceState(
             {},
             "",
@@ -879,6 +885,132 @@
         setSaveState(false);
       });
   };
+
+  /* ================================================================
+       Version History
+       ================================================================ */
+  var historyData = [];
+
+  function enableHistoryTab() {
+    var btn = document.getElementById("tab-history");
+    if (btn) {
+      btn.disabled = false;
+      btn.removeAttribute("title");
+    }
+  }
+
+  function loadHistory() {
+    if (!filePath) return;
+    var loading = document.getElementById("history-loading");
+    var empty = document.getElementById("history-empty");
+    var list = document.getElementById("history-list");
+
+    if (loading) loading.classList.remove("hidden");
+    if (empty) empty.classList.add("hidden");
+    if (list) list.innerHTML = "";
+
+    fetch("/" + prefix + "/file-history/" + encodePath(filePath))
+      .then(function (r) {
+        if (!r.ok) throw new Error("Failed to load history");
+        return r.json();
+      })
+      .then(function (data) {
+        historyData = data.history || [];
+        renderHistory();
+      })
+      .catch(function (err) {
+        if (loading) loading.classList.add("hidden");
+        showFlash("Could not load history: " + err.message, "error");
+      });
+  }
+
+  function renderHistory() {
+    var loading = document.getElementById("history-loading");
+    var empty = document.getElementById("history-empty");
+    var list = document.getElementById("history-list");
+    var count = document.getElementById("history-count");
+
+    if (loading) loading.classList.add("hidden");
+
+    if (count) count.textContent = historyData.length;
+
+    if (!historyData.length) {
+      if (empty) empty.classList.remove("hidden");
+      if (list) list.innerHTML = "";
+      return;
+    }
+
+    if (empty) empty.classList.add("hidden");
+    if (!list) return;
+
+    var html = "";
+    for (var i = 0; i < historyData.length; i++) {
+      var h = historyData[i];
+      var date = new Date(h.date);
+      var timeAgo = formatTimeAgo(date);
+      var isCurrent = i === 0;
+      var shortHash = h.hash.substring(0, 7);
+
+      html += '<div class="flex items-start justify-between gap-3 rounded-lg border border-moose-200 p-3 hover:bg-moose-50 transition-colors">';
+      html += '<div class="min-w-0 flex-1">';
+      html += '<div class="flex items-center gap-2 mb-1">';
+      if (isCurrent) {
+        html += '<span class="inline-flex items-center rounded-full bg-moose-100 px-2 py-0.5 text-xs font-medium text-moose-700">current</span>';
+      }
+      html += '<span class="text-sm font-medium text-moose-900 truncate">' + escHtml(h.message) + '</span>';
+      html += '</div>';
+      html += '<div class="flex items-center gap-3 text-xs text-moose-500">';
+      html += '<span title="' + escHtml(date.toLocaleString()) + '">' + timeAgo + '</span>';
+      html += '<span class="font-mono text-moose-400">' + shortHash + '</span>';
+      html += '</div>';
+      html += '</div>';
+      if (!isCurrent) {
+        html += '<button onclick="revertToVersion(\'' + escHtml(h.hash) + '\', \'' + escHtml(shortHash) + '\')" '
+          + 'class="shrink-0 text-xs bg-white border border-moose-300 hover:bg-moose-100 hover:border-moose-400 text-moose-700 px-3 py-1.5 rounded-lg transition-colors font-medium">'
+          + 'Revert</button>';
+      }
+      html += '</div>';
+    }
+    list.innerHTML = html;
+  }
+
+  window.revertToVersion = function (hash, shortHash) {
+    if (!filePath) return;
+    if (!confirm("Revert to version " + shortHash + "? Current changes will be overwritten.")) {
+      return;
+    }
+
+    fetch("/" + prefix + "/rollback/" + encodePath(filePath), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ commit: hash }),
+    })
+      .then(function (r) {
+        if (!r.ok)
+          return r.json().then(function (d) {
+            throw new Error(d.detail || "Rollback failed");
+          });
+        return r.json();
+      })
+      .then(function (result) {
+        showFlash("Reverted to " + shortHash + " (v" + result.version + ")", "success");
+        loadFile(filePath);
+        loadHistory();
+      })
+      .catch(function (err) {
+        showFlash("Rollback failed: " + err.message, "error");
+      });
+  };
+
+  function formatTimeAgo(date) {
+    var now = new Date();
+    var diff = Math.floor((now - date) / 1000);
+    if (diff < 60) return "just now";
+    if (diff < 3600) return Math.floor(diff / 60) + "m ago";
+    if (diff < 86400) return Math.floor(diff / 3600) + "h ago";
+    if (diff < 604800) return Math.floor(diff / 86400) + "d ago";
+    return date.toLocaleDateString();
+  }
 
   /* ================================================================
        File Picker
@@ -1097,6 +1229,7 @@
 
     if (filePath) {
       loadFile(filePath);
+      enableHistoryTab();
     }
 
     /* Apply dynamic height after init */
