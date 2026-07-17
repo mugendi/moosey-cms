@@ -62,9 +62,9 @@ These are hardcoded in the middleware and cannot currently be overridden via con
 
 Moosey validates all URL paths against the content directory:
 
-1. **Null byte check** — Rejects paths containing `\0`
-2. **Symlink resolution** — Resolves `..` and symlinks to absolute paths
-3. **Jail enforcement** — Ensures the resolved path stays inside the content directory
+1. **Null byte check**  -  Rejects paths containing `\0`
+2. **Symlink resolution**  -  Resolves `..` and symlinks to absolute paths
+3. **Jail enforcement**  -  Ensures the resolved path stays inside the content directory
 
 See `get_secure_target()` in `helpers.py`.
 

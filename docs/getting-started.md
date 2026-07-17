@@ -210,7 +210,7 @@ The `init_cms()` function accepts these parameters:
 | **[Markdown Rendering](markdown.md)** | Using the `markdown` and `markdown_inline` filters, enabled extensions |
 | **[Image Processing](images.md)** | Responsive images, `srcset`, face detection, CDN support |
 | **[SEO](seo.md)** | Meta tags, Open Graph, structured data, robots.txt, canonical URLs |
-| **[Admin API](admin.md)** | Programmatic content management — create, update, delete files and directories |
+| **[Admin API](admin.md)** | Programmatic content management  -  create, update, delete files and directories |
 | **[Security](security.md)** | HTML sanitization, Content Security Policy, sandboxed templates |
 | **[Patterns](patterns.md)** | Real-world project structures and conventions |
 

@@ -44,9 +44,9 @@ Content paths match their URLs automatically:
 ## Templates
 
 - Templates live in the `templates/` directory and use Jinja2 syntax
-- `base.html` — shared layout with `{% block %}` for child templates
+- `base.html`  -  shared layout with `{% block %}` for child templates
 - Template names are resolved via the [waterfall](templates.md#template-waterfall): frontmatter override → exact match → singular → plural/folder → fallback to `page.html`
-- `404.html` — rendered when a page is not found
+- `404.html`  -  rendered when a page is not found
 
 ## Navigation
 
@@ -93,7 +93,7 @@ init_cms(
 )
 ```
 
-Images in your static directory can be processed on-the-fly — see [Images](images.md).
+Images in your static directory can be processed on-the-fly  -  see [Images](images.md).
 
 ## Drafts
 

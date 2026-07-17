@@ -1,6 +1,6 @@
 # CLI Reference
 
-moosey-cms ships with a command-line tool for managing your site — scaffolding, admin setup, and running servers.
+moosey-cms ships with a command-line tool for managing your site  -  scaffolding, admin setup, and running servers.
 
 ## `moosey-cms init`
 
@@ -19,11 +19,11 @@ moosey-cms init ./my-site
 ### What it does
 
 1. Copies the entire example app to the target directory:
-   - `main.py` — FastAPI app with `init_cms()`
-   - `content/` — sample content files
-   - `templates/` — Jinja2 templates
-   - `advanced/` — advanced examples
-   - `assets/` — static assets
+   - `main.py`  -  FastAPI app with `init_cms()`
+   - `content/`  -  sample content files
+   - `templates/`  -  Jinja2 templates
+   - `advanced/`  -  advanced examples
+   - `assets/`  -  static assets
 2. Patches `main.py` to read `MOOSEY_MODE` from environment (instead of hardcoded `"development"`)
 3. Skips `__pycache__` directories
 4. Uses the shared setup workflow to generate `.moosey-cms.yaml`, including
@@ -77,16 +77,16 @@ moosey-cms admin --templates ./templates --static ./static
 
 1. Creates an `admin/` subdirectory inside your templates directory
 2. Copies the bundled admin templates into it:
-   - `base.html` — admin layout with sidebar navigation
-   - `dashboard.html` — overview page with stats and quick actions
-   - `list.html` — file/directory browser
-   - `editor.html` — tabbed markdown + metadata editor (TUI Editor + Guifier)
-   - `admin.js` — shared JavaScript utilities
+   - `base.html`  -  admin layout with sidebar navigation
+   - `dashboard.html`  -  overview page with stats and quick actions
+   - `list.html`  -  file/directory browser
+   - `editor.html`  -  tabbed markdown + metadata editor (TUI Editor + Guifier)
+   - `admin.js`  -  shared JavaScript utilities
 3. Creates an `admin/` subdirectory inside your static directory
 4. Copies the bundled admin static files into it:
-   - `admin.css` — pre-built Tailwind CSS with CSS custom properties
-   - `admin.js` — admin JavaScript (editor initialization, etc.)
-   - `editor.js` — editor JavaScript (TUI Editor setup)
+   - `admin.css`  -  pre-built Tailwind CSS with CSS custom properties
+   - `admin.js`  -  admin JavaScript (editor initialization, etc.)
+   - `editor.js`  -  editor JavaScript (TUI Editor setup)
 
 ### After running
 
@@ -132,7 +132,7 @@ The admin CSS uses Tailwind CSS with CSS custom properties for theming. Edit `st
 
 ### Customizing templates
 
-The copied templates are plain Jinja2 + Tailwind CSS. Edit them in your project's `templates/admin/` directory to match your site's look and feel. The bundled templates are only used as a starting point — changes to your copies are never overwritten.
+The copied templates are plain Jinja2 + Tailwind CSS. Edit them in your project's `templates/admin/` directory to match your site's look and feel. The bundled templates are only used as a starting point  -  changes to your copies are never overwritten.
 
 ## `moosey-cms dev`
 

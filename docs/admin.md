@@ -1,6 +1,6 @@
 # Admin Dashboard & API
 
-Moosey CMS ships with a full-featured admin dashboard — a Tailwind-rendered HTML UI for content CRUD operations, plus a JSON API for programmatic access.
+Moosey CMS ships with a full-featured admin dashboard  -  a Tailwind-rendered HTML UI for content CRUD operations, plus a JSON API for programmatic access.
 
 The editor includes a searchable picker for runtime-supported metadata. See [Frontmatter fields](frontmatter.md) for the complete reference and automatic `.moosey/frontmatter_fields.yaml` project overrides.
 
@@ -59,7 +59,7 @@ Before reverting, the editor clearly identifies the current and selected version
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `prefix` | `str` | — (required) | URL prefix, e.g. `"admin/content"`. No leading/trailing slash. |
+| `prefix` | `str` |  -  (required) | URL prefix, e.g. `"admin/content"`. No leading/trailing slash. |
 | `templates` | `str` | `"admin"` | Subdirectory within your `templates/` dir where admin templates live. |
 
 ```python
@@ -171,7 +171,7 @@ Both editors load via CDN and fall back to basic editors if unavailable.
 
 ### Adding Custom Routes
 
-Register additional admin pages inside your application — they coexist with the admin router:
+Register additional admin pages inside your application  -  they coexist with the admin router:
 
 ```python
 @app.get("/admin/content/analytics")
@@ -186,7 +186,7 @@ async def analytics_page(request: Request):
 
 ## Authentication
 
-The admin dashboard has **no built-in authentication** — you must secure it yourself. Two approaches:
+The admin dashboard has **no built-in authentication**  -  you must secure it yourself. Two approaches:
 
 ### Middleware
 
@@ -505,7 +505,7 @@ All paths are resolved against the content root using strict `pathlib` checks. A
 
 ### Atomic Writes
 
-Files are written atomically via a temp-file + `os.replace()` pattern. If a write fails mid-stream, the original file is not corrupted — the temp file is cleaned up automatically.
+Files are written atomically via a temp-file + `os.replace()` pattern. If a write fails mid-stream, the original file is not corrupted  -  the temp file is cleaned up automatically.
 
 ### Error Responses
 

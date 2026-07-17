@@ -65,12 +65,12 @@ Pass any schema builder dict through `json_ld` to render it:
 
 When a page is requested, moosey-cms resolves the template in this order:
 
-1. **Frontmatter override** — `template: custom.html` in page frontmatter
-2. **Exact match** — `post.html` for `/my-post`, `index.html` for `/`
-3. **Singular parent** — `post.html` for `/posts/hello`
-4. **Plural/folder** — `posts.html` for `/posts/hello`
-5. **Recursive parent** — walks up path segments
-6. **Fallback** — `page.html`
+1. **Frontmatter override**  -  `template: custom.html` in page frontmatter
+2. **Exact match**  -  `post.html` for `/my-post`, `index.html` for `/`
+3. **Singular parent**  -  `post.html` for `/posts/hello`
+4. **Plural/folder**  -  `posts.html` for `/posts/hello`
+5. **Recursive parent**  -  walks up path segments
+6. **Fallback**  -  `page.html`
 
 ## Drafts
 

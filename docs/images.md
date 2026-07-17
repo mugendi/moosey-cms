@@ -83,21 +83,21 @@ All parameters are optional.
 
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
-| `w` | int | — | Target width in pixels |
-| `h` | int | — | Target height in pixels |
+| `w` | int |  -  | Target width in pixels |
+| `h` | int |  -  | Target height in pixels |
 | `ar` | str | `auto` | Aspect ratio: `1x1`, `16x9`, `4x3`, `3x2`, `21x9`, `square`, `wide`, `portrait`, `landscape` |
 | `fit` | str | `cover` | `cover`, `contain`, `fill`, `crop`, `scale-down` |
 | `focus` | str | `auto` | `center`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, `bottom-right`, `face`, `point,X,Y` |
 | `fmt` | str | `auto` | Output format: `webp`, `avif`, `jpg`, `png` (auto negotiates WebP/AVIF) |
 | `q` | int | `82` (webp) / `90` (jpg) | Quality 1–100 |
-| `blur` | int | — | Gaussian blur radius 0–100 |
-| `sharpen` | int | — | Unsharp mask percent 0–100 |
-| `grayscale` | bool | — | Convert to monochrome |
-| `brightness` | int | — | Adjust ±100% |
-| `contrast` | int | — | Adjust ±100% |
-| `saturation` | int | — | Adjust ±100% |
-| `dpr` | float | — | Device pixel ratio (0.25–3) |
-| `resize` | float | — | Scale ratio (0.01–1) |
+| `blur` | int |  -  | Gaussian blur radius 0–100 |
+| `sharpen` | int |  -  | Unsharp mask percent 0–100 |
+| `grayscale` | bool |  -  | Convert to monochrome |
+| `brightness` | int |  -  | Adjust ±100% |
+| `contrast` | int |  -  | Adjust ±100% |
+| `saturation` | int |  -  | Adjust ±100% |
+| `dpr` | float |  -  | Device pixel ratio (0.25–3) |
+| `resize` | float |  -  | Scale ratio (0.01–1) |
 | `bg` | str | `#ffffff` | Background color for transparent→opaque conversion |
 
 ### Focus / Crop Modes

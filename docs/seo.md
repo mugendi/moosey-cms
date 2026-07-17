@@ -24,7 +24,7 @@ All arguments are optional. Values fall back to frontmatter fields, then `site_d
 | `canonical_url` | str | `page.canonical` → current URL | `<link rel="canonical">` |
 | `keywords` | str/list | `page.keywords` → `site_data.keywords` → `page.tags` | `<meta name="keywords">` |
 | `author` | str | `page.author` → `site_data.name` | `<meta name="author">`, `article:author` |
-| `publish_date` | str (ISO 8601) | — | Sets `og:type=article`, `article:published_time`, JSON-LD `datePublished` |
+| `publish_date` | str (ISO 8601) |  -  | Sets `og:type=article`, `article:published_time`, JSON-LD `datePublished` |
 | `noindex` | bool | `page.noindex` → `False` | `<meta name="robots" content="noindex">` |
 
 ### Example

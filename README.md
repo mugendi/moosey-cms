@@ -27,7 +27,7 @@
   </a>
 </p>
 
-Moosey CMS turns a FastAPI application into a content-driven website using Markdown files, YAML frontmatter, and Jinja templates—no database required.
+Moosey CMS turns a FastAPI application into a content-driven website using Markdown files, YAML frontmatter, and Jinja templates - no database required.
 
 ![Moosey CMS admin editor with side-by-side Markdown editing and live preview](example/assets/screenshots/admin-editor-split-preview.png)
 
