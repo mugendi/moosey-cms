@@ -405,7 +405,7 @@
         <!--  -->
         {%set breadcrumb_path =file_path.strip('/')%}
         <!-- else -->
-        {%elif route_path%} {%set breadcrumb_path = route_path.strip('/') %}
+        {%elif route_path%} {%set breadcrumb_path = route_path.strip('/').removeprefix('browse/').removeprefix('browse') %}
         <!--  -->
         {%endif%}
 
@@ -445,7 +445,7 @@
             <span class="text-moose-900 font-medium">{{ part }}</span>
             {% else %}
             <a
-              href="/{{ prefix }}/browse/{{ parts[:loop.index]|join('/') }}"
+              href="/{{ prefix }}/browse/{{ parts[:loop.index] | map('urlencode') | join('/') }}"
               class="hover:text-moose-900 transition-colors"
               >{{ part }}</a
             >

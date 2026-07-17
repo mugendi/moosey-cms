@@ -13,6 +13,13 @@
     });
   }
 
+  function encodePath(path) {
+    return String(path || "")
+      .split("/")
+      .map(encodeURIComponent)
+      .join("/");
+  }
+
   window.openNewFileModal = function () {
     var input = document.getElementById("new-file-name");
     var directory = document.getElementById("new-file-directory");
@@ -53,10 +60,10 @@
       "entry-name text-moose-800 hover:text-moose-600 font-medium transition-colors";
     if (entry.type === "directory") {
       var path = subpath ? subpath + "/" + entry.name : entry.name;
-      link.href = "/" + prefix + "/browse/" + path;
+      link.href = "/" + prefix + "/browse/" + encodePath(path);
       link.textContent = entry.name + "/";
     } else {
-      link.href = "/" + prefix + "/edit/" + entry.path;
+      link.href = "/" + prefix + "/edit/" + encodePath(entry.path);
       link.textContent = entry.name;
     }
     return link;
@@ -132,8 +139,13 @@
     tbody.replaceChildren();
 
     if (!entries || entries.length === 0) {
-      tbody.innerHTML =
-        '<tr><td colspan="4" class="px-5 py-6 text-center text-moose-400">This directory is empty.</td></tr>';
+      var emptyRow = document.createElement("tr");
+      var emptyCell = document.createElement("td");
+      emptyCell.colSpan = 4;
+      emptyCell.className = "px-5 py-6 text-center text-moose-400";
+      emptyCell.textContent = "This directory is empty.";
+      emptyRow.appendChild(emptyCell);
+      tbody.appendChild(emptyRow);
       return;
     }
 
@@ -142,21 +154,15 @@
       var modified = Date.parse(entry.modified) || 0;
       var size = entry.type === "directory" ? -1 : entry.size;
       row.className = "hover:bg-moose-50 transition-colors";
-      row.innerHTML =
-        '<td class="px-5 py-3"><div class="flex items-center gap-3">' +
-        entryIcon(entry) +
-        '<div data-entry-name></div></div></td>' +
-        '<td class="entry-size px-5 py-3 text-right text-moose-400" data-sort-value="' +
-        size +
-        '">' +
-        (entry.type === "directory" ? "—" : formatSize(entry.size)) +
-        '</td><td class="entry-modified px-5 py-3 text-right text-moose-400" data-sort-value="' +
-        modified +
-        '">' +
-        timeAgo(entry.modified) +
-        '</td><td class="px-5 py-3 text-right"><button type="button" class="text-moose-400 hover:text-red-600 transition-colors" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></td>';
 
-      var nameContainer = row.querySelector("[data-entry-name]");
+      var nameCell = document.createElement("td");
+      nameCell.className = "px-5 py-3";
+      var nameLayout = document.createElement("div");
+      nameLayout.className = "flex items-center gap-3";
+      var iconTemplate = document.createElement("template");
+      iconTemplate.innerHTML = entryIcon(entry);
+      nameLayout.appendChild(iconTemplate.content.firstElementChild);
+      var nameContainer = document.createElement("div");
       nameContainer.appendChild(entryName(entry));
       if (entry.title && entry.type !== "directory") {
         var title = document.createElement("span");
@@ -164,9 +170,39 @@
         title.textContent = entry.title;
         nameContainer.appendChild(title);
       }
-      row.querySelector("button").addEventListener("click", function () {
+      nameLayout.appendChild(nameContainer);
+      nameCell.appendChild(nameLayout);
+
+      var sizeCell = document.createElement("td");
+      sizeCell.className = "entry-size px-5 py-3 text-right text-moose-400";
+      sizeCell.dataset.sortValue = String(size);
+      sizeCell.textContent =
+        entry.type === "directory" ? "—" : formatSize(entry.size);
+
+      var modifiedCell = document.createElement("td");
+      modifiedCell.className =
+        "entry-modified px-5 py-3 text-right text-moose-400";
+      modifiedCell.dataset.sortValue = String(modified);
+      modifiedCell.textContent = timeAgo(entry.modified);
+
+      var actionsCell = document.createElement("td");
+      actionsCell.className = "px-5 py-3 text-right";
+      var deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.className =
+        "text-moose-400 hover:text-red-600 transition-colors";
+      deleteButton.title = "Delete";
+      deleteButton.setAttribute("aria-label", "Delete " + entry.name);
+      var deleteIcon = document.createElement("template");
+      deleteIcon.innerHTML =
+        '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>';
+      deleteButton.appendChild(deleteIcon.content.firstElementChild);
+      deleteButton.addEventListener("click", function () {
         openDeleteModal(entry.path, entry.type, entry.name);
       });
+      actionsCell.appendChild(deleteButton);
+
+      row.append(nameCell, sizeCell, modifiedCell, actionsCell);
       tbody.appendChild(row);
     });
 
@@ -184,7 +220,7 @@
     var path = document.getElementById("delete-target-path").value;
     var type = document.getElementById("delete-target-type").value;
     var endpoint = type === "directory" ? "/dir/" : "/file/";
-    requestJson("/" + prefix + endpoint + path, { method: "DELETE" }, "Delete failed")
+    requestJson("/" + prefix + endpoint + encodePath(path), { method: "DELETE" }, "Delete failed")
       .then(function () {
         showFlash("Deleted " + path, "success");
         closeModal("delete-modal");
@@ -206,7 +242,7 @@
     name += ".md";
     var path = subpath ? subpath + "/" + name : name;
     requestJson(
-      "/" + prefix + "/file/" + path,
+      "/" + prefix + "/file/" + encodePath(path),
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -232,7 +268,7 @@
     if (name === "." || name === "..")
       return showFlash("Enter a valid folder name", "error");
     var path = subpath ? subpath + "/" + name : name;
-    requestJson("/" + prefix + "/dir/" + path, { method: "POST" }, "Create failed")
+    requestJson("/" + prefix + "/dir/" + encodePath(path), { method: "POST" }, "Create failed")
       .then(function () {
         showFlash("Created folder " + name, "success");
         closeModal("new-dir-modal");
@@ -244,7 +280,7 @@
   };
 
   function loadDirectory(path) {
-    var url = path ? "/" + prefix + "/list/" + path : "/" + prefix + "/list";
+    var url = path ? "/" + prefix + "/list/" + encodePath(path) : "/" + prefix + "/list";
     requestJson(url, undefined, "Failed to load directory")
       .then(function (data) {
         renderEntries(data.entries);

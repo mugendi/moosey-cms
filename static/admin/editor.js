@@ -353,72 +353,115 @@
     }, 1500);
   }
 
+  function encodePath(path) {
+    return String(path || "")
+      .split("/")
+      .map(encodeURIComponent)
+      .join("/");
+  }
+
+  function applyFileIcon(iconElement, className, fontSize) {
+    var tokens = String(className || "")
+      .split(/\s+/)
+      .filter(function (token) {
+        return /^[a-zA-Z0-9_-]+$/.test(token);
+      });
+    if (!tokens.length) return;
+    var icon = document.createElement("i");
+    icon.classList.add.apply(icon.classList, tokens);
+    if (fontSize) icon.style.fontSize = fontSize;
+    iconElement.replaceChildren(icon);
+  }
+
   function fpLoadDirectory(subpath) {
-        var url = '/' + prefix + fpStaticRoute + (subpath ? '/' + subpath : '');
-        fetch(url)
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                fpRenderGrid(data.entries);
-            })
-            .catch(function(err) {
-                showFlash('Could not load files: ' + err.message, 'error');
-            });
+    var url =
+      "/" +
+      prefix +
+      fpStaticRoute +
+      (subpath ? "/" + encodePath(subpath) : "");
+    fetch(url)
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (data) {
+        fpRenderGrid(data.entries);
+      })
+      .catch(function (error) {
+        showFlash("Could not load files: " + error.message, "error");
+      });
+  }
+
+  function fpRenderGrid(entries) {
+    var grid = document.getElementById("fp-grid");
+    var empty = document.getElementById("fp-empty");
+    grid.replaceChildren();
+
+    if (!entries || entries.length === 0) {
+      empty.classList.remove("hidden");
+      return;
     }
+    empty.classList.add("hidden");
 
-    function fpRenderGrid(entries) {
-        var grid = document.getElementById('fp-grid');
-        var empty = document.getElementById('fp-empty');
+    entries.forEach(function (entry) {
+      var card = document.createElement("div");
+      var type = entry.type === "directory" ? "directory" : "file";
+      var mime = String(entry.mime_type || "");
+      var name = String(entry.name || "");
+      var path = String(entry.path || "");
+      var assetUrl =
+        "/" + prefix + fpStaticRoute + "/" + encodePath(path);
+      card.className =
+        "fp-card border border-moose-200 rounded-lg p-3 cursor-pointer hover:border-moose-500 hover:shadow transition-all";
+      card.dataset.path = path;
+      card.dataset.url = type === "directory" ? "" : assetUrl;
+      card.dataset.type = type;
+      card.dataset.mime = mime;
+      card.dataset.name = name;
+      card.dataset.size = String(Number(entry.size) || 0);
+      card.addEventListener("click", function () {
+        window.fpSelect(card);
+      });
+      card.addEventListener("dblclick", function () {
+        window.fpSelect(card);
+        window.fpInsertSelected();
+      });
 
-        if (entries.length === 0) {
-            grid.innerHTML = '';
-            empty.classList.remove('hidden');
-            return;
+      if (type === "directory") {
+        var folderIcon = document.createElement("div");
+        folderIcon.className = "text-3xl text-center mb-2";
+        folderIcon.textContent = "📁";
+        card.appendChild(folderIcon);
+      } else if (mime.indexOf("image/") === 0) {
+        var imageWrapper = document.createElement("div");
+        imageWrapper.className =
+          "aspect-square mb-2 overflow-hidden rounded bg-moose-100 flex items-center justify-center";
+        var image = document.createElement("img");
+        image.src = assetUrl;
+        image.alt = "";
+        image.className = "max-h-full max-w-full object-contain";
+        image.loading = "lazy";
+        imageWrapper.appendChild(image);
+        card.appendChild(imageWrapper);
+      } else {
+        var fileIcon = document.createElement("div");
+        fileIcon.className = "fp-icon text-3xl text-center mb-2";
+        fileIcon.textContent = "📄";
+        card.appendChild(fileIcon);
+        if (typeof FileIcons !== "undefined") {
+          FileIcons.getClass(name).then(function (className) {
+            applyFileIcon(fileIcon, className);
+          });
         }
-        empty.classList.add('hidden');
+      }
 
-        var html = '';
-        for (var i = 0; i < entries.length; i++) {
-            var e = entries[i];
-
-            html += '<div class="fp-card border border-moose-200 rounded-lg p-3 cursor-pointer hover:border-moose-500 hover:shadow transition-all" ';
-            html += 'data-path="' + escHtml(e.path) + '" ';
-            html += 'data-url="' + escHtml(e.url || '') + '" ';
-            html += 'data-type="' + e.type + '" ';
-            html += 'data-mime="' + escHtml(e.mime_type || '') + '" ';
-            html += 'data-name="' + escHtml(e.name) + '" ';
-            html += 'data-size="' + e.size + '" ';
-            html += 'onclick="fpSelect(this)" ondblclick="fpSelect(this);fpInsertSelected()">';
-
-            if (e.type === 'directory') {
-                html += '<div class="text-3xl text-center mb-2">📁</div>';
-            } else if (e.mime_type && e.mime_type.indexOf('image/') === 0 && e.url) {
-                html += '<div class="aspect-square mb-2 overflow-hidden rounded bg-moose-100 flex items-center justify-center">';
-                html += '<img src="' + escHtml(e.url) + '" alt="" class="max-h-full max-w-full object-contain" loading="lazy">';
-                html += '</div>';
-            } else {
-                // File icon — render emoji placeholder, async-update with file-icons
-                html += '<div class="fp-icon text-3xl text-center mb-2">📄</div>';
-            }
-
-            html += '<div class="text-xs text-moose-700 truncate text-center" title="' + escHtml(e.name) + '">' + escHtml(e.name) + '</div>';
-            html += '</div>';
-        }
-        grid.innerHTML = html;
-
-        // Async-update file icons (FileIcons.getClass is async)
-        if (typeof FileIcons !== 'undefined') {
-            var cards = grid.querySelectorAll('.fp-card[data-type="file"]:not([data-mime^="image/"])');
-            cards.forEach(function(card) {
-                var name = card.getAttribute('data-name');
-                var iconEl = card.querySelector('.fp-icon');
-                if (iconEl) {
-                    FileIcons.getClass(name).then(function(cls) {
-                        iconEl.innerHTML = '<i class="' + cls + '"></i>';
-                    });
-                }
-            });
-        }
-    }
+      var label = document.createElement("div");
+      label.className = "text-xs text-moose-700 truncate text-center";
+      label.title = name;
+      label.textContent = name;
+      card.appendChild(label);
+      grid.appendChild(card);
+    });
+  }
 
 
   window.addMetadataField = function (id) {
@@ -741,7 +784,7 @@
   function loadFile(path) {
     if (!path) return;
 
-    fetch("/" + prefix + "/file/" + path)
+    fetch("/" + prefix + "/file/" + encodePath(path))
       .then(function (r) {
         if (!r.ok) throw new Error("File not found");
         return r.json();
@@ -801,7 +844,7 @@
     var method = isNew ? "POST" : "PUT";
     setSaveState(true);
 
-    fetch("/" + prefix + "/file/" + savePath, {
+    fetch("/" + prefix + "/file/" + encodePath(savePath), {
       method: method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -823,7 +866,7 @@
           window.history.replaceState(
             {},
             "",
-            "/" + prefix + "/edit/" + result.path
+            "/" + prefix + "/edit/" + encodePath(result.path)
           );
           /* Reload to get frontmatter_raw for the newly created file */
           loadFile(result.path);
@@ -836,18 +879,6 @@
         setSaveState(false);
       });
   };
-
-  /* ================================================================
-       Utility
-       ================================================================ */
-  function escHtml(s) {
-    return s
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-  }
 
   /* ================================================================
        File Picker
@@ -912,46 +943,42 @@
     var content = document.getElementById("fp-preview-content");
     var info = document.getElementById("fp-preview-info");
     panel.classList.remove("hidden");
+    content.replaceChildren();
 
-    var html = "";
+    var preview;
     if (file.mime_type && file.mime_type.indexOf("image/") === 0) {
-      html =
-        '<img src="' +
-        escHtml(file.url) +
-        '" alt="' +
-        escHtml(file.name) +
-        '" class="max-w-full rounded">';
+      preview = document.createElement("img");
+      preview.src = file.url;
+      preview.alt = file.name;
+      preview.className = "max-w-full rounded";
     } else if (file.mime_type === "application/pdf") {
-      html =
-        '<iframe src="' +
-        escHtml(file.url) +
-        '" class="w-full h-64 rounded border border-moose-200"></iframe>';
+      preview = document.createElement("iframe");
+      preview.src = file.url;
+      preview.title = "Preview of " + file.name;
+      preview.className = "w-full h-64 rounded border border-moose-200";
+      preview.setAttribute("sandbox", "");
     } else if (file.mime_type && file.mime_type.indexOf("video/") === 0) {
-      html =
-        '<video src="' +
-        escHtml(file.url) +
-        '" controls class="w-full rounded"></video>';
+      preview = document.createElement("video");
+      preview.src = file.url;
+      preview.controls = true;
+      preview.className = "w-full rounded";
     } else if (file.mime_type && file.mime_type.indexOf("audio/") === 0) {
-      html =
-        '<audio src="' +
-        escHtml(file.url) +
-        '" controls class="w-full"></audio>';
+      preview = document.createElement("audio");
+      preview.src = file.url;
+      preview.controls = true;
+      preview.className = "w-full";
     } else {
-      html =
-        '<div id="fp-preview-icon" class="text-center py-8 text-4xl">📄</div>';
-    }
-    content.innerHTML = html;
-
-    // Async-update preview icon
-    if (typeof FileIcons !== "undefined") {
-      var iconEl = document.getElementById("fp-preview-icon");
-      if (iconEl) {
-        FileIcons.getClass(file.name).then(function (cls) {
-          iconEl.innerHTML =
-            '<i class="' + cls + '" style="font-size: 48px;"></i>';
+      preview = document.createElement("div");
+      preview.id = "fp-preview-icon";
+      preview.className = "text-center py-8 text-4xl";
+      preview.textContent = "📄";
+      if (typeof FileIcons !== "undefined") {
+        FileIcons.getClass(file.name).then(function (className) {
+          applyFileIcon(preview, className, "48px");
         });
       }
     }
+    content.appendChild(preview);
 
     var sizeStr =
       file.size > 1024 * 1024
@@ -959,16 +986,14 @@
         : file.size > 1024
           ? (file.size / 1024).toFixed(1) + " KB"
           : file.size + " B";
-    info.innerHTML =
-      '<p class="font-medium text-moose-900">' +
-      escHtml(file.name) +
-      "</p>" +
-      "<p>" +
-      escHtml(file.mime_type || "Unknown type") +
-      "</p>" +
-      "<p>" +
-      sizeStr +
-      "</p>";
+    var name = document.createElement("p");
+    name.className = "font-medium text-moose-900";
+    name.textContent = file.name;
+    var mime = document.createElement("p");
+    mime.textContent = file.mime_type || "Unknown type";
+    var size = document.createElement("p");
+    size.textContent = sizeStr;
+    info.replaceChildren(name, mime, size);
   }
 
   window.fpInsertSelected = function () {
@@ -1007,7 +1032,7 @@
 
       try {
         var resp = await fetch(
-          "/" + prefix + fpStaticRoute + "/upload/" + uploadPath,
+          "/" + prefix + fpStaticRoute + "/upload/" + encodePath(uploadPath),
           {
             method: "POST",
             body: formData,
@@ -1036,7 +1061,7 @@
     if (!name) return;
     var createPath = fpCurrentPath ? fpCurrentPath + "/" + name : name;
 
-    fetch("/" + prefix + fpStaticRoute + "/mkdir/" + createPath, {
+    fetch("/" + prefix + fpStaticRoute + "/mkdir/" + encodePath(createPath), {
       method: "POST",
     })
       .then(function (r) {
