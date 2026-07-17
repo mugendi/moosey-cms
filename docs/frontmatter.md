@@ -4,7 +4,7 @@ The admin editor's **Add metadata** menu is generated from Moosey's built-in reg
 
 ## Project overrides
 
-Moosey automatically loads `<project>/.moosey/frontmatter_fields.yaml` beside the content directory. No `init_cms()` option is required. Definitions merge over built-ins by field ID:
+Moosey automatically loads `<project>/.moosey/frontmatter_fields.yaml` beside the content directory. For nested content it then scans down to the current content folder, merging each `.moosey/frontmatter_fields.yaml` it finds. The closest file takes precedence, so a blog can define local fields in `content/blog/.moosey/frontmatter_fields.yaml`. No `init_cms()` option is required. Definitions merge over built-ins by field ID:
 
 ```yaml
 version: 1

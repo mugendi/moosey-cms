@@ -501,6 +501,7 @@
     if (!field || field.hidden) return;
     var data = readGuifierData() || cloneData(frontmatterData);
     var path = metadataFieldPath(id, field);
+    
     if (hasMetadataPath(data, path)) {
       showFlash((field.label || id) + " already exists", "info");
       return;

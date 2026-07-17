@@ -30,7 +30,7 @@ fields:
     {
       label: Draft,
       type: boolean,
-      default: true,
+      default: false,
       group: Publishing,
       description: "Hide the page outside development mode and exclude it from normal indexes.",
       is_basic_field: true
@@ -103,8 +103,7 @@ fields:
       type: text,
       default: "",
       group: Navigation,
-      description: "Short title used in navigation and content indexes instead of title.",
-      is_basic_field: true
+      description: "Short title used in navigation and content indexes instead of title."
     }
   order:
     {
@@ -172,8 +171,7 @@ fields:
       type: string_array,
       default: [],
       group: SEO,
-      description: "Keywords consumed by Moosey's SEO helper; tags are used as a fallback.",
-      is_basic_field: true
+      description: "Keywords consumed by Moosey's SEO helper; tags are used as a fallback."
     }
   image:
     {

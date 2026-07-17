@@ -22,7 +22,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.responses import HTMLResponse
 
 from .helpers import get_secure_target, parse_markdown_file
-from .frontmatter import load_frontmatter_fields
+from .frontmatter import build_initial_frontmatter, load_frontmatter_fields
 from .yaml_handler import build_markdown, split_frontmatter
 from .lib.git import GitManager
 from .lib.config import GitConfig
@@ -345,8 +345,6 @@ def register_admin_routes(
     templates_subdir = admin_config["templates"]
 
     content_dir: Path = dirs["content"]
-    frontmatter_fields = load_frontmatter_fields(content_dir)
-
     # Git versioning
     git_config_data = admin_config.get("git", {})
     git_config = GitConfig(**git_config_data) if isinstance(git_config_data, dict) else GitConfig()
@@ -426,13 +424,8 @@ def register_admin_routes(
         if target.exists():
             raise HTTPException(status_code=409, detail="File already exists")
 
-        metadata = {
-            name: deepcopy(field["default"])
-            for name, field in frontmatter_fields.get("fields", {}).items()
-            if isinstance(field, dict)
-            and field.get("is_basic_field")
-            and "default" in field
-        }
+        frontmatter_fields = load_frontmatter_fields(content_dir, target.parent)
+        metadata = build_initial_frontmatter(frontmatter_fields)
 
         metadata.update(payload.frontmatter)
         metadata["version"] = 1
@@ -728,6 +721,8 @@ def register_admin_routes(
     @router.get(f"/{prefix}/edit/", include_in_schema=False)
     @router.get(f"/{prefix}/edit/{{file_path:path}}", include_in_schema=False)
     async def admin_editor_page(request: Request, file_path: str = ""):
+        target = _safe_path(file_path, content_dir) if file_path else content_dir
+        current_dir = target.parent if target.suffix else target
         return await _render_admin_template(
             request,
             f"{templates_subdir}/editor.html",
@@ -735,7 +730,7 @@ def register_admin_routes(
                 "admin_config": admin_config,
                 "mode": mode,
                 "file_path": file_path,
-                "frontmatter_fields": frontmatter_fields,
+                "frontmatter_fields": load_frontmatter_fields(content_dir, current_dir),
             },
         )
 
