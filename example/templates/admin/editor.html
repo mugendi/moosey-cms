@@ -95,6 +95,8 @@ Guifier ships as an ES module only — must use type="module" to import. #}
   rel="stylesheet"
   href="/__moosey/static/vendor/file-icons/file-icons.min.css"
 />
+<link rel="stylesheet" href="/__moosey/static/vendor/diff2html/highlight-github.min.css" />
+<link rel="stylesheet" href="/__moosey/static/vendor/diff2html/diff2html.min.css" />
 <script type="module">
   import FileIcons from "/__moosey/static/vendor/file-icons/file-icons.esm.min.js";
   window.FileIcons = FileIcons;
@@ -330,6 +332,91 @@ Guifier ships as an ES module only — must use type="module" to import. #}
     <div class="flex justify-end">{{ save_button("-bottom") }}</div>
   </div>
 </div>
+{# ── History Preview Modal ── #}
+<div id="history-preview-modal" class="fixed inset-0 z-50 hidden">
+  <div
+    class="absolute inset-0 bg-black/50"
+    onclick="closeHistoryPreview()"
+  ></div>
+  <div
+    class="absolute inset-4 md:inset-8 lg:inset-16 bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="history-preview-title"
+  >
+    <div
+      class="flex items-center justify-between gap-3 px-4 py-3 border-b border-moose-200"
+    >
+      <div>
+        <h2
+          id="history-preview-title"
+          class="text-lg font-semibold text-moose-900"
+        >
+          Version preview
+        </h2>
+        <p id="history-preview-summary" class="text-xs text-moose-500"></p>
+      </div>
+      <button
+        type="button"
+        onclick="closeHistoryPreview()"
+        class="text-moose-400 hover:text-moose-600"
+        aria-label="Close version preview"
+      >
+        ×
+      </button>
+    </div>
+    <div id="history-preview-loading" class="p-8 text-center text-moose-400">
+      Loading version…
+    </div>
+    <div
+      id="history-preview-content"
+      class="hidden flex-1 overflow-y-auto p-4 space-y-4"
+    >
+      <section>
+        <h3 class="mb-2 text-sm font-semibold text-moose-900">
+          Changes applied by reverting
+        </h3>
+        <div
+          id="history-preview-diff"
+          class="max-h-[32rem] overflow-auto rounded-lg border border-moose-200 bg-white"
+        ></div>
+      </section>
+      <details>
+        <summary class="cursor-pointer text-sm font-semibold text-moose-900">
+          Full selected-version content
+        </summary>
+        <pre
+          id="history-preview-file"
+          class="mt-2 max-h-96 overflow-auto whitespace-pre-wrap rounded-lg border border-moose-200 bg-moose-50 p-4 text-xs text-moose-800"
+        ></pre>
+      </details>
+    </div>
+    <div
+      class="flex items-center justify-between gap-3 border-t border-moose-200 bg-moose-50 px-4 py-3"
+    >
+      <p class="text-xs text-moose-500">
+        Revert restores only this file and creates a new history entry.
+      </p>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          onclick="closeHistoryPreview()"
+          class="rounded-lg px-4 py-2 text-sm text-moose-600 hover:text-moose-900"
+        >
+          Cancel
+        </button>
+        <button
+          id="history-preview-revert"
+          type="button"
+          disabled
+          class="rounded-lg bg-moose-700 px-4 py-2 text-sm font-medium text-white hover:bg-moose-800 disabled:cursor-not-allowed disabled:bg-moose-300"
+        >
+          Revert this file
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 {# ── File Picker Modal ── #} {% if admin_config._static_dir %}
 <div id="file-picker-modal" class="fixed inset-0 z-50 hidden">
   {# Backdrop #}
@@ -443,5 +530,6 @@ Guifier ships as an ES module only — must use type="module" to import. #}
   var filePath = '{{ file_path | default("") }}';
   var fpStaticRoute = '{{ admin_config._static_route | default("/static") }}';
 </script>
+<script src="/__moosey/static/vendor/diff2html/diff2html-ui-slim.min.js"></script>
 <script src="/__moosey/static/admin/editor.js"></script>
 {% endblock %}
