@@ -764,6 +764,7 @@
   function setFrontmatter(data) {
     frontmatterData = data || {};
     guifierSnapshot = cloneData(frontmatterData);
+    setApproximateHistoryCount(frontmatterData.version);
     if (guifierInstance) {
       try {
         suppressGuifierObserver = true;
@@ -864,6 +865,8 @@
       .then(function (result) {
         showFlash("Saved!", "success");
         rememberSavedState();
+        historyCountIsExact = false;
+        setApproximateHistoryCount(result.version);
         if (isNew && result.path) {
           /* Update URL so subsequent saves use PUT */
           filePath = result.path;
@@ -890,6 +893,15 @@
        Version History
        ================================================================ */
   var historyData = [];
+  var historyCountIsExact = false;
+
+  function setApproximateHistoryCount(version) {
+    if (historyCountIsExact) return;
+    var numericVersion = Number(version);
+    if (!Number.isInteger(numericVersion) || numericVersion < 1) return;
+    var count = document.getElementById("history-count");
+    if (count) count.textContent = "~" + numericVersion;
+  }
 
   function enableHistoryTab() {
     var btn = document.getElementById("tab-history");
@@ -907,7 +919,7 @@
 
     if (loading) loading.classList.remove("hidden");
     if (empty) empty.classList.add("hidden");
-    if (list) list.innerHTML = "";
+    if (list) list.replaceChildren();
 
     fetch("/" + prefix + "/file-history/" + encodePath(filePath))
       .then(function (r) {
@@ -916,6 +928,7 @@
       })
       .then(function (data) {
         historyData = data.history || [];
+        historyCountIsExact = true;
         renderHistory();
       })
       .catch(function (err) {
@@ -931,54 +944,174 @@
     var count = document.getElementById("history-count");
 
     if (loading) loading.classList.add("hidden");
-
     if (count) count.textContent = historyData.length;
 
     if (!historyData.length) {
       if (empty) empty.classList.remove("hidden");
-      if (list) list.innerHTML = "";
+      if (list) list.replaceChildren();
       return;
     }
 
     if (empty) empty.classList.add("hidden");
     if (!list) return;
+    list.replaceChildren();
 
-    var html = "";
-    for (var i = 0; i < historyData.length; i++) {
-      var h = historyData[i];
-      var date = new Date(h.date);
-      var timeAgo = formatTimeAgo(date);
-      var isCurrent = i === 0;
-      var shortHash = h.hash.substring(0, 7);
+    historyData.forEach(function (history, index) {
+      var date = new Date(history.date);
+      var shortHash = String(history.hash || "").substring(0, 7);
+      var isCurrent = index === 0;
+      var item = document.createElement("div");
+      item.className =
+        "flex items-start justify-between gap-3 rounded-lg border border-moose-200 p-3 hover:bg-moose-50 transition-colors";
 
-      html += '<div class="flex items-start justify-between gap-3 rounded-lg border border-moose-200 p-3 hover:bg-moose-50 transition-colors">';
-      html += '<div class="min-w-0 flex-1">';
-      html += '<div class="flex items-center gap-2 mb-1">';
+      var details = document.createElement("div");
+      details.className = "min-w-0 flex-1";
+      var heading = document.createElement("div");
+      heading.className = "flex items-center gap-2 mb-1";
       if (isCurrent) {
-        html += '<span class="inline-flex items-center rounded-full bg-moose-100 px-2 py-0.5 text-xs font-medium text-moose-700">current</span>';
+        var current = document.createElement("span");
+        current.className =
+          "inline-flex items-center rounded-full bg-moose-200 px-2 py-0.5 text-xs font-medium uppercase text-green-600";
+        current.textContent = "current";
+        heading.appendChild(current);
       }
-      html += '<span class="text-sm font-medium text-moose-900 truncate">' + escHtml(h.message) + '</span>';
-      html += '</div>';
-      html += '<div class="flex items-center gap-3 text-xs text-moose-500">';
-      html += '<span title="' + escHtml(date.toLocaleString()) + '">' + timeAgo + '</span>';
-      html += '<span class="font-mono text-moose-400">' + shortHash + '</span>';
-      html += '</div>';
-      html += '</div>';
+      var message = document.createElement("span");
+      message.className =
+        "text-sm font-medium text-moose-900 truncate";
+      message.textContent = history.message || "";
+      heading.appendChild(message);
+
+      var metadata = document.createElement("div");
+      metadata.className =
+        "flex items-center gap-3 text-xs text-moose-500";
+      var timestamp = document.createElement("span");
+      timestamp.title = date.toLocaleString();
+      timestamp.textContent = formatTimeAgo(date);
+      var hash = document.createElement("span");
+      hash.className = "font-mono text-moose-400";
+      hash.textContent = shortHash;
+      metadata.append(timestamp, hash);
+      details.append(heading, metadata);
+      item.appendChild(details);
+
       if (!isCurrent) {
-        html += '<button onclick="revertToVersion(\'' + escHtml(h.hash) + '\', \'' + escHtml(shortHash) + '\')" '
-          + 'class="shrink-0 text-xs bg-white border border-moose-300 hover:bg-moose-100 hover:border-moose-400 text-moose-700 px-3 py-1.5 rounded-lg transition-colors font-medium">'
-          + 'Revert</button>';
+        var revertButton = document.createElement("button");
+        revertButton.type = "button";
+        revertButton.className =
+          "shrink-0 text-xs bg-white border border-moose-300 hover:bg-moose-100 hover:border-moose-400 text-moose-700 px-3 py-1.5 rounded-lg transition-colors font-medium";
+        revertButton.textContent = "Preview";
+        revertButton.addEventListener("click", function () {
+          window.openHistoryPreview(history.hash, shortHash);
+        });
+        item.appendChild(revertButton);
       }
-      html += '</div>';
-    }
-    list.innerHTML = html;
+      list.appendChild(item);
+    });
   }
+
+  function renderHistoryDiff(diff) {
+    var target = document.getElementById("history-preview-diff");
+    target.replaceChildren();
+
+    if (!diff) {
+      var empty = document.createElement("p");
+      empty.className = "p-4 text-sm text-moose-500";
+      empty.textContent = "No content changes from the current file.";
+      target.appendChild(empty);
+      return;
+    }
+
+    if (typeof Diff2HtmlUI === "undefined") {
+      var fallback = document.createElement("pre");
+      fallback.className = "overflow-auto whitespace-pre-wrap p-4 text-xs";
+      fallback.textContent = diff;
+      target.appendChild(fallback);
+      return;
+    }
+
+    var diffUi = new Diff2HtmlUI(target, diff, {
+      drawFileList: false,
+      fileContentToggle: false,
+      matching: "lines",
+      outputFormat: window.matchMedia("(min-width: 900px)").matches
+        ? "side-by-side"
+        : "line-by-line",
+      synchronisedScroll: true,
+      highlight: true,
+      stickyFileHeaders: true,
+      renderNothingWhenEmpty: false,
+    });
+    diffUi.draw();
+    diffUi.highlightCode();
+  }
+
+  var historyPreviewHash = "";
+  var historyPreviewShortHash = "";
+
+  window.openHistoryPreview = function (hash, shortHash) {
+    if (!filePath) return;
+    historyPreviewHash = hash;
+    historyPreviewShortHash = shortHash;
+
+    var modal = document.getElementById("history-preview-modal");
+    var loading = document.getElementById("history-preview-loading");
+    var content = document.getElementById("history-preview-content");
+    var revertButton = document.getElementById("history-preview-revert");
+    document.getElementById("history-preview-summary").textContent =
+      filePath + " at " + shortHash;
+    document.getElementById("history-preview-diff").replaceChildren();
+    document.getElementById("history-preview-file").textContent = "";
+    loading.textContent = "Loading version…";
+    loading.classList.remove("hidden");
+    content.classList.add("hidden");
+    revertButton.disabled = true;
+    modal.classList.remove("hidden");
+
+    fetch(
+      "/" +
+        prefix +
+        "/file-version/" +
+        encodePath(filePath) +
+        "?commit=" +
+        encodeURIComponent(hash)
+    )
+      .then(function (response) {
+        if (!response.ok)
+          return response.json().then(function (data) {
+            throw new Error(data.detail || "Version preview failed");
+          });
+        return response.json();
+      })
+      .then(function (data) {
+        if (historyPreviewHash !== hash) return;
+        renderHistoryDiff(data.diff);
+        document.getElementById("history-preview-file").textContent =
+          data.content || "";
+        loading.classList.add("hidden");
+        content.classList.remove("hidden");
+        revertButton.disabled = false;
+        revertButton.onclick = function () {
+          window.revertToVersion(historyPreviewHash, historyPreviewShortHash);
+        };
+      })
+      .catch(function (error) {
+        loading.textContent = "Could not load preview: " + error.message;
+      });
+  };
+
+  window.closeHistoryPreview = function () {
+    document.getElementById("history-preview-modal").classList.add("hidden");
+    historyPreviewHash = "";
+    historyPreviewShortHash = "";
+  };
+
 
   window.revertToVersion = function (hash, shortHash) {
     if (!filePath) return;
     if (!confirm("Revert to version " + shortHash + "? Current changes will be overwritten.")) {
       return;
     }
+    closeHistoryPreview();
 
     fetch("/" + prefix + "/rollback/" + encodePath(filePath), {
       method: "POST",
@@ -1276,6 +1409,10 @@
         var modal = document.getElementById("file-picker-modal");
         if (modal && !modal.classList.contains("hidden")) {
           closeFilePicker();
+        }
+        var historyModal = document.getElementById("history-preview-modal");
+        if (historyModal && !historyModal.classList.contains("hidden")) {
+          closeHistoryPreview();
         }
       }
     });

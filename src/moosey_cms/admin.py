@@ -5,6 +5,7 @@ This software is released under the MIT License.
 https://opensource.org/licenses/MIT
 """
 
+import difflib
 import mimetypes
 import os
 import shutil
@@ -511,6 +512,57 @@ def register_admin_routes(
         return {
             "path": str(target.relative_to(content_dir)).replace("\\", "/"),
             "history": history,
+        }
+
+    @router.get(f"/{prefix}/file-version/{{file_path:path}}")
+    async def admin_file_version(
+        file_path: str, commit: str
+    ) -> Dict[str, Any]:
+        target = _safe_path(file_path, content_dir)
+
+        if not target.exists():
+            raise HTTPException(status_code=404, detail="File not found")
+        if target.is_dir():
+            raise HTTPException(
+                status_code=400, detail="Path is a directory, not a file"
+            )
+
+        try:
+            current_content = target.read_text(encoding="utf-8")
+            historical_content = git_mgr.file_content_at(target, commit)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        except OSError as exc:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to read current file: {exc}"
+            )
+
+        rel_path = str(target.relative_to(content_dir)).replace("\\", "/")
+
+        try:
+            current_version = frontmatter.loads(current_content).metadata.get("version")
+        except Exception:
+            current_version = None
+        try:
+            target_version = frontmatter.loads(historical_content).metadata.get("version")
+        except Exception:
+            target_version = None
+
+        diff = "".join(
+            difflib.unified_diff(
+                current_content.splitlines(keepends=True),
+                historical_content.splitlines(keepends=True),
+                fromfile=f"a/{rel_path}",
+                tofile=f"b/{rel_path}",
+            )
+        )
+        return {
+            "path": rel_path,
+            "commit": commit,
+            "content": historical_content,
+            "current_version": current_version,
+            "target_version": target_version,
+            "diff": diff,
         }
 
     # ------------------------------------------------------------------

@@ -332,6 +332,30 @@ class TestAdminListTemplate:
         assert "list.replaceChildren()" in editor_js
         assert 'revertButton.addEventListener("click"' in editor_js
         assert "escHtml(" not in editor_js
+        assert "setApproximateHistoryCount(frontmatterData.version)" in editor_js
+        assert 'count.textContent = "~" + numericVersion' in editor_js
+        assert "historyCountIsExact = true" in editor_js
+        assert "count.textContent = historyData.length" in editor_js
+
+        editor_html = (
+            package / "_admin_templates" / "editor.html"
+        ).read_text()
+        assert 'id="history-preview-modal"' in editor_html
+        assert "Revert restores only this file" in editor_html
+        assert 'revertButton.textContent = "Preview"' in editor_js
+        assert '"/file-version/" +' in editor_js
+        assert "history-preview-diff" in editor_js
+        assert "window.revertToVersion(historyPreviewHash" in editor_js
+
+        assert "diff2html.min.css" in editor_html
+        assert "diff2html-ui-slim.min.js" in editor_html
+        assert "new Diff2HtmlUI(target, diff" in editor_js
+        assert '"side-by-side"' in editor_js
+        assert '"line-by-line"' in editor_js
+        vendor = package / "_static" / "vendor" / "diff2html"
+        assert (vendor / "diff2html.min.css").is_file()
+        assert (vendor / "diff2html-ui-slim.min.js").is_file()
+        assert (vendor / "highlight-github.min.css").is_file()
 
     def test_breadcrumb_escapes_text_and_encodes_path_segments(
         self, client, content_dir

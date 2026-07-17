@@ -95,6 +95,35 @@ def test_file_history(client, git_content_dir):
     assert "hash" in data["history"][0]
 
 
+def test_file_version_preview_returns_diff_without_changing_file(
+    client, git_content_dir
+):
+    client.post(
+        "/admin/content/file/preview-test.md",
+        json={"frontmatter": {"title": "Preview"}, "body": "original"},
+    )
+    original_hash = client.get(
+        "/admin/content/file-history/preview-test.md"
+    ).json()["history"][0]["hash"]
+    client.put(
+        "/admin/content/file/preview-test.md",
+        json={"frontmatter": {"title": "Preview"}, "body": "updated"},
+    )
+
+    response = client.get(
+        "/admin/content/file-version/preview-test.md",
+        params={"commit": original_hash},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["commit"] == original_hash
+    assert "original" in data["content"]
+    assert "-updated" in data["diff"]
+    assert "+original" in data["diff"]
+    assert frontmatter.load(git_content_dir / "preview-test.md").content.strip() == "updated"
+
+
 def test_rollback(client, git_content_dir):
     # Create
     client.post(
@@ -106,6 +135,10 @@ def test_rollback(client, git_content_dir):
     client.put(
         "/admin/content/file/rollback-test.md",
         json={"frontmatter": {"title": "RB"}, "body": "updated"},
+    )
+    client.post(
+        "/admin/content/file/untouched.md",
+        json={"frontmatter": {"title": "Other"}, "body": "leave me alone"},
     )
 
     # Get history
@@ -127,6 +160,8 @@ def test_rollback(client, git_content_dir):
     post = frontmatter.load(git_content_dir / "rollback-test.md")
     assert post.content.strip() == "original"
     assert post.metadata.get("version") == 3  # bumped from 2
+    other = frontmatter.load(git_content_dir / "untouched.md")
+    assert other.content.strip() == "leave me alone"
 
 
 def test_rollback_invalid_hash(client, git_content_dir):

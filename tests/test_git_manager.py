@@ -55,6 +55,17 @@ def test_file_history(manager, git_repo):
     assert "date" in history[0]
 
 
+def test_file_content_at_does_not_change_worktree(manager, git_repo):
+    test_file = git_repo / "test.md"
+    original_hash = manager.file_history(test_file)[0]["hash"]
+    test_file.write_text("working tree content\n")
+
+    content = manager.file_content_at(test_file, original_hash)
+
+    assert content == "initial content\n"
+    assert test_file.read_text() == "working tree content\n"
+
+
 def test_restore_file(manager, git_repo):
     test_file = git_repo / "test.md"
 

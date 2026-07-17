@@ -90,24 +90,29 @@ class GitManager:
             )
         return history
 
-    def restore_file(self, file_path: Path, commit_hash: str) -> str:
-        """Restore a file from a specific commit. Returns restored content."""
+    def file_content_at(self, file_path: Path, commit_hash: str) -> str:
+        """Return a file's content at one commit without changing the worktree."""
         repo = self.ensure_repo()
         file_path = Path(file_path).resolve()
 
         try:
             rel = str(file_path.relative_to(self.repo_path))
-        except ValueError:
-            raise ValueError(f"File {file_path} is outside repo {self.repo_path}")
+        except ValueError as exc:
+            raise ValueError(
+                f"File {file_path} is outside repo {self.repo_path}"
+            ) from exc
 
-        # Get the file content at that commit
         try:
             commit = repo.commit(commit_hash)
-            content = commit.tree[rel].data_stream.read().decode("utf-8")
-        except (KeyError, Exception) as exc:
+            return commit.tree[rel].data_stream.read().decode("utf-8")
+        except Exception as exc:
             raise ValueError(
                 f"Could not read file {rel} at commit {commit_hash}: {exc}"
-            )
+            ) from exc
+
+    def restore_file(self, file_path: Path, commit_hash: str) -> str:
+        """Restore a file from a specific commit. Returns restored content."""
+        content = self.file_content_at(file_path, commit_hash)
 
         # Write to disk
         file_path.parent.mkdir(parents=True, exist_ok=True)
