@@ -25,14 +25,34 @@ from .seo import seo_tags
 
 log = logging.getLogger(__name__)
 
+_DATETIME_TYPE = datetime
+_DATE_TYPE = date
+
 # ============================================================================
 # DATE & TIME FILTERS
 # ============================================================================
 
-def fancy_date(dt):
+def _coerce_datetime(value):
+    """Return a datetime for date-like values, or None when parsing fails."""
+    if isinstance(value, _DATETIME_TYPE):
+        return value
+    if isinstance(value, _DATE_TYPE):
+        return datetime.combine(value, time.min)
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    return None
+
+
+def fancy_date(value):
     """Format date as '13th Jan, 2026 at 6:00 PM'"""
-    if not dt:
+    if not value:
         return ""
+    dt = _coerce_datetime(value)
+    if dt is None:
+        return str(value)
     
     day = dt.day
     if 10 <= day % 100 <= 20:
@@ -47,27 +67,35 @@ def fancy_date(dt):
         formatted = parts[0] + 'at ' + parts[1][1:]
     return formatted
 
-
-def short_date(dt):
+def short_date(value):
     """Format date as 'Jan 13, 2026'"""
-    if not dt:
+    if not value:
         return ""
+    dt = _coerce_datetime(value)
+    if dt is None:
+        return str(value)
     return dt.strftime('%b %d, %Y')
 
 
-def iso_date(dt):
+def iso_date(value):
     """Format date as '2026-01-13'"""
-    if not dt:
+    if not value:
         return ""
+    dt = _coerce_datetime(value)
+    if dt is None:
+        return str(value)
     return dt.strftime('%Y-%m-%d')
 
 
-def relative_time(dt, showAgo=True):
+def relative_time(value, showAgo=True):
     """Format date as relative time (e.g., '2 hours ago', 'yesterday')"""
-    if not dt:
+    if not value:
         return ""
+    dt = _coerce_datetime(value)
+    if dt is None:
+        return str(value)
     
-    now = datetime.now()
+    now = datetime.now(dt.tzinfo) if dt.tzinfo else datetime.now()
     diff = now - dt
 
     ago = " ago" if showAgo else ""
@@ -98,10 +126,13 @@ def relative_time(dt, showAgo=True):
         return f"{years} year{'s' if years != 1 else ''}{ago}"
 
 
-def time_only(dt):
+def time_only(value):
     """Format as time only '6:00 PM'"""
-    if not dt:
+    if not value:
         return ""
+    dt = _coerce_datetime(value)
+    if dt is None:
+        return str(value)
     formatted = dt.strftime('%I:%M %p')
     if formatted[0] == '0':
         formatted = formatted[1:]
@@ -115,15 +146,9 @@ def rfc822_date(value):
     """Format a date/datetime for RSS feeds."""
     if not value:
         return ""
-    if isinstance(value, datetime):
-        dt = value
-    elif isinstance(value, date):
-        dt = datetime.combine(value, time.min)
-    else:
-        try:
-            dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-        except ValueError:
-            return str(value)
+    dt = _coerce_datetime(value)
+    if dt is None:
+        return str(value)
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return format_datetime(dt, usegmt=True)

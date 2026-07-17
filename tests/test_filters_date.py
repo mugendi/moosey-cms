@@ -213,3 +213,29 @@ class TestRfc822Date:
 
     def test_empty_string_returns_empty(self):
         assert rfc822_date("") == ""
+
+
+class TestStringDateInputs:
+    def test_iso_datetime_string(self):
+        value = "2026-01-13T18:00:00Z"
+
+        assert fancy_date(value) == "13th Jan, 2026 at 6:00 PM"
+        assert short_date(value) == "Jan 13, 2026"
+        assert iso_date(value) == "2026-01-13"
+        assert time_only(value) == "6:00 PM"
+
+    def test_iso_date_string(self):
+        assert short_date("2026-07-04") == "Jul 04, 2026"
+
+    def test_timezone_aware_string_supports_relative_time(self):
+        assert "year" in relative_time("2000-01-01T00:00:00Z")
+
+    def test_unparseable_string_is_returned_unchanged(self):
+        value = "not-a-date"
+
+        assert fancy_date(value) == value
+        assert short_date(value) == value
+        assert iso_date(value) == value
+        assert relative_time(value) == value
+        assert time_only(value) == value
+        assert rfc822_date(value) == value

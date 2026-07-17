@@ -366,8 +366,9 @@ class TestAdminListTemplate:
 
         assert "diff2html.min.css" in editor_html
         assert "diff2html-ui-slim.min.js" in editor_html
-        assert "#history-preview-diff .d2h-file-side-diff" in editor_html
-        assert "position: relative" in editor_html
+        assert "#history-preview-diff .d2h-code-side-linenumber" in editor_html
+        assert "display: table-cell" in editor_html
+        assert "position: static" in editor_html
         assert "new Diff2HtmlUI(target, diff" in editor_js
         assert '"side-by-side"' in editor_js
         assert '"line-by-line"' in editor_js

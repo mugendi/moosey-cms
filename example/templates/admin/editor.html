@@ -106,9 +106,16 @@ Guifier ships as an ES module only — must use type="module" to import. #}
     border: none;
   }
 
-  #history-preview-diff .d2h-file-diff,
-  #history-preview-diff .d2h-file-side-diff {
-    position: relative;
+  #history-preview-diff .d2h-code-linenumber,
+  #history-preview-diff .d2h-code-side-linenumber {
+    display: table-cell;
+    position: static;
+  }
+
+  #history-preview-diff .d2h-code-line,
+  #history-preview-diff .d2h-code-side-line {
+    padding: 0 0.5em;
+    width: auto;
   }
 
   @media (max-width: 640px) {
