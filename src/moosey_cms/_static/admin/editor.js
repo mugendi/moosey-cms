@@ -948,6 +948,8 @@
     if (loading) loading.classList.remove("hidden");
     if (empty) empty.classList.add("hidden");
     if (list) list.replaceChildren();
+    var limitNote = document.getElementById("history-limit-note");
+    if (limitNote) limitNote.classList.add("hidden");
 
     fetch("/" + prefix + "/file-history/" + encodePath(filePath))
       .then(function (r) {
@@ -1035,6 +1037,16 @@
       }
       list.appendChild(item);
     });
+
+    /* Show limit note when at max */
+    var limitNote = document.getElementById("history-limit-note");
+    if (limitNote) {
+      if (historyData.length >= 50) {
+        limitNote.classList.remove("hidden");
+      } else {
+        limitNote.classList.add("hidden");
+      }
+    }
   }
 
   function renderHistoryDiff(diff) {
