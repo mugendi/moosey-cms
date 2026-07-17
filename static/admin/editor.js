@@ -1061,6 +1061,8 @@
       filePath + " at " + shortHash;
     document.getElementById("history-preview-diff").replaceChildren();
     document.getElementById("history-preview-file").textContent = "";
+    document.getElementById("history-preview-current-version").textContent = "—";
+    document.getElementById("history-preview-target-version").textContent = "—";
     loading.textContent = "Loading version…";
     loading.classList.remove("hidden");
     content.classList.add("hidden");
@@ -1084,6 +1086,24 @@
       })
       .then(function (data) {
         if (historyPreviewHash !== hash) return;
+        var currentVersion =
+          data.current_version === null || data.current_version === undefined
+            ? "unknown"
+            : String(data.current_version);
+        var targetVersion =
+          data.target_version === null || data.target_version === undefined
+            ? "unknown"
+            : String(data.target_version);
+        document.getElementById("history-preview-current-version").textContent =
+          currentVersion;
+        document.getElementById("history-preview-target-version").textContent =
+          targetVersion;
+        document.getElementById("history-preview-direction-text").textContent =
+          "You are reverting this file from version " +
+          currentVersion +
+          " (current) to version " +
+          targetVersion +
+          " (selected).";
         renderHistoryDiff(data.diff);
         document.getElementById("history-preview-file").textContent =
           data.content || "";

@@ -347,6 +347,12 @@ class TestAdminListTemplate:
         assert "history-preview-diff" in editor_js
         assert "window.revertToVersion(historyPreviewHash" in editor_js
 
+        assert 'id="history-preview-current-version"' in editor_html
+        assert 'id="history-preview-target-version"' in editor_html
+        assert "Revert direction" in editor_html
+        assert '" (current) to version " +' in editor_js
+        assert '" (selected)."' in editor_js
+
         assert "diff2html.min.css" in editor_html
         assert "diff2html-ui-slim.min.js" in editor_html
         assert "new Diff2HtmlUI(target, diff" in editor_js

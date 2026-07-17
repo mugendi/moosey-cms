@@ -118,6 +118,8 @@ def test_file_version_preview_returns_diff_without_changing_file(
     assert response.status_code == 200
     data = response.json()
     assert data["commit"] == original_hash
+    assert data["current_version"] == 2
+    assert data["target_version"] == 1
     assert "original" in data["content"]
     assert "-updated" in data["diff"]
     assert "+original" in data["diff"]
