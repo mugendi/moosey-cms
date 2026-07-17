@@ -49,8 +49,35 @@
   /* ================================================================
        Tab switching
        ================================================================ */
+  var editorTabs = ["content", "metadata", "history"];
+
+  function activeTabStorageKey() {
+    return "moosey-editor-tab:" + prefix + ":" + (filePath || "new");
+  }
+
+  function persistActiveTab() {
+    try {
+      sessionStorage.setItem(activeTabStorageKey(), activeTab);
+    } catch (error) {
+      // Storage may be unavailable in privacy-restricted browser contexts.
+    }
+  }
+
+  function restoreActiveTab() {
+    var storedTab;
+    try {
+      storedTab = sessionStorage.getItem(activeTabStorageKey());
+    } catch (error) {
+      return;
+    }
+    if (editorTabs.indexOf(storedTab) === -1) return;
+    if (storedTab === "history" && !filePath) return;
+    window.switchTab(storedTab);
+  }
+
   window.switchTab = function (tabName) {
     activeTab = tabName;
+    persistActiveTab();
 
     /* Update tab buttons */
     document.querySelectorAll(".tab-button").forEach(function (btn) {
@@ -870,6 +897,7 @@
         if (isNew && result.path) {
           /* Update URL so subsequent saves use PUT */
           filePath = result.path;
+          persistActiveTab();
           isNew = false;
           enableHistoryTab();
           window.history.replaceState(
@@ -1384,6 +1412,7 @@
       loadFile(filePath);
       enableHistoryTab();
     }
+    restoreActiveTab();
 
     /* Apply dynamic height after init */
     applyEditorHeight();

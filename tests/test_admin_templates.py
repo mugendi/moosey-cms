@@ -117,6 +117,17 @@ class TestAdminEditorTemplate:
         assert "panel-content" in resp.text
         assert "panel-metadata" in resp.text
         
+
+    def test_editor_restores_active_tab_per_file(self):
+        package = Path(__file__).parent.parent / "src" / "moosey_cms"
+        editor_js = (package / "_static" / "admin" / "editor.js").read_text()
+
+        assert '"moosey-editor-tab:" + prefix' in editor_js
+        assert "sessionStorage.setItem(activeTabStorageKey(), activeTab)" in editor_js
+        assert "sessionStorage.getItem(activeTabStorageKey())" in editor_js
+        assert 'var editorTabs = ["content", "metadata", "history"]' in editor_js
+        assert 'storedTab === "history" && !filePath' in editor_js
+        assert "restoreActiveTab();" in editor_js
     def test_editor_loads_tui_editor(self, client):
         """Test that editor loads TUI Editor for markdown."""
         resp = client.get(f"/{PREFIX}/edit/")
