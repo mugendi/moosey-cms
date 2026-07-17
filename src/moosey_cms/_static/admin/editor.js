@@ -681,13 +681,15 @@
   }
 
   function updateSaveButton() {
-    var button = document.getElementById("btn-save");
-    if (!button) return;
+    var buttons = document.querySelectorAll('[id^="btn-save"]');
+    if (!buttons.length) return;
     var changed =
       savedBody !== null &&
       (getEditorValue() !== savedBody ||
         serializedFrontmatter() !== savedFrontmatter);
-    button.disabled = isSaving || !changed;
+    buttons.forEach(function (button) {
+      button.disabled = isSaving || !changed;
+    });
   }
 
   function setEditorValue(text) {
@@ -760,17 +762,19 @@
        ================================================================ */
   function setSaveState(saving) {
     isSaving = saving;
-    var button = document.getElementById("btn-save");
-    var label = document.getElementById("save-label");
-    var icon = document.getElementById("save-icon");
-    var spinner = document.getElementById("save-spinner");
-    if (button) {
-      updateSaveButton();
+    updateSaveButton();
+    document.querySelectorAll('[id^="btn-save"]').forEach(function (button) {
       button.setAttribute("aria-busy", String(saving));
-    }
-    if (label) label.textContent = saving ? "Saving…" : "Save";
-    if (icon) icon.classList.toggle("hidden", saving);
-    if (spinner) spinner.classList.toggle("hidden", !saving);
+    });
+    document.querySelectorAll('[id^="save-label"]').forEach(function (label) {
+      label.textContent = saving ? "Saving…" : "Save";
+    });
+    document.querySelectorAll('[id^="save-icon"]').forEach(function (icon) {
+      icon.classList.toggle("hidden", saving);
+    });
+    document.querySelectorAll('[id^="save-spinner"]').forEach(function (spinner) {
+      spinner.classList.toggle("hidden", !saving);
+    });
   }
 
   window.saveFile = function () {

@@ -1,7 +1,51 @@
 {% extends admin_config.templates ~ "/base.html" %} {% block title %}{% if
 file_path %}Edit: {{ file_path }}{% else %}New File{% endif %}{% endblock %} {%
 set active_page = 'editor' %}
-<!--  -->
+{% macro save_button(suffix='') %}
+<button
+  id="btn-save{{ suffix }}"
+  onclick="saveFile()"
+  disabled
+  class="inline-flex items-center gap-1.5 bg-moose-700 hover:bg-moose-800 disabled:bg-moose-200 disabled:text-moose-300 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
+>
+  <svg
+    id="save-icon{{ suffix }}"
+    class="w-4 h-4"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      d="M5 13l4 4L19 7"
+    />
+  </svg>
+  <svg
+    id="save-spinner{{ suffix }}"
+    class="hidden w-4 h-4 animate-spin"
+    fill="none"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <circle
+      class="opacity-25"
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      stroke-width="4"
+    ></circle>
+    <path
+      class="opacity-75"
+      fill="currentColor"
+      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+    ></path>
+  </svg>
+  <span id="save-label{{ suffix }}">Save</span>
+</button>
+{% endmacro %}
 {% block head %} {# ── TUI Editor (toast-ui) — WYSIWYG/Markdown editor for
 content. #}
 <link rel="stylesheet" href="/__moosey/static/vendor/toast-ui/editor.min.css" />
@@ -97,49 +141,7 @@ Guifier ships as an ES module only — must use type="module" to import. #}
       </div>
       <div class="flex items-center gap-2">
         
-        <button
-          id="btn-save"
-          onclick="saveFile()"
-          disabled
-          class="inline-flex items-center gap-1.5 bg-moose-700 hover:bg-moose-800 disabled:bg-moose-200 disabled:text-moose-300 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
-        >
-          <svg
-            id="save-icon"
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-          <svg
-            id="save-spinner"
-            class="hidden w-4 h-4 animate-spin"
-            fill="none"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            ></circle>
-            <path
-              class="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-            ></path>
-          </svg>
-          <span id="save-label">Save</span>
-        </button>
+        {{ save_button() }}
       </div>
     </div>
 
@@ -279,6 +281,7 @@ Guifier ships as an ES module only — must use type="module" to import. #}
         <div id="guifier-container" class="p-4"></div>
       </div>
     </div>
+    <div class="flex justify-end">{{ save_button("-bottom") }}</div>
   </div>
 </div>
 {# ── File Picker Modal ── #} {% if admin_config._static_dir %}
